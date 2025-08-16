@@ -39,6 +39,22 @@ export const getUserCategories = query({
   },
 });
 
+// Query to get all categories for a user (simplified version)
+export const getCategories = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const categories = await ctx.db
+      .query("categories")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .order("asc")
+      .collect();
+
+    return categories;
+  },
+});
+
 // Query to get a specific category with its subcategories
 export const getCategory = query({
   args: {
@@ -196,23 +212,44 @@ export const deleteCategory = mutation({
 // Query to get all subcategories for a category
 export const getSubcategories = query({
   args: {
-    categoryId: v.id("categories"),
     userId: v.id("users"),
+    categoryId: v.optional(v.id("categories")),
   },
   handler: async (ctx, args) => {
-    // Verify category ownership
-    const category = await ctx.db.get(args.categoryId);
-    if (!category || category.userId !== args.userId) {
-      throw new Error("Category not found or unauthorized");
+    if (args.categoryId) {
+      // Verify category ownership
+      const category = await ctx.db.get(args.categoryId);
+      if (!category || category.userId !== args.userId) {
+        throw new Error("Category not found or unauthorized");
+      }
+      
+      const subcategories = await ctx.db
+        .query("subcategories")
+        .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId!))
+        .order("asc")
+        .collect();
+      
+      return subcategories;
+    } else {
+      // Get all subcategories for the user
+      const userCategories = await ctx.db
+        .query("categories")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .collect();
+      
+      const categoryIds = userCategories.map(cat => cat._id);
+      
+      const allSubcategories = await Promise.all(
+        categoryIds.map(async (categoryId) => {
+          return await ctx.db
+            .query("subcategories")
+            .withIndex("by_category", (q) => q.eq("categoryId", categoryId))
+            .collect();
+        })
+      );
+      
+      return allSubcategories.flat().sort((a, b) => a.order - b.order);
     }
-
-    const subcategories = await ctx.db
-      .query("subcategories")
-      .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId))
-      .order("asc")
-      .collect();
-
-    return subcategories;
   },
 });
 

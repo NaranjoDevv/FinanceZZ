@@ -5,8 +5,13 @@ import { mutation, query } from "./_generated/server";
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
+    console.log("🔍 getCurrentUser called");
+    
     const identity = await ctx.auth.getUserIdentity();
+    console.log("👤 Identity:", identity ? { tokenIdentifier: identity.tokenIdentifier, email: identity.email } : null);
+    
     if (!identity) {
+      console.log("❌ No identity found");
       return null;
     }
     
@@ -14,6 +19,8 @@ export const getCurrentUser = query({
       .query("users")
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .first();
+    
+    console.log("👥 User found:", user ? { _id: user._id, email: user.email } : null);
     
     return user;
   },

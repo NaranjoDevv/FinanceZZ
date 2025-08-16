@@ -207,6 +207,41 @@ body {
   box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.2), 0 0 0 3px var(--primary-blue);
 }
 
+.brutal-select {
+  background-color: var(--bg-primary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  padding: var(--spacing-md);
+  width: 100%;
+  cursor: pointer;
+}
+
+.brutal-select:focus {
+  outline: none;
+  box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.2), 0 0 0 3px var(--primary-blue);
+}
+
+.brutal-textarea {
+  background-color: var(--bg-primary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  padding: var(--spacing-md);
+  width: 100%;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.brutal-textarea:focus {
+  outline: none;
+  box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.2), 0 0 0 3px var(--primary-blue);
+}
+
 /* Animaciones */
 @keyframes brutal-bounce {
   0%, 20%, 53%, 80%, 100% {
@@ -248,6 +283,27 @@ body {
   font-weight: var(--font-weight-black);
   text-transform: uppercase;
   letter-spacing: 1px;
+  color: var(--text-primary);
+}
+
+.text-error {
+  color: var(--error);
+}
+
+.text-secondary-gray {
+  color: var(--secondary-gray);
+}
+
+.border-error {
+  border-color: var(--error) !important;
+}
+
+.border-border-color {
+  border-color: var(--border-color);
+}
+
+.border-3 {
+  border-width: 3px;
 }
 
 .shadow-brutal {

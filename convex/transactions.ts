@@ -108,7 +108,7 @@ export const getTransactionStats = query({
 export const createTransaction = mutation({
   args: {
     userId: v.id("users"),
-    type: v.union(v.literal("income"), v.literal("expense")),
+    type: v.union(v.literal("income"), v.literal("expense"), v.literal("debt_payment"), v.literal("loan_received")),
     amount: v.number(),
     description: v.string(),
     categoryId: v.optional(v.id("categories")),
@@ -166,7 +166,7 @@ export const updateTransaction = mutation({
   args: {
     id: v.id("transactions"),
     userId: v.id("users"),
-    type: v.optional(v.union(v.literal("income"), v.literal("expense"))),
+    type: v.optional(v.union(v.literal("income"), v.literal("expense"), v.literal("debt_payment"), v.literal("loan_received"))),
     amount: v.optional(v.number()),
     description: v.optional(v.string()),
     categoryId: v.optional(v.id("categories")),

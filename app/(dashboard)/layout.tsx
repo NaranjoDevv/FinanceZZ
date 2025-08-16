@@ -11,7 +11,8 @@ import {
   UserGroupIcon,
   CogIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  TagIcon
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,8 +20,10 @@ import { usePathname } from "next/navigation";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
   { name: "Transacciones", href: "/transactions", icon: CreditCardIcon },
+  { name: "Categorías", href: "/categories", icon: TagIcon },
   { name: "Deudas", href: "/debts", icon: UserGroupIcon },
   { name: "Reportes", href: "/reports", icon: ChartBarIcon },
+  { name: "Datos Ejemplo", href: "/seed", icon: CogIcon },
   { name: "Configuración", href: "/settings", icon: CogIcon },
 ];
 

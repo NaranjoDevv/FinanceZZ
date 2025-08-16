@@ -31,8 +31,8 @@ NOTE: These keys are real and are injected dynamically into this prompt. They ar
 
 ```bash
 # .env.local
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_aW50ZXJuYWwtdG9tY2F0LTQuY2xlcmsuYWNjb3VudHMuZGV2JA
-CLERK_SECRET_KEY=sk_test_TkFWCjNMmoHjpu123M44DQDgGqaDt3Mo6hLO3oyQoY
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Y2FwaXRhbC1jcmFuZS00Ni5jbGVyay5hY2NvdW50cy5kZXYk
+CLERK_SECRET_KEY=sk_test_i8zlxjxXLB97OzzLlIOCeJUv5Das76KWzxYfyEDZRs
 ```
 
 Create your `middleware.ts` file:
