@@ -35,6 +35,7 @@ import {
 export interface NewTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onTransactionCreated?: () => void;
 }
 
 interface FormData {
@@ -57,6 +58,7 @@ interface FormErrors {
 export default function NewTransactionModal({
   isOpen,
   onClose,
+  onTransactionCreated,
 }: NewTransactionModalProps) {
   const [formData, setFormData] = useState<FormData>({
     type: "expense",
@@ -162,6 +164,7 @@ export default function NewTransactionModal({
       });
       setErrors({});
       onClose();
+      onTransactionCreated?.();
     } catch (error) {
       console.error("Error creating transaction:", error);
     } finally {

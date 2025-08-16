@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import NewTransactionModal from "@/components/forms/NewTransactionModal";
 import {
   PlusIcon,
   CreditCardIcon,
@@ -14,6 +17,34 @@ import {
 
 export default function DashboardPage() {
   const { user } = useUser();
+  const router = useRouter();
+  const [isNewTransactionModalOpen, setIsNewTransactionModalOpen] = useState(false);
+
+  const handleNewTransaction = () => {
+    console.log('Nueva Transacción clicked');
+    setIsNewTransactionModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    console.log('Modal closed');
+    setIsNewTransactionModalOpen(false);
+  };
+
+  const handleTransactionCreated = () => {
+    console.log('Transaction created, redirecting to /transactions');
+    setIsNewTransactionModalOpen(false);
+    router.push('/transactions');
+  };
+
+  const handleManageDebts = () => {
+    console.log('Gestionar Deudas clicked, redirecting to /debts');
+    router.push('/debts');
+  };
+
+  const handleViewReports = () => {
+    console.log('Ver Reportes clicked, redirecting to /reports');
+    router.push('/reports');
+  };
 
   const stats = [
     {
@@ -95,18 +126,30 @@ export default function DashboardPage() {
         className="mb-8"
       >
         <div className="flex flex-wrap gap-3 sm:gap-4">
-          <Button className="brutal-button brutal-button--primary">
+          <button 
+            className="brutal-button brutal-button--primary"
+            onClick={handleNewTransaction}
+            type="button"
+          >
             <PlusIcon className="w-5 h-5 mr-2" />
             Nueva Transacción
-          </Button>
-          <Button className="brutal-button">
+          </button>
+          <button 
+            className="brutal-button"
+            onClick={handleManageDebts}
+            type="button"
+          >
             <UserGroupIcon className="w-5 h-5 mr-2" />
             Gestionar Deudas
-          </Button>
-          <Button className="brutal-button">
+          </button>
+          <button 
+            className="brutal-button"
+            onClick={handleViewReports}
+            type="button"
+          >
             <ChartBarIcon className="w-5 h-5 mr-2" />
             Ver Reportes
-          </Button>
+          </button>
         </div>
       </motion.div>
 
@@ -169,6 +212,13 @@ export default function DashboardPage() {
           </div>
         </Card>
       </motion.div>
+
+      {/* New Transaction Modal */}
+      <NewTransactionModal
+        isOpen={isNewTransactionModalOpen}
+        onClose={handleCloseModal}
+        onTransactionCreated={handleTransactionCreated}
+      />
     </div>
   );
 }

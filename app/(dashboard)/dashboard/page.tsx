@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SignInModal } from "@/components/auth/SignInModal";
+import NewTransactionModal from "@/components/forms/NewTransactionModal";
 import {
   PlusIcon,
   CreditCardIcon,
@@ -21,6 +22,32 @@ export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const [showSignIn, setShowSignIn] = useState(false);
+  const [showNewTransaction, setShowNewTransaction] = useState(false);
+
+  // Event handlers for buttons
+  const handleNewTransaction = () => {
+    console.log('Nueva Transacción clicked');
+    setShowNewTransaction(true);
+  };
+
+  const handleCloseNewTransaction = () => {
+    setShowNewTransaction(false);
+  };
+
+  const handleTransactionCreated = () => {
+    setShowNewTransaction(false);
+    // Optionally refresh data here
+  };
+
+  const handleManageDebts = () => {
+    console.log('Gestionar Deudas clicked');
+    router.push('/debts');
+  };
+
+  const handleViewReports = () => {
+    console.log('Ver Reportes clicked');
+    router.push('/reports');
+  };
 
   // Get real data from Convex - MUST be called before any conditional returns
   const { stats: transactionStats, transactions, isLoading: transactionsLoading } = useTransactions({ limit: 5 });
@@ -69,6 +96,12 @@ export default function DashboardPage() {
           onSwitchToSignUp={() => {}}
           isOpen={showSignIn}
           onClose={handleCloseModal}
+        />
+
+        <NewTransactionModal
+          isOpen={showNewTransaction}
+          onClose={handleCloseNewTransaction}
+          onTransactionCreated={handleTransactionCreated}
         />
       </>
     );
@@ -135,15 +168,15 @@ export default function DashboardPage() {
         className="mb-8"
       >
         <div className="flex gap-4 flex-wrap">
-          <Button className="brutal-button brutal-button--primary flex items-center gap-2">
+          <Button onClick={handleNewTransaction} className="brutal-button brutal-button--primary flex items-center gap-2">
             <PlusIcon className="w-5 h-5" />
             Nueva Transacción
           </Button>
-          <Button className="brutal-button flex items-center gap-2">
+          <Button onClick={handleManageDebts} className="brutal-button flex items-center gap-2">
             <CreditCardIcon className="w-5 h-5" />
             Gestionar Deudas
           </Button>
-          <Button className="brutal-button flex items-center gap-2">
+          <Button onClick={handleViewReports} className="brutal-button flex items-center gap-2">
             <ChartBarIcon className="w-5 h-5" />
             Ver Reportes
           </Button>
@@ -239,6 +272,13 @@ export default function DashboardPage() {
           </div>
         </Card>
       </motion.div>
+
+      {/* New Transaction Modal */}
+      <NewTransactionModal
+        isOpen={showNewTransaction}
+        onClose={handleCloseNewTransaction}
+        onTransactionCreated={handleTransactionCreated}
+      />
     </div>
   );
 }
