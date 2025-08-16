@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories } from "@/hooks/use-categories";
@@ -32,6 +30,7 @@ const CATEGORY_COLORS = [
 export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
   const { createCategory } = useCategories();
   const [isLoading, setIsLoading] = useState(false);
+  const [colorPickerMode, setColorPickerMode] = useState<'preset' | 'custom'>('preset');
   const [formData, setFormData] = useState({
     name: "",
     icon: "📁",
@@ -41,14 +40,14 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast.error("El nombre de la categoría es requerido");
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       await createCategory({
         name: formData.name.trim(),
@@ -56,7 +55,7 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
         color: formData.color,
         isExpense: formData.isExpense,
       });
-      
+
       // Reset form
       setFormData({
         name: "",
@@ -64,7 +63,7 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
         color: "#6B7280",
         isExpense: true,
       });
-      
+
       onClose();
     } catch (error) {
       console.error("Error creating category:", error);
@@ -137,7 +136,7 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
                     className="w-full px-4 py-3 border-4 border-black bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-black transition-all"
                     placeholder="Ej: Alimentación, Transporte, Salario..."
                     disabled={isLoading}
-                    required
+
                   />
                 </div>
 
@@ -169,11 +168,10 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
                       <button
                         key={icon}
                         type="button"
-                        className={`p-2 text-lg border-2 transition-all hover:scale-110 ${
-                          formData.icon === icon 
-                            ? "border-black bg-black text-white" 
-                            : "border-gray-300 bg-white hover:border-black"
-                        }`}
+                        className={`text-lg border-2 transition-all hover:scale-110 ${formData.icon === icon
+                          ? "border-black bg-black text-white"
+                          : "border-gray-300 bg-white hover:border-black"
+                          }`}
                         onClick={() => setFormData({ ...formData, icon })}
                         disabled={isLoading}
                       >
@@ -187,20 +185,88 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
                   <Label htmlFor="color" className="block text-sm font-medium text-black mb-2">
                     Color
                   </Label>
-                  <div className="grid grid-cols-12 gap-2 p-4 border-4 border-black bg-white">
-                    {CATEGORY_COLORS.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        className={`w-6 h-6 border-4 transition-all hover:scale-110 ${
-                          formData.color === color ? "border-black scale-110" : "border-gray-300"
+
+                  {/* Color Mode Selector */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setColorPickerMode('preset')}
+                      className={`px-4 py-2 border-2 font-medium transition-all ${colorPickerMode === 'preset'
+                          ? 'border-black bg-black text-white'
+                          : 'border-gray-300 bg-white text-black hover:border-black'
                         }`}
-                        style={{ backgroundColor: color }}
-                        onClick={() => setFormData({ ...formData, color })}
-                        disabled={isLoading}
-                      />
-                    ))}
+                      disabled={isLoading}
+                    >
+                      Colores Predefinidos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setColorPickerMode('custom')}
+                      className={`px-4 py-2 border-2 font-medium transition-all ${colorPickerMode === 'custom'
+                          ? 'border-black bg-black text-white'
+                          : 'border-gray-300 bg-white text-black hover:border-black'
+                        }`}
+                      disabled={isLoading}
+                    >
+                      Selector de Color
+                    </button>
                   </div>
+
+                  {/* Preset Colors */}
+                  {colorPickerMode === 'preset' && (
+                    <div className="grid grid-cols-12 gap-2 p-4 border-4 border-black bg-white">
+                      {CATEGORY_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={`w-6 h-6 border-4 transition-all hover:scale-110 ${formData.color === color ? "border-black scale-110" : "border-gray-300"
+                            }`}
+                          style={{ backgroundColor: color }}
+                          onClick={() => setFormData({ ...formData, color })}
+                          disabled={isLoading}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Custom Color Picker */}
+                  {colorPickerMode === 'custom' && (
+                    <div className="p-4 border-4 border-black bg-white">
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="color"
+                          value={formData.color}
+                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                          className="w-16 h-16 border-4 border-black cursor-pointer"
+                          disabled={isLoading}
+                        />
+                        <div className="flex-1">
+                          <Label htmlFor="hex-input" className="block text-sm font-medium text-black mb-2">
+                            Código Hexadecimal
+                          </Label>
+                          <input
+                            id="hex-input"
+                            type="text"
+                            value={formData.color}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value.match(/^#[0-9A-Fa-f]{0,6}$/)) {
+                                setFormData({ ...formData, color: value });
+                              }
+                            }}
+                            className="w-full px-3 py-2 border-4 border-black bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-black transition-all"
+                            placeholder="#000000"
+                            disabled={isLoading}
+                            maxLength={7}
+                          />
+                        </div>
+                        <div
+                          className="w-12 h-12 border-4 border-black"
+                          style={{ backgroundColor: formData.color }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Footer */}

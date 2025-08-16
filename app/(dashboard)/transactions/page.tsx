@@ -352,11 +352,11 @@ export default function TransactionsPage() {
         transition={{ duration: 0.5 }}
         className="mb-8 pt-6"
       >
-        <h1 className="text-4xl font-black uppercase tracking-wider mb-2">
+        <h1 className="text-4xl font-black uppercase tracking-wider mb-2 text-black transition-colors duration-200">
           Transacciones
         </h1>
-        <p className="text-gray-600 font-medium">
-          Gestiona y revisa todas tus transacciones
+        <p className="text-gray-600 font-medium transition-colors duration-200">
+          Gestiona tus ingresos y gastos
         </p>
         <div className="w-20 h-1 bg-black mt-4"></div>
       </motion.div>
@@ -402,10 +402,10 @@ export default function TransactionsPage() {
                   <ArrowUpIcon className="h-6 w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Total Ingresos
               </h3>
-              <p className="text-2xl font-black text-green-600">${totalIncome.toFixed(2)}</p>
+              <p className="text-2xl font-black text-green-600 transition-colors duration-200">${totalIncome.toFixed(2)}</p>
             </Card>
           </motion.div>
 
@@ -420,10 +420,10 @@ export default function TransactionsPage() {
                   <ArrowDownIcon className="h-6 w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Total Gastos
               </h3>
-              <p className="text-2xl font-black text-red-600">${totalExpenses.toFixed(2)}</p>
+              <p className="text-2xl font-black text-red-600 transition-colors duration-200">${totalExpenses.toFixed(2)}</p>
             </Card>
           </motion.div>
 
@@ -438,10 +438,10 @@ export default function TransactionsPage() {
                   <CalendarIcon className="h-6 w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Balance
               </h3>
-              <p className={`text-2xl font-black ${balance >= 0 ? 'text-green-600' : 'text-red-600'
+              <p className={`text-2xl font-black transition-colors duration-200 ${balance >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
                 ${balance.toFixed(2)}
               </p>

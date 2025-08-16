@@ -1,8 +1,4 @@
 
-@import "tw-animate-css";
-
-@custom-variant dark (&:is(.dark *));
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -31,27 +27,7 @@
     --radius: 0.5rem;
   }
 
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-  }
+
 }
 
 /* Paleta de Colores - Brutalismo Emocional */
@@ -75,22 +51,22 @@
   --error: #ff0000;
   --info: #0066ff;
 
-  /* Colores de Fondo */
+  /* Colores de Fondo - Modo Claro */
   --bg-primary: #ffffff;
   --bg-secondary: #f5f5f5;
   --bg-accent: #000000;
 
-  /* Colores de Texto */
+  /* Colores de Texto - Modo Claro */
   --text-primary: #000000;
   --text-secondary: #808080;
   --text-inverse: #ffffff;
 
-  /* Sombras Brutales */
+  /* Sombras Brutales - Modo Claro */
   --shadow-brutal: 4px 4px 0px #000000;
   --shadow-brutal-lg: 8px 8px 0px #000000;
   --shadow-brutal-xl: 12px 12px 0px #000000;
 
-  /* Bordes */
+  /* Bordes - Modo Claro */
   --border-width: 3px;
   --border-color: #000000;
   --border-radius: 0px;
@@ -117,15 +93,9 @@
   --font-weight-medium: 500;
   --font-weight-bold: 700;
   --font-weight-black: 900;
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(240 5.3% 26.1%);
-  --sidebar-primary: hsl(240 5.9% 10%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(240 4.8% 95.9%);
-  --sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --sidebar-border: hsl(220 13% 91%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
+
+
 
 /* Estilos Base */
 * {

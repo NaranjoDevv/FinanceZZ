@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+
 import {
   HomeIcon,
   CreditCardIcon,
@@ -75,7 +76,7 @@ export default function DashboardLayout({
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b-4 border-black">
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-wider">
+              <h1 className="text-2xl font-black uppercase tracking-wider text-black">
                 Finance
               </h1>
               <p className="text-sm font-bold uppercase tracking-wide text-gray-600">
@@ -96,8 +97,8 @@ export default function DashboardLayout({
                     <Link
                       href={item.href}
                       className={`flex items-center px-4 py-3 text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${isActive
-                        ? "bg-yellow-400 shadow-brutal"
-                        : "bg-white hover:bg-gray-100 hover:shadow-brutal"
+                        ? "bg-yellow-400 text-black shadow-brutal"
+                        : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
                         }`}
                     >
                       <IconComponent className="w-5 h-5 mr-3" />
@@ -111,20 +112,23 @@ export default function DashboardLayout({
 
           {/* User section */}
           <div className="p-6 border-t-4 border-black">
-            <div className="flex items-center space-x-3">
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "w-10 h-10 border-2 border-black"
-                  }
-                }}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold uppercase tracking-wide truncate">
-                  Mi Cuenta
-                </p>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-10 h-10 border-2 border-black"
+                    }
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold uppercase tracking-wide truncate text-black">
+                    Mi Cuenta
+                  </p>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -140,7 +144,7 @@ export default function DashboardLayout({
           {/* Logo */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b-4 border-black">
             <div>
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider">
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-black">
                 Finance
               </h1>
               <p className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600">
@@ -169,8 +173,8 @@ export default function DashboardLayout({
                     <Link
                       href={item.href}
                       className={`flex items-center px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${isActive
-                        ? "bg-yellow-400 shadow-brutal"
-                        : "bg-white hover:bg-gray-100 hover:shadow-brutal"
+                        ? "bg-yellow-400 text-black shadow-brutal"
+                        : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
                         }`}
                       onClick={() => setSidebarOpen(false)}
                     >
@@ -185,19 +189,26 @@ export default function DashboardLayout({
 
           {/* User section */}
           <div className="p-4 sm:p-6 border-t-4 border-black">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "w-8 h-8 sm:w-10 sm:h-10 border-2 border-black"
-                  }
-                }}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-bold uppercase tracking-wide truncate">
-                  Mi Cuenta
-                </p>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8 sm:w-10 sm:h-10 border-2 border-black"
+                    }
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-bold uppercase tracking-wide truncate text-black">
+                    Mi Cuenta
+                  </p>
+                </div>
               </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wide text-gray-600">
+                Tema
+              </span>
             </div>
           </div>
         </div>
@@ -237,12 +248,13 @@ export default function DashboardLayout({
                   })}
                 </p>
               </div>
+
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-gray-50">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

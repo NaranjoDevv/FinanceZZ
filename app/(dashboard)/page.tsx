@@ -78,10 +78,10 @@ export default function DashboardPage() {
         className="mb-8 pt-6"
         data-testid="dashboard-header"
       >
-        <h1 className="text-4xl font-black uppercase tracking-wider mb-2">
+        <h1 className="text-4xl font-black uppercase tracking-wider mb-2 text-black transition-colors duration-200">
           Dashboard
         </h1>
-        <p className="text-gray-600 font-medium">
+        <p className="text-gray-600 font-medium transition-colors duration-200">
           Bienvenido de vuelta, {user?.firstName || 'Usuario'}
         </p>
         <div className="w-20 h-1 bg-black mt-4"></div>
@@ -131,10 +131,10 @@ export default function DashboardPage() {
                     {stat.change}
                   </span>
                 </div>
-                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600 mb-1">
+                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                   {stat.title}
                 </h3>
-                <p className="text-xl sm:text-2xl font-black">
+                <p className="text-xl sm:text-2xl font-black text-black transition-colors duration-200">
                   {stat.value}
                 </p>
               </Card>

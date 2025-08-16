@@ -19,10 +19,10 @@ export default function ReportsPage() {
         transition={{ duration: 0.5 }}
         className="mb-8 pt-6"
       >
-        <h1 className="text-4xl font-black uppercase tracking-wider mb-2">
+        <h1 className="text-4xl font-black uppercase tracking-wider mb-2 text-black transition-colors duration-200">
           Reportes
         </h1>
-        <p className="text-gray-600 font-medium">
+        <p className="text-gray-600 font-medium transition-colors duration-200">
           Analiza tus finanzas con reportes detallados
         </p>
         <div className="w-20 h-1 bg-black mt-4"></div>
@@ -58,11 +58,11 @@ export default function ReportsPage() {
         transition={{ duration: 0.5, delay: 0.4 }}
       >
         <Card className="brutal-card p-6">
-          <h2 className="text-xl font-black uppercase tracking-wide mb-4">
+          <h2 className="text-xl font-black uppercase tracking-wide mb-4 text-black transition-colors duration-200">
             Reportes Financieros
           </h2>
           <div className="text-center py-12">
-            <p className="text-gray-500 font-medium">
+            <p className="text-gray-500 font-medium transition-colors duration-200">
               La funcionalidad de reportes se implementará próximamente
             </p>
           </div>

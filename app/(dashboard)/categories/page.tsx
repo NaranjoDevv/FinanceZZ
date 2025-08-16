@@ -111,11 +111,11 @@ export default function Categories() {
         transition={{ duration: 0.5 }}
         className="mb-8 pt-6"
       >
-        <h1 className="text-4xl font-black uppercase tracking-wider mb-2">
+        <h1 className="text-4xl font-black uppercase tracking-wider mb-2 text-black transition-colors duration-200">
           Categorías
         </h1>
-        <p className="text-gray-600 font-medium">
-          Gestiona las categorías para organizar tus transacciones
+        <p className="text-gray-600 font-medium transition-colors duration-200">
+          Gestiona las categorías de tus transacciones
         </p>
         <div className="w-20 h-1 bg-black mt-4"></div>
       </motion.div>
@@ -161,10 +161,10 @@ export default function Categories() {
                   <TagIcon className="h-6 w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1">
-                Total Categorías
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+                Categorías Totales
               </h3>
-              <p className="text-2xl font-black text-blue-600">{totalCategories}</p>
+              <p className="text-2xl font-black text-blue-600 transition-colors duration-200">{totalCategories}</p>
             </Card>
           </motion.div>
 
@@ -179,10 +179,10 @@ export default function Categories() {
                   <TagIcon className="h-6 w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Categorías Gastos
               </h3>
-              <p className="text-2xl font-black text-red-600">{totalExpenseCategories}</p>
+              <p className="text-2xl font-black text-red-600 transition-colors duration-200">{totalExpenseCategories}</p>
             </Card>
           </motion.div>
 
@@ -197,10 +197,10 @@ export default function Categories() {
                   <TagIcon className="h-6 w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Categorías Ingresos
               </h3>
-              <p className="text-2xl font-black text-green-600">{totalIncomeCategories}</p>
+              <p className="text-2xl font-black text-green-600 transition-colors duration-200">{totalIncomeCategories}</p>
             </Card>
           </motion.div>
         </div>
@@ -214,10 +214,10 @@ export default function Categories() {
         className="mb-8"
       >
         <Card className="brutal-card p-6">
-          <h3 className="text-lg font-black uppercase tracking-wide mb-4">Filtros</h3>
+          <h3 className="text-lg font-black uppercase tracking-wide mb-4 text-black transition-colors duration-200">Filtros</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-2 block">
+              <label className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-2 block transition-colors duration-200">
                 Buscar categorías
               </label>
               <div className="relative">
@@ -232,7 +232,7 @@ export default function Categories() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-2 block">
+              <label className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-2 block transition-colors duration-200">
                 Tipo
               </label>
               <Select value={selectedType} onValueChange={setSelectedType}>
@@ -257,7 +257,7 @@ export default function Categories() {
         transition={{ duration: 0.5, delay: 0.8 }}
       >
       <Card className="brutal-card p-6">
-        <h3 className="text-lg font-black uppercase tracking-wide mb-6">
+        <h3 className="text-lg font-black uppercase tracking-wide mb-6 text-black transition-colors duration-200">
           Categorías ({filteredCategories.length})
         </h3>
         {filteredCategories.length === 0 ? (
@@ -315,7 +315,7 @@ export default function Categories() {
                             className="w-4 h-4 border-2 border-black"
                             style={{ backgroundColor: category.color || "#6B7280" }}
                           />
-                          <span className="text-sm font-bold text-gray-600">
+                          <span className="text-sm font-bold text-gray-600 transition-colors duration-200">
                             {category.subcategories?.length || 0} subcategorías
                           </span>
                         </div>
