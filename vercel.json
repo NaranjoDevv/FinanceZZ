@@ -3,22 +3,12 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "env": {
-    "CONVEX_DEPLOYMENT": "@convex_deployment",
-    "NEXT_PUBLIC_CONVEX_URL": "@next_public_convex_url",
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "@next_public_clerk_publishable_key",
-    "CLERK_SECRET_KEY": "@clerk_secret_key",
-    "CLERK_JWT_KEY": "@clerk_jwt_key",
-    "CLERK_FRONTEND_API_URL": "@clerk_frontend_api_url",
-    "NEXT_PUBLIC_CLERK_SIGN_IN_URL": "/sign-in",
-    "NEXT_PUBLIC_CLERK_SIGN_UP_URL": "/sign-up",
-    "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL": "/dashboard",
-    "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL": "/dashboard"
-  },
   "functions": {
     "app/**/*.tsx": {
       "maxDuration": 30
     }
   },
-  "regions": ["iad1"]
+  "regions": [
+    "iad1"
+  ]
 }
