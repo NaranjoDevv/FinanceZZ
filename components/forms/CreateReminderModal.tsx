@@ -4,14 +4,18 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Bell } from "lucide-react";
+import { 
+  BellIcon, 
+  XMarkIcon, 
+  CalendarIcon, 
+  ClockIcon, 
+  TagIcon, 
+  UsersIcon, 
+  DocumentTextIcon, 
+  CreditCardIcon, 
+  ArrowPathIcon 
+} from "@heroicons/react/24/outline";
 
 interface Debt {
   _id: string;
@@ -59,7 +63,7 @@ export default function CreateReminderModal({ isOpen, onClose }: CreateReminderM
   const [isLoading, setIsLoading] = useState(false);
 
   const currentUser = useQuery(api.users.getCurrentUser);
-  
+
   const createReminder = useMutation(api.reminders.createReminder);
   const debts = useQuery(
     api.debts.getUserDebts,
@@ -72,7 +76,7 @@ export default function CreateReminderModal({ isOpen, onClose }: CreateReminderM
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim()) {
       toast.error("El título es requerido");
       return;
@@ -88,7 +92,7 @@ export default function CreateReminderModal({ isOpen, onClose }: CreateReminderM
     try {
       // Combinar fecha y hora
       const dateTime = new Date(`${dueDate}T${dueTime || '09:00'}`);
-      
+
       if (!currentUser?._id) {
         toast.error("Usuario no autenticado");
         return;
@@ -133,253 +137,251 @@ export default function CreateReminderModal({ isOpen, onClose }: CreateReminderM
 
 
 
+  const buttonClass = "px-6 py-3 font-black text-lg border-4 border-black bg-white hover:bg-black hover:text-white transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]";
+  const inputClass = "w-full px-4 py-3 text-lg font-bold border-4 border-black bg-white focus:bg-yellow-100 focus:outline-none focus:ring-0 transition-all duration-200";
+  const selectClass = "w-full px-4 py-3 text-lg font-bold border-4 border-black bg-white focus:bg-yellow-100 focus:outline-none focus:ring-0 transition-all duration-200";
+
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] bg-[#f5f5dc] border-4 border-black shadow-[8px_8px_0px_0px_#000] max-h-[85vh] overflow-y-auto">
-        <DialogHeader className="border-b-4 border-black pb-3 mb-4">
-          <DialogTitle className="flex items-center gap-3 text-xl font-bold">
-            <div className="p-2 bg-black text-white rounded-lg">
-              <Bell className="h-4 w-4" />
-            </div>
-            Crear Recordatorio
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Título */}
-          <div>
-            <label className="block text-sm font-bold text-black mb-2">
-              Título *
-            </label>
-            <Input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ej: Pagar factura de electricidad"
-              className="brutal-input"
-              required
-            />
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className="block text-sm font-bold text-black mb-2">
-              Descripción
-            </label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe el recordatorio..."
-              className="brutal-input min-h-[80px] resize-none"
-              rows={2}
-            />
-          </div>
-
-          {/* Fecha y Hora */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-black mb-2">
-                Fecha de Vencimiento *
-              </label>
-              <Input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="brutal-input"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-black mb-2">
-                Hora
-              </label>
-              <Input
-                type="time"
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
-                className="brutal-input"
-              />
-            </div>
-          </div>
-
-          {/* Prioridad y Categoría */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-black mb-2">
-                Prioridad
-              </label>
-              <Select value={priority} onValueChange={(value: "low" | "medium" | "high" | "urgent") => setPriority(value)}>
-                <SelectTrigger className="brutal-input">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">
-                    <span className="flex items-center gap-2">
-                      <span className="text-green-500">●</span>
-                      Baja
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="medium">
-                    <span className="flex items-center gap-2">
-                      <span className="text-yellow-500">●</span>
-                      Media
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="high">
-                    <span className="flex items-center gap-2">
-                      <span className="text-orange-500">●</span>
-                      Alta
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="urgent">
-                    <span className="flex items-center gap-2">
-                      <span className="text-red-500">●</span>
-                      Urgente
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-black mb-2">
-                Categoría
-              </label>
-              <Select value={category} onValueChange={(value: "debt" | "payment" | "meeting" | "task" | "other") => setCategory(value)}>
-                <SelectTrigger className="brutal-input">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="debt">
-                    <span className="flex items-center gap-2">
-                      💰 Deuda
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="payment">
-                    <span className="flex items-center gap-2">
-                      💳 Pago
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="meeting">
-                    <span className="flex items-center gap-2">
-                      👥 Reunión
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="task">
-                    <span className="flex items-center gap-2">
-                      📋 Tarea
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="other">
-                    <span className="flex items-center gap-2">
-                      📝 Otro
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Relaciones */}
-          {(category === "debt" || category === "payment") && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-black mb-2">
-                  Deuda Relacionada
-                </label>
-                <Select value={relatedDebtId} onValueChange={setRelatedDebtId}>
-                  <SelectTrigger className="brutal-input">
-                    <SelectValue placeholder="Seleccionar deuda" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">
-                      Ninguna
-                    </SelectItem>
-                    {debts.map((debt: Debt) => (
-                      <SelectItem key={debt._id} value={debt._id}>
-                        {debt.description} - ${debt.currentAmount}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+    <>
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        {/* Modal */}
+        <div className="bg-white border-8 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] w-full max-w-2xl max-h-[90vh] overflow-hidden">
+          {/* Header brutalista */}
+          <div className="bg-yellow-400 border-b-8 border-black p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-black border-4 border-black">
+                  <BellIcon className="h-8 w-8 text-yellow-400" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-black text-black uppercase tracking-tight">CREAR RECORDATORIO</h2>
+                  <p className="text-lg font-bold text-black">PROGRAMA UNA NUEVA TAREA</p>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-black mb-2">
-                  Contacto Relacionado
-                </label>
-                <Select value={relatedContactId} onValueChange={setRelatedContactId}>
-                  <SelectTrigger className="brutal-input">
-                    <SelectValue placeholder="Seleccionar contacto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">
-                      Ninguno
-                    </SelectItem>
-                    {contacts.map((contact: Contact) => (
-                      <SelectItem key={contact._id} value={contact._id}>
-                        {contact.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <button
+                onClick={handleClose}
+                className="p-3 bg-red-500 border-4 border-black hover:bg-red-600 transition-colors transform hover:scale-110 active:scale-95 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              >
+                <XMarkIcon className="h-6 w-6 text-white" />
+              </button>
             </div>
-          )}
-
-          {/* Recurrencia */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="recurring"
-                checked={isRecurring}
-                onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
-                className="brutal-checkbox"
-              />
-              <label htmlFor="recurring" className="text-sm font-bold text-black">
-                Recordatorio recurrente
-              </label>
-            </div>
-            
-            {isRecurring && (
-              <div>
-                <label className="block text-sm font-bold text-black mb-2">
-                  Frecuencia
-                </label>
-                <Select value={recurringFrequency} onValueChange={(value: "daily" | "weekly" | "monthly" | "yearly") => setRecurringFrequency(value)}>
-                  <SelectTrigger className="brutal-input">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Diario</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="monthly">Mensual</SelectItem>
-                    <SelectItem value="yearly">Anual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
 
-          {/* Botones */}
-          <div className="flex gap-4 pt-3 border-t-4 border-black">
-            <Button
-              type="button"
-              onClick={handleClose}
-              variant="outline"
-              className="flex-1 brutal-button"
-              disabled={isLoading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 brutal-button bg-black text-white hover:bg-gray-800"
-              disabled={isLoading}
-            >
-              {isLoading ? "Creando..." : "Crear Recordatorio"}
-            </Button>
+          {/* Contenido del formulario */}
+          <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto bg-white">
+
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  {/* Título */}
+                  <div>
+                    <label className="flex items-center gap-3 text-xl font-black text-black mb-4 uppercase tracking-wide">
+                      <DocumentTextIcon className="h-6 w-6 text-black" />
+                      TÍTULO *
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="EJ: PAGAR FACTURA DE ELECTRICIDAD"
+                      className={inputClass}
+                      required
+                    />
+                  </div>
+
+                  {/* Descripción */}
+                  <div>
+                    <label className="flex items-center gap-3 text-xl font-black text-black mb-4 uppercase tracking-wide">
+                      <DocumentTextIcon className="h-6 w-6 text-black" />
+                      DESCRIPCIÓN
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="DESCRIBE EL RECORDATORIO..."
+                      className={`${inputClass} min-h-[100px] resize-none`}
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Fecha y Hora */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="flex items-center gap-3 text-xl font-black text-black mb-4 uppercase tracking-wide">
+                        <CalendarIcon className="h-6 w-6 text-black" />
+                        FECHA *
+                      </label>
+                      <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        className={inputClass}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-3 text-xl font-black text-black mb-4 uppercase tracking-wide">
+                        <ClockIcon className="h-6 w-6 text-black" />
+                        HORA
+                      </label>
+                      <input
+                        type="time"
+                        value={dueTime}
+                        onChange={(e) => setDueTime(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Prioridad y Categoría */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="flex items-center gap-3 text-xl font-black text-black mb-4 uppercase tracking-wide">
+                        <TagIcon className="h-6 w-6 text-black" />
+                        PRIORIDAD
+                      </label>
+                      <select
+                        value={priority}
+                        onChange={(e) => setPriority(e.target.value as "low" | "medium" | "high" | "urgent")}
+                        className={selectClass}
+                      >
+                        <option value="low">🟢 BAJA</option>
+                        <option value="medium">🟡 MEDIA</option>
+                        <option value="high">🟠 ALTA</option>
+                        <option value="urgent">🔴 URGENTE</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-3 text-xl font-black text-black mb-4 uppercase tracking-wide">
+                        <TagIcon className="h-6 w-6 text-black" />
+                        CATEGORÍA
+                      </label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value as "debt" | "payment" | "meeting" | "task" | "other")}
+                        className={selectClass}
+                      >
+                        <option value="debt">💰 DEUDA</option>
+                        <option value="payment">💳 PAGO</option>
+                        <option value="meeting">👥 REUNIÓN</option>
+                        <option value="task">📋 TAREA</option>
+                        <option value="other">📝 OTRO</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Relaciones */}
+                  {(category === "debt" || category === "payment") && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="flex items-center gap-3 text-xl font-black text-black mb-4 uppercase tracking-wide">
+                            <CreditCardIcon className="h-6 w-6 text-black" />
+                            DEUDA RELACIONADA
+                          </label>
+                          <select
+                            value={relatedDebtId}
+                            onChange={(e) => setRelatedDebtId(e.target.value)}
+                            className={selectClass}
+                          >
+                            <option value="">NINGUNA</option>
+                            {debts.map((debt: Debt) => (
+                              <option key={debt._id} value={debt._id}>
+                                {debt.description} - ${debt.currentAmount}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="flex items-center gap-3 text-xl font-black text-black mb-4 uppercase tracking-wide">
+                            <UsersIcon className="h-6 w-6 text-black" />
+                            CONTACTO RELACIONADO
+                          </label>
+                          <select
+                            value={relatedContactId}
+                            onChange={(e) => setRelatedContactId(e.target.value)}
+                            className={selectClass}
+                          >
+                            <option value="">NINGUNO</option>
+                            {contacts.map((contact: Contact) => (
+                              <option key={contact._id} value={contact._id}>
+                                {contact.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recurrencia */}
+                  <div className="space-y-6">
+                    <div className="flex items-center space-x-4">
+                      <input
+                        type="checkbox"
+                        id="recurring"
+                        checked={isRecurring}
+                        onChange={(e) => setIsRecurring(e.target.checked)}
+                        className="w-6 h-6 border-4 border-black bg-white checked:bg-black focus:ring-0 focus:ring-offset-0"
+                      />
+                      <label htmlFor="recurring" className="flex items-center gap-3 text-xl font-black text-black uppercase tracking-wide">
+                        <ArrowPathIcon className="h-6 w-6 text-black" />
+                        RECORDATORIO RECURRENTE
+                      </label>
+                    </div>
+
+                    {isRecurring && (
+                      <div className="space-y-4">
+                        <label className="flex items-center gap-3 text-xl font-black text-black mb-4 uppercase tracking-wide">
+                          <CalendarIcon className="h-6 w-6 text-black" />
+                          FRECUENCIA
+                        </label>
+                        <select
+                          value={recurringFrequency}
+                          onChange={(e) => setRecurringFrequency(e.target.value as "daily" | "weekly" | "monthly" | "yearly")}
+                          className={selectClass}
+                        >
+                          <option value="daily">📅 DIARIO</option>
+                          <option value="weekly">📅 SEMANAL</option>
+                          <option value="monthly">📅 MENSUAL</option>
+                          <option value="yearly">📅 ANUAL</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botones */}
+                  <div className="flex justify-end space-x-4 pt-8">
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      className="px-6 py-3 font-black text-lg border-4 border-black bg-gray-200 hover:bg-gray-300 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] uppercase tracking-wide"
+                    >
+                      CANCELAR
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="px-6 py-3 font-black text-lg border-4 border-black bg-green-400 hover:bg-green-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] uppercase tracking-wide"
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 border-3 border-black border-t-transparent animate-spin" />
+                          CREANDO...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <BellIcon className="h-5 w-5" />
+                          CREAR RECORDATORIO
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                </form>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </>
   );
-}
+  }

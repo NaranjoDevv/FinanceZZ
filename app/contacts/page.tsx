@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card } from "@/components/ui/card";
@@ -137,7 +137,7 @@ export default function ContactsPage() {
               Nuevo Contacto
             </Button>
             <Button 
-              className="brutal-button"
+              className={`brutal-button ${showFilters ? 'bg-black text-white' : ''}`}
               onClick={() => setShowFilters(!showFilters)}
             >
               <AdjustmentsHorizontalIcon className="w-5 h-5 mr-2" />
@@ -153,7 +153,7 @@ export default function ContactsPage() {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="mb-8"
         >
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -237,46 +237,53 @@ export default function ContactsPage() {
         </motion.div>
 
         {/* Controls */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="mb-8"
-        >
-          <Card className="brutal-card p-6">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                {/* Search */}
-                <div className="relative flex-1 max-w-md">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Buscar contactos..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border-2 border-black font-medium focus:outline-none focus:ring-0 focus:border-gray-600"
-                  />
-                </div>
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -20, height: 0 }}
+              transition={{ 
+                duration: 0.4,
+                ease: "easeInOut",
+                height: { delay: 0.1, duration: 0.3 }
+              }}
+              className="mb-8"
+            >
+              <Card className="brutal-card p-6">
+                <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                  <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                    {/* Search */}
+                    <div className="relative flex-1 max-w-md">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Buscar contactos..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border-2 border-black font-medium focus:outline-none focus:ring-0 focus:border-gray-600"
+                      />
+                    </div>
 
-                {/* Filters */}
-                {showFilters && (
-                  <div className="flex gap-2">
-                    <Select value={filterType} onValueChange={setFilterType}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="with-email">Con Email</SelectItem>
-                        <SelectItem value="with-phone">Con Teléfono</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {/* Filters */}
+                    <div className="flex gap-2">
+                      <Select value={filterType} onValueChange={setFilterType}>
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="with-email">Con Email</SelectItem>
+                          <SelectItem value="with-phone">Con Teléfono</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        </motion.div>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Contacts List */}
         <motion.div

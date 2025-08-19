@@ -3,25 +3,18 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import {
-  PlusIcon,
-  MinusIcon,
+  XMarkIcon,
   CurrencyDollarIcon,
-  PencilSquareIcon,
-  CalendarDaysIcon,
+  CalendarIcon,
   UserIcon,
   DocumentTextIcon,
-  XMarkIcon,
   PhoneIcon,
-  PercentBadgeIcon
+  PlusIcon,
+  MinusIcon,
 } from "@heroicons/react/24/outline";
 
 export interface NewDebtModalProps {
@@ -67,7 +60,6 @@ export default function NewDebtModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentUser = useQuery(api.users.getCurrentUser);
-
   const createDebt = useMutation(api.debts.createDebt);
 
   const handleInputChange = (field: keyof FormData, value: string) => {
@@ -75,7 +67,6 @@ export default function NewDebtModal({
       ...prev,
       [field]: value,
     }));
-
     if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -83,32 +74,25 @@ export default function NewDebtModal({
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
       newErrors.amount = "El monto debe ser mayor a 0";
     }
-
     if (!formData.description.trim()) {
       newErrors.description = "La descripción es requerida";
     }
-
     if (!formData.counterpartyName.trim()) {
       newErrors.counterpartyName = "El nombre de la persona es requerido";
     }
-
     if (formData.interestRate && (parseFloat(formData.interestRate) < 0 || parseFloat(formData.interestRate) > 100)) {
       newErrors.interestRate = "La tasa de interés debe estar entre 0 y 100";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm() || !currentUser) return;
-
     setIsSubmitting(true);
 
     try {
@@ -123,297 +107,255 @@ export default function NewDebtModal({
         notes: formData.notes.trim() || undefined,
         interestRate: formData.interestRate ? parseFloat(formData.interestRate) : undefined,
       });
-
-      // Reset form
-      setFormData({
-        type: "i_owe",
-        amount: "",
-        description: "",
-        counterpartyName: "",
-        counterpartyContact: "",
-        dueDate: "",
-        notes: "",
-        interestRate: "",
-      });
-      setErrors({});
-      onClose();
+      toast.success("Deuda creada exitosamente.");
+      handleClose();
     } catch (error) {
       console.error("Error creating debt:", error);
-      // You can add toast notification here
+      toast.error("Error al crear la deuda. Inténtalo de nuevo.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  useEffect(() => {
-    if (!isOpen) {
-      setErrors({});
-    }
-  }, [isOpen]);
+  const handleClose = () => {
+    setFormData({
+      type: "i_owe",
+      amount: "",
+      description: "",
+      counterpartyName: "",
+      counterpartyContact: "",
+      dueDate: "",
+      notes: "",
+      interestRate: "",
+    });
+    setErrors({});
+    onClose();
+  };
 
   const buttonClass = (type: "owes_me" | "i_owe") => `
-    brutal-button h-12 font-black uppercase tracking-wide transition-all duration-200
+    flex items-center justify-center gap-2 border-4 border-black font-black uppercase tracking-wide transition-all duration-200 px-6 py-3
     ${formData.type === type
       ? type === "owes_me"
-        ? "bg-green-500 hover:bg-green-600 text-white border-green-500"
-        : "bg-red-500 hover:bg-red-600 text-white border-red-500"
-      : "border-black hover:bg-black hover:text-white"
+        ? "bg-green-400 text-black"
+        : "bg-red-400 text-black"
+      : "bg-white hover:bg-black hover:text-white"
     }
   `;
 
   const inputClass = (isError: boolean) => `
-    brutal-input h-12 font-medium border-black w-full px-4 py-3
+    border-4 font-bold text-black w-full px-4 py-3 bg-white
     ${isError ? "border-red-500" : "border-black"}
+    focus:outline-none focus:ring-0
   `;
 
+  const FormInput = ({ label, id, icon: Icon, type, placeholder, value, onChange, error, ...props }: any) => (
+    <div className="space-y-3">
+      <Label htmlFor={id} className="text-lg font-black text-black uppercase tracking-wide flex items-center gap-2">
+        <Icon className="w-5 h-5" />
+        {label} {props.required && "*"}
+      </Label>
+      <input
+        id={id}
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        className={inputClass(!!error)}
+        {...props}
+      />
+      {error && (
+        <p className="text-red-500 text-sm font-bold">{error}</p>
+      )}
+    </div>
+  );
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="brutal-card p-0 border-4 border-black shadow-brutal max-w-6xl w-[98vw] overflow-hidden"
-        showCloseButton={false}
-      >
-        <DialogTitle className="sr-only">Nueva Deuda</DialogTitle>
-        <AnimatePresence mode="wait">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="new-debt-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
           <motion.div
-            key="new-debt"
-            className="relative"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="relative bg-white border-4 border-black max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            initial={{ y: "100vh", opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "100vh", opacity: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b-4 border-black bg-white">
-              <div className="flex items-center gap-3">
-                <CurrencyDollarIcon className="w-6 h-6" />
-                <h2 className="text-xl font-black uppercase tracking-wider">
-                  Nueva Deuda
-                </h2>
+            <div className="bg-yellow-400 border-b-4 border-black px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-black p-3 border-4 border-black">
+                  <CurrencyDollarIcon className="w-8 h-8 text-yellow-400" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-black uppercase tracking-wider">
+                    Nueva Deuda
+                  </h2>
+                  <p className="text-black font-bold text-sm hidden sm:block">
+                    Registra una nueva deuda o préstamo
+                  </p>
+                </div>
               </div>
-              <motion.button
-                onClick={onClose}
-                className="brutal-button p-2 hover:bg-black hover:text-white transition-all duration-200"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+              <button
+                onClick={handleClose}
+                className="bg-black text-yellow-400 p-3 border-4 border-black hover:bg-yellow-400 hover:text-black transition-all duration-200 font-black"
               >
-                <XMarkIcon className="w-4 h-4" />
-              </motion.button>
+                <XMarkIcon className="w-6 h-6" />
+              </button>
             </div>
 
-            {/* Decorative line */}
-            <motion.div
-              className="w-full h-1 bg-black"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            />
-
             {/* Content */}
-            <motion.div
-              className="p-6 bg-white"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.3 }}
-            >
-              <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="p-6 bg-white">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Debt Type */}
-                <div className="space-y-2">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                    <DocumentTextIcon className="w-4 h-4" />
+                <div className="space-y-4">
+                  <Label className="text-lg font-black text-black uppercase tracking-wide">
                     Tipo de Deuda
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
+                  </Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
                       type="button"
-                      variant={formData.type === "owes_me" ? "default" : "outline"}
-                      className={buttonClass("owes_me")}
                       onClick={() => handleInputChange("type", "owes_me")}
+                      className={buttonClass("owes_me")}
                     >
-                      <PlusIcon className="w-4 h-4 mr-2" />
+                      <PlusIcon className="w-5 h-5" />
                       Me Deben
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                       type="button"
-                      variant={formData.type === "i_owe" ? "default" : "outline"}
-                      className={buttonClass("i_owe")}
                       onClick={() => handleInputChange("type", "i_owe")}
+                      className={buttonClass("i_owe")}
                     >
-                      <MinusIcon className="w-4 h-4 mr-2" />
+                      <MinusIcon className="w-5 h-5" />
                       Debo
-                    </Button>
+                    </button>
                   </div>
                 </div>
 
-                {/* Primera fila de campos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Amount */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <CurrencyDollarIcon className="w-4 h-4" />
-                      Monto *
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={formData.amount}
-                      onChange={(e) => handleInputChange("amount", e.target.value)}
-                      className={inputClass(!!errors.amount)}
-                    />
-                    {errors.amount && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.amount}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <PencilSquareIcon className="w-4 h-4" />
-                      Descripción *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Descripción de la deuda"
-                      value={formData.description}
-                      onChange={(e) => handleInputChange("description", e.target.value)}
-                      className={inputClass(!!errors.description)}
-                    />
-                    {errors.description && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.description}
-                      </p>
-                    )}
-                  </div>
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <FormInput
+                    id="amount"
+                    label="Monto"
+                    icon={CurrencyDollarIcon}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={formData.amount}
+                    onChange={(e: any) => handleInputChange("amount", e.target.value)}
+                    error={errors.amount}
+                    required
+                  />
+                  <FormInput
+                    id="description"
+                    label="Descripción"
+                    icon={DocumentTextIcon}
+                    type="text"
+                    placeholder="Descripción de la deuda"
+                    value={formData.description}
+                    onChange={(e: any) => handleInputChange("description", e.target.value)}
+                    error={errors.description}
+                    required
+                  />
+                  <FormInput
+                    id="counterpartyName"
+                    label="Persona"
+                    icon={UserIcon}
+                    type="text"
+                    placeholder="Nombre de la persona"
+                    value={formData.counterpartyName}
+                    onChange={(e: any) => handleInputChange("counterpartyName", e.target.value)}
+                    error={errors.counterpartyName}
+                    required
+                  />
+                  <FormInput
+                    id="counterpartyContact"
+                    label="Contacto"
+                    icon={PhoneIcon}
+                    type="text"
+                    placeholder="Teléfono o email (opcional)"
+                    value={formData.counterpartyContact}
+                    onChange={(e: any) => handleInputChange("counterpartyContact", e.target.value)}
+                  />
+                  <FormInput
+                    id="dueDate"
+                    label="Fecha de Vencimiento"
+                    icon={CalendarIcon}
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e: any) => handleInputChange("dueDate", e.target.value)}
+                    error={errors.dueDate}
+                  />
+                  <FormInput
+                    id="interestRate"
+                    label="Tasa de Interés (%)"
+                    icon={CurrencyDollarIcon} // Puedes usar un icono diferente si lo tienes
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="0.00"
+                    value={formData.interestRate}
+                    onChange={(e: any) => handleInputChange("interestRate", e.target.value)}
+                    error={errors.interestRate}
+                  />
                 </div>
 
-                {/* Segunda fila de campos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Counterparty Name */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <UserIcon className="w-4 h-4" />
-                      Persona *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Nombre de la persona"
-                      value={formData.counterpartyName}
-                      onChange={(e) => handleInputChange("counterpartyName", e.target.value)}
-                      className={inputClass(!!errors.counterpartyName)}
-                    />
-                    {errors.counterpartyName && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.counterpartyName}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Counterparty Contact */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <PhoneIcon className="w-4 h-4" />
-                      Contacto
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Teléfono o email (opcional)"
-                      value={formData.counterpartyContact}
-                      onChange={(e) => handleInputChange("counterpartyContact", e.target.value)}
-                      className={inputClass(false)}
-                    />
-                  </div>
-                </div>
-
-                {/* Tercera fila de campos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Due Date */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <CalendarDaysIcon className="w-4 h-4" />
-                      Fecha de Vencimiento
-                    </label>
-                    <Input
-                      type="date"
-                      value={formData.dueDate}
-                      onChange={(e) => handleInputChange("dueDate", e.target.value)}
-                      className={inputClass(!!errors.dueDate)}
-                    />
-                    {errors.dueDate && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.dueDate}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Interest Rate */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <PercentBadgeIcon className="w-4 h-4" />
-                      Tasa de Interés (%)
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      placeholder="0.00"
-                      value={formData.interestRate}
-                      onChange={(e) => handleInputChange("interestRate", e.target.value)}
-                      className={inputClass(!!errors.interestRate)}
-                    />
-                    {errors.interestRate && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.interestRate}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Notes - Campo completo */}
-                <div className="space-y-2">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                    <DocumentTextIcon className="w-4 h-4" />
+                {/* Notes */}
+                <div className="space-y-3">
+                  <Label htmlFor="notes" className="text-lg font-black text-black uppercase tracking-wide flex items-center gap-2">
+                    <DocumentTextIcon className="w-5 h-5" />
                     Notas
-                  </label>
+                  </Label>
                   <textarea
+                    id="notes"
                     placeholder="Notas adicionales (opcional)"
                     value={formData.notes}
                     onChange={(e) => handleInputChange("notes", e.target.value)}
-                    className={`${inputClass(false)} min-h-[50px] resize-none`}
-                    rows={2}
+                    className="border-4 font-bold text-black w-full px-4 py-3 bg-white border-black focus:outline-none focus:ring-0 min-h-[80px] resize-none"
+                    rows={3}
                   />
                 </div>
 
                 {/* Action Buttons */}
-                <motion.div
-                  className="flex gap-4 pt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.3 }}
-                >
+                <div className="flex flex-col sm:flex-row gap-4 pt-6">
                   <button
                     type="button"
-                    onClick={onClose}
-                    className="brutal-button flex-1 min-h-[48px] py-3 px-6 flex items-center justify-center"
+                    onClick={handleClose}
+                    className="flex-1 bg-white hover:bg-black hover:text-white text-black font-black uppercase tracking-wide border-4 border-black px-6 py-3 transition-all duration-200"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="brutal-button brutal-button--primary flex-1 min-h-[48px] py-3 px-6 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`flex-1 font-black uppercase tracking-wide border-4 border-black px-6 py-3 transition-all duration-200 ${formData.type === "owes_me"
+                        ? "bg-green-400 hover:bg-green-500 text-black"
+                        : "bg-red-400 hover:bg-red-500 text-black"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    {isSubmitting ? "Creando..." : "Crear Deuda"}
+                    {isSubmitting ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        Creando...
+                      </div>
+                    ) : (
+                      'Crear Deuda'
+                    )}
                   </button>
-                </motion.div>
+                </div>
               </form>
-            </motion.div>
+            </div>
           </motion.div>
-        </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

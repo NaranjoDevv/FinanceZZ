@@ -1,30 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
-
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { Category, Subcategory } from "@/hooks/use-categories";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  PlusIcon,
-  MinusIcon,
-  CurrencyDollarIcon,
-  PencilSquareIcon,
-  CalendarDaysIcon,
-  TagIcon,
-  DocumentTextIcon,
-  XMarkIcon
-} from "@heroicons/react/24/outline";
-import { FolderIcon } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -32,6 +13,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { motion, AnimatePresence } from "framer-motion";
+import { XMarkIcon, PlusIcon, MinusIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
+
+interface Category {
+  _id: Id<"categories">;
+  name: string;
+}
+
+interface Subcategory {
+  _id: Id<"subcategories">;
+  name: string;
+}
 
 export interface NewTransactionModalProps {
   isOpen: boolean;
@@ -93,6 +87,10 @@ export default function NewTransactionModal({
       categoryId: formData.categoryId || undefined
     } : "skip"
   ) || [];
+
+  const handleClose = () => {
+    onClose();
+  };
 
   const handleInputChange = (field: keyof FormData, value: string | number | null) => {
     setFormData((prev) => ({
@@ -194,263 +192,269 @@ export default function NewTransactionModal({
   `;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="brutal-card p-0 border-4 border-black shadow-brutal max-w-3xl w-full sm:max-w-2xl overflow-hidden [&>button]:hidden">
-        <DialogTitle className="sr-only">Nueva Transacción</DialogTitle>
-        <AnimatePresence mode="wait">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={handleClose}
+        >
           <motion.div
-            key="new-transaction"
-            className="relative"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-[600px] w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b-4 border-black bg-white">
-              <div className="flex items-center gap-3">
-                <CurrencyDollarIcon className="w-6 h-6" />
-                <h2 className="text-xl font-black uppercase tracking-wider">
-                  Nueva Transacción
-                </h2>
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-black text-white">
+                    <CurrencyDollarIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-black">Nueva Transacción</h2>
+                    <p className="text-sm text-gray-600">Registra un nuevo ingreso o gasto</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleClose}
+                  className="p-2 hover:bg-gray-100 transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
               </div>
-              <motion.button
-                onClick={onClose}
-                className="brutal-button p-2 hover:bg-black hover:text-white transition-all duration-200"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <XMarkIcon className="w-4 h-4" />
-              </motion.button>
-            </div>
 
-            {/* Decorative line */}
-            <motion.div
-              className="w-full h-1 bg-black"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            />
-
-            {/* Content */}
-            <motion.div
-              className="p-6 bg-white"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.3 }}
-            >
+              {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Transaction Type */}
-                <div className="space-y-3">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                    <DocumentTextIcon className="w-4 h-4" />
-                    Tipo de Transacción
-                  </label>
+                <div>
+                  <Label className="block text-sm font-medium text-black mb-2">
+                    Tipo de Transacción *
+                  </Label>
                   <div className="grid grid-cols-2 gap-3">
-                    <Button
+                    <button
                       type="button"
-                      variant={formData.type === "income" ? "default" : "outline"}
-                      className={buttonClass("income")}
+                      className={`px-4 py-3 border-4 font-bold transition-all hover:scale-105 flex items-center justify-center gap-2 ${
+                        formData.type === "income"
+                          ? "border-black bg-green-500 text-white"
+                          : "border-gray-300 bg-white text-black hover:border-black"
+                      }`}
                       onClick={() => handleInputChange("type", "income")}
+                      disabled={isSubmitting}
                     >
-                      <PlusIcon className="w-4 h-4 mr-2" />
+                      <PlusIcon className="h-4 w-4" />
                       Ingreso
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                       type="button"
-                      variant={formData.type === "expense" ? "default" : "outline"}
-                      className={buttonClass("expense")}
+                      className={`px-4 py-3 border-4 font-bold transition-all hover:scale-105 flex items-center justify-center gap-2 ${
+                        formData.type === "expense"
+                          ? "border-black bg-red-500 text-white"
+                          : "border-gray-300 bg-white text-black hover:border-black"
+                      }`}
                       onClick={() => handleInputChange("type", "expense")}
+                      disabled={isSubmitting}
                     >
-                      <MinusIcon className="w-4 h-4 mr-2" />
+                      <MinusIcon className="h-4 w-4" />
                       Gasto
-                    </Button>
+                    </button>
                   </div>
                 </div>
 
                 {/* Amount and Description */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <CurrencyDollarIcon className="w-4 h-4" />
+                  <div>
+                    <Label htmlFor="amount" className="block text-sm font-medium text-black mb-2">
                       Monto *
-                    </label>
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        step="1000"
-                        min="0"
-                        placeholder="5000"
-                        value={formData.amount}
-                        onChange={(e) => handleInputChange("amount", e.target.value)}
-                        className={`${inputClass(!!errors.amount)} pl-12`}
-                      />
-                    </div>
+                    </Label>
+                    <input
+                      id="amount"
+                      type="number"
+                      step="1000"
+                      min="0"
+                      placeholder="50000"
+                      value={formData.amount}
+                      onChange={(e) => handleInputChange("amount", e.target.value)}
+                      className={`w-full px-4 py-3 border-4 bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-0 transition-all ${
+                        errors.amount
+                          ? "border-red-500 focus:border-red-500"
+                          : "border-black focus:border-black"
+                      }`}
+                      disabled={isSubmitting}
+                    />
                     {errors.amount && (
-                      <p className="text-red-600 text-xs font-black uppercase tracking-wide">
-                        {errors.amount}
-                      </p>
+                      <p className="text-red-500 text-sm mt-1">{errors.amount}</p>
                     )}
                   </div>
-
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <PencilSquareIcon className="w-4 h-4" />
+                  <div>
+                    <Label htmlFor="description" className="block text-sm font-medium text-black mb-2">
                       Descripción *
-                    </label>
-                    <Input
+                    </Label>
+                    <input
+                      id="description"
                       type="text"
-                      placeholder="¿En qué gastaste o ganaste?"
+                      placeholder="Ej: Almuerzo en restaurante"
                       value={formData.description}
                       onChange={(e) => handleInputChange("description", e.target.value)}
-                      className={inputClass(!!errors.description)}
+                      className={`w-full px-4 py-3 border-4 bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-0 transition-all ${
+                        errors.description
+                          ? "border-red-500 focus:border-red-500"
+                          : "border-black focus:border-black"
+                      }`}
+                      disabled={isSubmitting}
                     />
                     {errors.description && (
-                      <p className="text-red-600 text-xs font-black uppercase tracking-wide">
-                        {errors.description}
-                      </p>
+                      <p className="text-red-500 text-sm mt-1">{errors.description}</p>
                     )}
                   </div>
                 </div>
 
-                {/* Category and Subcategory */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <FolderIcon className="w-4 h-4" />
-                      Categoría
-                    </label>
-                    <Select
-                      value={formData.categoryId || ""}
-                      onValueChange={(value) =>
-                        handleInputChange(
-                          "categoryId",
-                          value as Id<"categories">
-                        )
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category: Category) => (
-                          <SelectItem key={category._id} value={category._id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {/* Category and Subcategory */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="block text-sm font-bold text-black mb-2">
+                        Categoría
+                      </Label>
+                      <Select
+                        value={formData.categoryId || ""}
+                        onValueChange={(value) =>
+                          handleInputChange(
+                            "categoryId",
+                            value as Id<"categories">
+                          )
+                        }
+                      >
+                        <SelectTrigger className="w-full px-4 py-3 border-4 border-black bg-white text-black font-bold focus:outline-none focus:ring-0 focus:border-black">
+                          <SelectValue placeholder="Seleccionar categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category: Category) => (
+                            <SelectItem key={category._id} value={category._id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="block text-sm font-bold text-black mb-2">
+                        Subcategoría
+                      </Label>
+                      <Select
+                        value={formData.subcategoryId || ""}
+                        onValueChange={(value) =>
+                          handleInputChange(
+                            "subcategoryId",
+                            value as Id<"subcategories">
+                          )
+                        }
+                        disabled={!subcategories || subcategories.length === 0}
+                      >
+                        <SelectTrigger className={`w-full px-4 py-3 border-4 border-black bg-white text-black font-bold focus:outline-none focus:ring-0 focus:border-black ${!subcategories || subcategories.length === 0 ? "opacity-50" : ""
+                          }`}>
+                          <SelectValue
+                            placeholder={
+                              !subcategories || subcategories.length === 0
+                                ? "Sin subcategorías"
+                                : "Seleccionar subcategoría"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subcategories?.map((subcategory: Subcategory) => (
+                            <SelectItem key={subcategory._id} value={subcategory._id}>
+                              {subcategory.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <FolderIcon className="w-4 h-4" />
-                      Subcategoría
-                    </label>
-                    <Select
-                      value={formData.subcategoryId || ""}
-                      onValueChange={(value) =>
-                        handleInputChange(
-                          "subcategoryId",
-                          value as Id<"subcategories">
-                        )
-                      }
-                      disabled={!subcategories || subcategories.length === 0}
-                    >
-                      <SelectTrigger className={!subcategories || subcategories.length === 0 ? "opacity-50" : ""}>
-                        <SelectValue 
-                          placeholder={
-                            !subcategories || subcategories.length === 0 
-                              ? "Sin subcategorías" 
-                              : "Seleccionar subcategoría"
-                          } 
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subcategories?.map((subcategory: Subcategory) => (
-                          <SelectItem key={subcategory._id} value={subcategory._id}>
-                            {subcategory.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Date */}
-                <div className="space-y-3">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                    <CalendarDaysIcon className="w-4 h-4" />
-                    Fecha *
-                  </label>
-                  <Input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => handleInputChange("date", e.target.value)}
-                    className={inputClass(!!errors.date)}
-                  />
-                  {errors.date && (
-                    <p className="text-red-600 text-xs font-black uppercase tracking-wide">
-                      {errors.date}
-                    </p>
-                  )}
-                </div>
-
-                {/* Notes and Tags */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <DocumentTextIcon className="w-4 h-4" />
-                      Notas
-                    </label>
-                    <textarea
-                      placeholder="Notas adicionales..."
-                      value={formData.notes}
-                      onChange={(e) => handleInputChange("notes", e.target.value)}
-                      className="brutal-textarea font-medium border-black w-full h-20 resize-none px-4 py-3"
-                      rows={3}
+                  {/* Date */}
+                  <div>
+                    <Label className="block text-sm font-bold text-black mb-2">
+                      Fecha *
+                    </Label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => handleInputChange("date", e.target.value)}
+                      className={`w-full px-4 py-3 border-4 bg-white text-black font-bold focus:outline-none focus:ring-0 ${
+                        errors.date
+                          ? "border-red-500"
+                          : "border-black"
+                      }`}
                     />
+                    {errors.date && (
+                      <p className="text-red-500 text-sm font-bold mt-1">
+                        {errors.date}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <TagIcon className="w-4 h-4" />
-                      Etiquetas
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="trabajo, personal, urgente"
-                      value={formData.tags}
-                      onChange={(e) => handleInputChange("tags", e.target.value)}
-                      className="brutal-input h-12 font-medium border-black px-4 py-3"
-                    />
-                  </div>
-                </div>
+                  {/* Notes and Tags */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="block text-sm font-bold text-black mb-2">
+                        Notas
+                      </Label>
+                      <textarea
+                        placeholder="Notas adicionales (opcional)"
+                        value={formData.notes}
+                        onChange={(e) => handleInputChange("notes", e.target.value)}
+                        className="w-full h-24 px-4 py-3 border-4 border-black bg-white text-black font-bold focus:outline-none focus:ring-0 focus:border-black resize-none"
+                        rows={3}
+                      />
+                    </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t-4 border-black">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onClose}
-                    className="brutal-button flex-1 h-12 font-black uppercase tracking-wide border-black hover:bg-black hover:text-white transition-all duration-200"
-                    disabled={isSubmitting}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    className={buttonClass(formData.type) + " flex-1"}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Guardando..." : formData.type === "income" ? "Crear Ingreso" : "Crear Gasto"}
-                  </Button>
-                </div>
-              </form>
-            </motion.div>
+                    <div>
+                      <Label className="block text-sm font-bold text-black mb-2">
+                        Etiquetas
+                      </Label>
+                      <input
+                        type="text"
+                        placeholder="Etiquetas separadas por comas (opcional)"
+                        value={formData.tags}
+                        onChange={(e) => handleInputChange("tags", e.target.value)}
+                        className="w-full px-4 py-3 border-4 border-black bg-white text-black font-bold focus:outline-none focus:ring-0 focus:border-black"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-4 pt-6">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="flex-1 px-6 py-3 border-4 border-black bg-white text-black font-bold hover:bg-gray-100 focus:outline-none focus:ring-0 disabled:opacity-50"
+                      disabled={isSubmitting}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className={`flex-1 px-6 py-3 border-4 font-bold focus:outline-none focus:ring-0 disabled:opacity-50 ${
+                        formData.type === "income"
+                          ? "border-green-500 bg-green-500 text-white hover:bg-green-600"
+                          : "border-red-500 bg-red-500 text-white hover:bg-red-600"
+                      }`}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Guardando..." : formData.type === "income" ? "Crear Ingreso" : "Crear Gasto"}
+                    </button>
+                  </div>
+                </form>
+            </div>
           </motion.div>
-        </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

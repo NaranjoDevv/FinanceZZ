@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -147,7 +147,7 @@ export default function RemindersPage() {
         </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -214,35 +214,6 @@ export default function RemindersPage() {
             <Card className="brutal-card hover:shadow-brutal-lg transition-all duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">
-                  Próximos (7 días)
-                </CardTitle>
-                <TooltipProvider>
-                   <Tooltip>
-                     <TooltipTrigger>
-                       <CalendarIcon className="h-4 w-4 text-blue-600" />
-                     </TooltipTrigger>
-                     <TooltipContent>
-                       <p>Recordatorios próximos en 7 días</p>
-                     </TooltipContent>
-                   </Tooltip>
-                 </TooltipProvider>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {stats.upcoming}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <Card className="brutal-card hover:shadow-brutal-lg transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
                   Completados
                 </CardTitle>
                 <TooltipProvider>
@@ -267,7 +238,7 @@ export default function RemindersPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
           >
             <Card className="brutal-card hover:shadow-brutal-lg transition-all duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -313,7 +284,11 @@ export default function RemindersPage() {
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className="brutal-button"
+              className={`brutal-button transition-all duration-300 ${
+                showFilters 
+                  ? 'bg-blue-500 text-white shadow-brutal-lg scale-105' 
+                  : 'hover:shadow-brutal-md hover:scale-105'
+              }`}
             >
               <AdjustmentsHorizontalIcon className="h-4 w-4 mr-2" />
               Filtros
@@ -333,14 +308,19 @@ export default function RemindersPage() {
         </motion.div>
 
         {/* Filters */}
-        {showFilters && (
-          <motion.div 
-            className="flex gap-4 p-4 bg-white rounded-lg border-2 border-black shadow-brutal"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div 
+              className="flex gap-4 p-4 bg-white rounded-lg border-2 border-black shadow-brutal"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ 
+                duration: 0.4, 
+                ease: "easeInOut",
+                height: { delay: 0.1, duration: 0.3 }
+              }}
+            >
             <div className="flex gap-4 items-center flex-wrap">
               <span className="text-sm font-medium text-gray-700">Filtrar por:</span>
               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as "all" | "pending" | "completed" | "cancelled")}>
@@ -368,8 +348,9 @@ export default function RemindersPage() {
                 </SelectContent>
               </Select>
             </div>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Reminders List */}
         <motion.div 
