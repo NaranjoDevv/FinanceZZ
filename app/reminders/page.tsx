@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -19,7 +19,6 @@ import {
   AdjustmentsHorizontalIcon,
   PencilIcon,
   TrashIcon,
-  CheckIcon,
 } from "@heroicons/react/24/outline";
 import CreateReminderModal from "@/components/forms/CreateReminderModal";
 import EditReminderModal from "@/components/forms/EditReminderModal";

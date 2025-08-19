@@ -6,13 +6,11 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   PlusIcon,
   UserGroupIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   PencilIcon,
   TrashIcon,
   EnvelopeIcon,
@@ -48,10 +46,14 @@ export default function ContactsPage() {
   const [deletingContact, setDeletingContact] = useState<Contact | null>(null);
 
   const currentUser = useQuery(api.users.getCurrentUser);
-  const contacts = useQuery(
+  const contactsData = useQuery(
     api.contacts.getContacts,
     currentUser?._id ? { userId: currentUser._id } : "skip"
-  ) || [];
+  );
+
+  const contacts = useMemo(() => {
+    return contactsData || [];
+  }, [contactsData]);
 
   const filteredContacts = useMemo(() => {
     if (!contacts) return [];
@@ -90,14 +92,7 @@ export default function ContactsPage() {
     });
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+
 
   const handleEditContact = (contact: Contact) => {
     setEditingContact(contact);

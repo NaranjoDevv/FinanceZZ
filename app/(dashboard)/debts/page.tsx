@@ -16,7 +16,6 @@ import {
   PlusIcon,
   UserGroupIcon,
   ClockIcon,
-  MagnifyingGlassIcon,
   FunnelIcon,
   PencilIcon,
   TrashIcon,
