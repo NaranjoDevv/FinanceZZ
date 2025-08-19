@@ -24,6 +24,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { useTransactions } from "@/hooks/use-transactions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { formatCurrency, formatCurrencyWithRounding, toCurrency } from "@/lib/currency";
+import { BalanceTooltip } from "@/components/ui/balance-tooltip";
 import NewTransactionModal from "@/components/forms/NewTransactionModal";
 import EditTransactionModal from "@/components/forms/EditTransactionModal";
 import DeleteTransactionModal from "@/components/forms/DeleteTransactionModal";
@@ -68,7 +72,7 @@ interface Transaction {
 const types = ["Todos", "Ingresos", "Gastos"];
 
 // Componente para transacción arrastrable
-function SortableTransaction({ transaction, index, hoveredTransaction, setHoveredTransaction, setSelectedTransaction, setIsEditModalOpen, setIsDeleteModalOpen }: {
+function SortableTransaction({ transaction, index, hoveredTransaction, setHoveredTransaction, setSelectedTransaction, setIsEditModalOpen, setIsDeleteModalOpen, userCurrency }: {
   transaction: Transaction;
   index: number;
   hoveredTransaction: string | null;
@@ -76,6 +80,7 @@ function SortableTransaction({ transaction, index, hoveredTransaction, setHovere
   setSelectedTransaction: (transaction: Transaction) => void;
   setIsEditModalOpen: (open: boolean) => void;
   setIsDeleteModalOpen: (open: boolean) => void;
+  userCurrency: import('@/lib/currency').Currency;
 }) {
   const {
     attributes,
@@ -154,7 +159,7 @@ function SortableTransaction({ transaction, index, hoveredTransaction, setHovere
             (transaction.type === 'income' || transaction.type === 'loan_received') ? 'text-green-600' : 'text-red-600'
           }`}>
             {(transaction.type === 'income' || transaction.type === 'loan_received') ? '+' : '-'}
-            ${transaction.amount.toFixed(2)}
+            {formatCurrency(transaction.amount, userCurrency).replace(/^[^\d-+]*/, '')}
           </p>
         </div>
 
@@ -205,7 +210,9 @@ export default function TransactionsPage() {
   const [hoveredTransaction, setHoveredTransaction] = useState<string | null>(null);
   const [orderedTransactions, setOrderedTransactions] = useState<Transaction[]>([]);
 
-  const { transactions, isLoading, error, currentUser, isAuthenticated } = useTransactions();
+  const { transactions, isLoading, error, isAuthenticated } = useTransactions();
+  const user = useQuery(api.users.getCurrentUser);
+  const userCurrency = toCurrency(user?.currency || 'USD');
 
   // Funciones para manejar localStorage
   const saveOrderToLocalStorage = (order: string[]) => {
@@ -331,17 +338,17 @@ export default function TransactionsPage() {
   });
 
   const totalIncome = transactions
-    .filter(t => t.type === 'income' || t.type === 'loan_received')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .filter((t: Transaction) => t.type === 'income' || t.type === 'loan_received')
+    .reduce((sum: number, t: Transaction) => sum + t.amount, 0);
 
   const totalExpenses = transactions
-    .filter(t => t.type === 'expense' || t.type === 'debt_payment')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .filter((t: Transaction) => t.type === 'expense' || t.type === 'debt_payment')
+    .reduce((sum: number, t: Transaction) => sum + t.amount, 0);
 
   const balance = totalIncome - totalExpenses;
 
   // Get unique categories from transactions
-  const categories = ["Todos", ...Array.from(new Set(transactions.map(t => t.category?.name || "Sin categoría")))];
+  const categories: string[] = ["Todos", ...Array.from<string>(new Set(transactions.map((t: Transaction) => t.category?.name || "Sin categoría")))];
 
   return (
     <div className="px-6 py-0">
@@ -405,7 +412,17 @@ export default function TransactionsPage() {
               <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Total Ingresos
               </h3>
-              <p className="text-2xl font-black text-green-600 transition-colors duration-200">${totalIncome.toFixed(2)}</p>
+              <BalanceTooltip
+                value={formatCurrencyWithRounding(totalIncome, userCurrency, user?.numberRounding || false)}
+                fullValue={formatCurrency(totalIncome, userCurrency)}
+                amount={totalIncome}
+                currency={userCurrency}
+                useRounding={user?.numberRounding || false}
+              >
+                <p className="text-2xl font-black text-green-600 transition-colors duration-200 cursor-help">
+                  {formatCurrencyWithRounding(totalIncome, userCurrency, user?.numberRounding || false)}
+                </p>
+              </BalanceTooltip>
             </Card>
           </motion.div>
 
@@ -423,7 +440,17 @@ export default function TransactionsPage() {
               <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Total Gastos
               </h3>
-              <p className="text-2xl font-black text-red-600 transition-colors duration-200">${totalExpenses.toFixed(2)}</p>
+              <BalanceTooltip
+                value={formatCurrencyWithRounding(totalExpenses, userCurrency, user?.numberRounding || false)}
+                fullValue={formatCurrency(totalExpenses, userCurrency)}
+                amount={totalExpenses}
+                currency={userCurrency}
+                useRounding={user?.numberRounding || false}
+              >
+                <p className="text-2xl font-black text-red-600 transition-colors duration-200 cursor-help">
+                  {formatCurrencyWithRounding(totalExpenses, userCurrency, user?.numberRounding || false)}
+                </p>
+              </BalanceTooltip>
             </Card>
           </motion.div>
 
@@ -441,10 +468,18 @@ export default function TransactionsPage() {
               <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Balance
               </h3>
-              <p className={`text-2xl font-black transition-colors duration-200 ${balance >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                ${balance.toFixed(2)}
-              </p>
+              <BalanceTooltip
+                value={formatCurrencyWithRounding(balance, userCurrency, user?.numberRounding || false)}
+                fullValue={formatCurrency(balance, userCurrency)}
+                amount={balance}
+                currency={userCurrency}
+                useRounding={user?.numberRounding || false}
+              >
+                <p className={`text-2xl font-black transition-colors duration-200 cursor-help ${balance >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                  {formatCurrencyWithRounding(balance, userCurrency, user?.numberRounding || false)}
+                </p>
+              </BalanceTooltip>
             </Card>
           </motion.div>
         </div>
@@ -524,7 +559,7 @@ export default function TransactionsPage() {
                 </p>
                 {orderedTransactions.length === 0 && (
                   <p className="text-gray-400 text-sm">
-                    Crea tu primera transacción o usa la página "Datos Ejemplo" para generar transacciones de prueba
+                    Crea tu primera transacción o usa la página &quot;Datos Ejemplo&quot; para generar transacciones de prueba
                   </p>
                 )}
               </div>
@@ -549,6 +584,7 @@ export default function TransactionsPage() {
                         setSelectedTransaction={setSelectedTransaction}
                         setIsEditModalOpen={setIsEditModalOpen}
                         setIsDeleteModalOpen={setIsDeleteModalOpen}
+                        userCurrency={userCurrency}
                       />
                     ))}
                   </div>

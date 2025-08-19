@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useUser } from "@clerk/nextjs";
+
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { Category, Subcategory } from "@/hooks/use-categories";
 import {
   Dialog,
   DialogContent,
@@ -74,7 +75,6 @@ export default function NewTransactionModal({
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { user } = useUser();
   const currentUser = useQuery(api.users.getCurrentUser);
 
   const createTransaction = useMutation(api.transactions.createTransaction);
@@ -94,7 +94,7 @@ export default function NewTransactionModal({
     } : "skip"
   ) || [];
 
-  const handleInputChange = (field: keyof FormData, value: any) => {
+  const handleInputChange = (field: keyof FormData, value: string | number | null) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -333,7 +333,7 @@ export default function NewTransactionModal({
                         <SelectValue placeholder="Seleccionar categoría" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((category) => (
+                        {categories.map((category: Category) => (
                           <SelectItem key={category._id} value={category._id}>
                             {category.name}
                           </SelectItem>
@@ -367,7 +367,7 @@ export default function NewTransactionModal({
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        {subcategories?.map((subcategory) => (
+                        {subcategories?.map((subcategory: Subcategory) => (
                           <SelectItem key={subcategory._id} value={subcategory._id}>
                             {subcategory.name}
                           </SelectItem>

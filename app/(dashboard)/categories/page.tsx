@@ -30,11 +30,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function Categories() {
   const {
     categories,
-    expenseCategories,
-    incomeCategories,
     isLoading,
     isAuthenticated,
-    deleteCategory,
   } = useCategories();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -99,8 +96,8 @@ export default function Categories() {
   };
 
   const totalCategories = categories.length;
-  const totalExpenseCategories = expenseCategories.length;
-  const totalIncomeCategories = incomeCategories.length;
+  const totalExpenseCategories = categories.filter(cat => cat.isExpense === true).length;
+  const totalIncomeCategories = categories.filter(cat => cat.isExpense === false).length;
 
   return (
     <div className="px-6 py-0">

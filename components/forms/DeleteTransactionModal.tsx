@@ -11,7 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/nextjs";
+
 import { Id } from "@/convex/_generated/dataModel";
 
 interface Transaction {
@@ -44,7 +44,7 @@ export default function DeleteTransactionModal({
   transaction
 }: DeleteTransactionModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const { user } = useUser();
+
   const currentUser = useQuery(api.users.getCurrentUser);
   const deleteTransaction = useMutation(api.transactions.deleteTransaction);
 

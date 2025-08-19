@@ -6,6 +6,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   PlusIcon,
   UserGroupIcon,
   ClockIcon,
@@ -17,7 +24,6 @@ import {
   UserIcon,
   CalendarIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon,
   ClockIcon as ClockIconSolid,
   MinusIcon
 } from "@heroicons/react/24/outline";
@@ -25,6 +31,10 @@ import { useDebts } from "@/hooks/use-debts";
 import NewDebtModal from "@/components/forms/NewDebtModal";
 import EditDebtModal from "@/components/forms/EditDebtModal";
 import DeleteDebtModal from "@/components/forms/DeleteDebtModal";
+import { formatCurrency, formatCurrencyWithRounding, toCurrency } from "@/lib/currency";
+import { BalanceTooltip } from "@/components/ui/balance-tooltip";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 interface Debt {
   _id: string;
@@ -46,7 +56,7 @@ export default function DebtsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Modal states
   const [isNewDebtModalOpen, setIsNewDebtModalOpen] = useState(false);
   const [isEditDebtModalOpen, setIsEditDebtModalOpen] = useState(false);
@@ -54,15 +64,18 @@ export default function DebtsPage() {
   const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
 
   const { debts, stats, isLoading } = useDebts();
+  const user = useQuery(api.users.getCurrentUser);
+
+  const userCurrency = toCurrency(user?.currency || 'USD');
 
   const filteredDebts = useMemo(() => {
     if (!debts) return [];
 
     return debts.filter((debt: Debt) => {
-      const matchesSearch = 
+      const matchesSearch =
         debt.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         debt.counterpartyName.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesStatus = statusFilter === "all" || debt.status === statusFilter;
       const matchesType = typeFilter === "all" || debt.type === typeFilter;
 
@@ -70,14 +83,7 @@ export default function DebtsPage() {
     });
   }, [debts, searchTerm, statusFilter, typeFilter]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('es-CO', {
@@ -87,18 +93,7 @@ export default function DebtsPage() {
     });
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return <CheckCircleIcon className="w-5 h-5 text-green-600" />;
-      case 'overdue':
-        return <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />;
-      case 'partially_paid':
-        return <ClockIconSolid className="w-5 h-5 text-yellow-600" />;
-      default:
-        return <ClockIconSolid className="w-5 h-5 text-blue-600" />;
-    }
-  };
+
 
   const getStatusText = (status: string) => {
     const statusMap = {
@@ -144,7 +139,7 @@ export default function DebtsPage() {
   return (
     <div className="px-6 py-0">
       {/* Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -161,7 +156,7 @@ export default function DebtsPage() {
 
       {/* Stats Cards */}
       {stats && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
@@ -173,9 +168,17 @@ export default function DebtsPage() {
                 <p className="text-sm font-black uppercase tracking-wider text-gray-600 mb-1 transition-colors duration-200">
                   Total Me Deben
                 </p>
-                <p className="text-2xl font-black text-green-600 transition-colors duration-200">
-                  {formatCurrency(stats.totalOwedToMe || 0)}
-                </p>
+                <BalanceTooltip
+                  value={formatCurrencyWithRounding(stats.totalOwedToMe || 0, userCurrency, user?.numberRounding || false)}
+                  fullValue={formatCurrency(stats.totalOwedToMe || 0, userCurrency)}
+                  amount={stats.totalOwedToMe || 0}
+                  currency={userCurrency}
+                  useRounding={user?.numberRounding || false}
+                >
+                  <p className="text-2xl font-black text-green-600 transition-colors duration-200 cursor-help">
+                    {formatCurrencyWithRounding(stats.totalOwedToMe || 0, userCurrency, user?.numberRounding || false)}
+                  </p>
+                </BalanceTooltip>
               </div>
               <PlusIcon className="w-8 h-8 text-green-600" />
             </div>
@@ -187,9 +190,17 @@ export default function DebtsPage() {
                 <p className="text-sm font-black uppercase tracking-wider text-gray-600 mb-1 transition-colors duration-200">
                   Total Debo
                 </p>
-                <p className="text-2xl font-black text-red-600 transition-colors duration-200">
-                  {formatCurrency(stats.totalIOwe || 0)}
-                </p>
+                <BalanceTooltip
+                  value={formatCurrencyWithRounding(stats.totalIOwe || 0, userCurrency, user?.numberRounding || false)}
+                  fullValue={formatCurrency(stats.totalIOwe || 0, userCurrency)}
+                  amount={stats.totalIOwe || 0}
+                  currency={userCurrency}
+                  useRounding={user?.numberRounding || false}
+                >
+                  <p className="text-2xl font-black text-red-600 transition-colors duration-200 cursor-help">
+                    {formatCurrencyWithRounding(stats.totalIOwe || 0, userCurrency, user?.numberRounding || false)}
+                  </p>
+                </BalanceTooltip>
               </div>
               <MinusIcon className="w-8 h-8 text-red-600" />
             </div>
@@ -226,14 +237,14 @@ export default function DebtsPage() {
       )}
 
       {/* Actions */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
         className="mb-8"
       >
         <div className="flex flex-wrap gap-4 mb-6">
-          <Button 
+          <Button
             className="brutal-button brutal-button--primary"
             onClick={() => setIsNewDebtModalOpen(true)}
           >
@@ -253,16 +264,15 @@ export default function DebtsPage() {
         {/* Search and Filters */}
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <Input
               type="text"
               placeholder="Buscar por descripción o persona..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="brutal-input pl-10 h-12 font-medium"
+              className="brutal-input pl-12 h-12 font-medium"
             />
           </div>
-          
+
           <Button
             onClick={() => setShowFilters(!showFilters)}
             className={`brutal-button h-12 ${showFilters ? 'bg-black text-white' : ''}`}
@@ -284,39 +294,41 @@ export default function DebtsPage() {
               <label className="text-sm font-black uppercase tracking-wider text-gray-600 mb-2 block">
                 Estado
               </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="brutal-input h-12 font-medium w-full"
-              >
-                <option value="all">Todos los estados</option>
-                <option value="open">Abierta</option>
-                <option value="partially_paid">Parcialmente Pagada</option>
-                <option value="paid">Pagada</option>
-                <option value="overdue">Vencida</option>
-              </select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="brutal-input h-12 font-medium w-full">
+                  <SelectValue placeholder="Todos los estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="open">Abierta</SelectItem>
+                  <SelectItem value="partially_paid">Parcialmente Pagada</SelectItem>
+                  <SelectItem value="paid">Pagada</SelectItem>
+                  <SelectItem value="overdue">Vencida</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            
+
             <div>
               <label className="text-sm font-black uppercase tracking-wider text-gray-600 mb-2 block">
                 Tipo
               </label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="brutal-input h-12 font-medium w-full"
-              >
-                <option value="all">Todos los tipos</option>
-                <option value="owes_me">Me Deben</option>
-                <option value="i_owe">Debo</option>
-              </select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="brutal-input h-12 font-medium w-full">
+                  <SelectValue placeholder="Todos los tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  <SelectItem value="owes_me">Me Deben</SelectItem>
+                  <SelectItem value="i_owe">Debo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </motion.div>
         )}
       </motion.div>
 
       {/* Debts List */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
@@ -331,7 +343,7 @@ export default function DebtsPage() {
           <Card className="brutal-card p-6">
             <div className="text-center py-12">
               <p className="text-gray-500 font-medium">
-                {debts?.length === 0 
+                {debts?.length === 0
                   ? "No tienes deudas registradas. ¡Crea tu primera deuda!"
                   : "No se encontraron deudas con los filtros aplicados."
                 }
@@ -358,27 +370,27 @@ export default function DebtsPage() {
                           {getStatusText(debt.status)}
                         </span>
                       </div>
-                      
+
                       <h3 className="text-xl font-black mb-2">{debt.description}</h3>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                         <div className="flex items-center gap-2">
                           <UserIcon className="w-4 h-4 text-gray-500" />
                           <span className="font-medium">{debt.counterpartyName}</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                           <CurrencyDollarIcon className="w-4 h-4 text-gray-500" />
                           <span className="font-medium">
-                            {formatCurrency(debt.currentAmount)}
+                            {formatCurrency(debt.currentAmount, userCurrency)}
                             {debt.originalAmount !== debt.currentAmount && (
                               <span className="text-gray-400 ml-1">
-                                (de {formatCurrency(debt.originalAmount)})
+                                (de {formatCurrency(debt.originalAmount, userCurrency)})
                               </span>
                             )}
                           </span>
                         </div>
-                        
+
                         {debt.dueDate && (
                           <div className="flex items-center gap-2">
                             <CalendarIcon className="w-4 h-4 text-gray-500" />
@@ -389,7 +401,7 @@ export default function DebtsPage() {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <Button
                         onClick={() => handleEditDebt(debt)}
@@ -397,7 +409,7 @@ export default function DebtsPage() {
                       >
                         <PencilIcon className="w-4 h-4" />
                       </Button>
-                      
+
                       <Button
                         onClick={() => handleDeleteDebt(debt)}
                         className="brutal-button p-3 hover:bg-red-500 hover:text-white transition-all duration-200"
@@ -418,7 +430,7 @@ export default function DebtsPage() {
         isOpen={isNewDebtModalOpen}
         onClose={() => setIsNewDebtModalOpen(false)}
       />
-      
+
       <EditDebtModal
         isOpen={isEditDebtModalOpen}
         onClose={() => {
@@ -427,7 +439,7 @@ export default function DebtsPage() {
         }}
         debt={selectedDebt}
       />
-      
+
       <DeleteDebtModal
         isOpen={isDeleteDebtModalOpen}
         onClose={() => {

@@ -23,7 +23,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/nextjs";
+import { Category, Subcategory } from "@/hooks/use-categories";
+
 import { Id } from "@/convex/_generated/dataModel";
 
 interface Transaction {
@@ -67,7 +68,6 @@ export default function EditTransactionModal({
   transaction
 }: EditTransactionModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useUser();
   const currentUser = useQuery(api.users.getCurrentUser);
   const updateTransaction = useMutation(api.transactions.updateTransaction);
   const categories = useQuery(api.categories.getCategories, 
@@ -146,7 +146,7 @@ export default function EditTransactionModal({
   };
 
   const filteredSubcategories = subcategories?.filter(
-    sub => sub.categoryId === formData.categoryId
+    (sub: Subcategory) => sub.categoryId === formData.categoryId
   ) || [];
 
   if (!transaction) return null;
@@ -285,7 +285,7 @@ export default function EditTransactionModal({
                           <SelectValue placeholder="Seleccionar categoría" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories?.map((category) => (
+                          {categories?.map((category: Category) => (
                             <SelectItem key={category._id} value={category._id}>
                               {category.name}
                             </SelectItem>
@@ -308,7 +308,7 @@ export default function EditTransactionModal({
                           <SelectValue placeholder="Sin subcategoría" />
                         </SelectTrigger>
                         <SelectContent>
-                          {filteredSubcategories.map((subcategory) => (
+                          {filteredSubcategories.map((subcategory: Subcategory) => (
                             <SelectItem key={subcategory._id} value={subcategory._id}>
                               {subcategory.name}
                             </SelectItem>

@@ -14,6 +14,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { formatCurrency, toCurrency } from "@/lib/currency";
 
 interface Debt {
   _id: string;
@@ -44,6 +45,8 @@ export default function DeleteDebtModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const currentUser = useQuery(api.users.getCurrentUser);
   const deleteDebt = useMutation(api.debts.deleteDebt);
+  
+  const userCurrency = toCurrency(currentUser?.currency || 'USD');
 
   const handleDelete = async () => {
     if (!currentUser || !debt) return;
@@ -65,14 +68,7 @@ export default function DeleteDebtModal({
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+
 
   const getDebtTypeText = (type: 'owes_me' | 'i_owe') => {
     return type === 'owes_me' ? 'Me Deben' : 'Debo';
@@ -187,7 +183,7 @@ export default function DeleteDebtModal({
                         Monto
                       </span>
                       <span className="font-black">
-                        {formatCurrency(debt.currentAmount)}
+                        {formatCurrency(debt.currentAmount, userCurrency)}
                       </span>
                     </div>
 
@@ -232,7 +228,7 @@ export default function DeleteDebtModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="brutal-button flex-1 h-12 font-black uppercase tracking-wide border-black hover:bg-black hover:text-white transition-all duration-200"
+                    className="brutal-button flex-1 min-h-[48px] py-3 px-6 flex items-center justify-center font-black uppercase tracking-wide border-black hover:bg-black hover:text-white transition-all duration-200"
                   >
                     Cancelar
                   </button>
@@ -240,7 +236,7 @@ export default function DeleteDebtModal({
                     type="button"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="brutal-button flex-1 h-12 font-black uppercase tracking-wide bg-red-500 hover:bg-red-600 text-white border-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="brutal-button flex-1 min-h-[48px] py-3 px-6 flex items-center justify-center font-black uppercase tracking-wide bg-red-500 hover:bg-red-600 text-white border-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isDeleting ? "Eliminando..." : "Eliminar"}
                   </button>

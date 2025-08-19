@@ -5,7 +5,6 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import NewTransactionModal from "@/components/forms/NewTransactionModal";
 import {
   PlusIcon,

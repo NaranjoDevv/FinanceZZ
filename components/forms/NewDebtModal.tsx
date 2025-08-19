@@ -215,10 +215,10 @@ export default function NewDebtModal({
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
             >
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3">
                 {/* Debt Type */}
-                <div className="space-y-3">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                     <DocumentTextIcon className="w-4 h-4" />
                     Tipo de Deuda
                   </label>
@@ -245,10 +245,10 @@ export default function NewDebtModal({
                 </div>
 
                 {/* Primera fila de campos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Amount */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <CurrencyDollarIcon className="w-4 h-4" />
                       Monto *
                     </label>
@@ -269,8 +269,8 @@ export default function NewDebtModal({
                   </div>
 
                   {/* Description */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <PencilSquareIcon className="w-4 h-4" />
                       Descripción *
                     </label>
@@ -290,10 +290,10 @@ export default function NewDebtModal({
                 </div>
 
                 {/* Segunda fila de campos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Counterparty Name */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <UserIcon className="w-4 h-4" />
                       Persona *
                     </label>
@@ -312,8 +312,8 @@ export default function NewDebtModal({
                   </div>
 
                   {/* Counterparty Contact */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <PhoneIcon className="w-4 h-4" />
                       Contacto
                     </label>
@@ -328,10 +328,10 @@ export default function NewDebtModal({
                 </div>
 
                 {/* Tercera fila de campos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Due Date */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <CalendarDaysIcon className="w-4 h-4" />
                       Fecha de Vencimiento
                     </label>
@@ -349,8 +349,8 @@ export default function NewDebtModal({
                   </div>
 
                   {/* Interest Rate */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <PercentBadgeIcon className="w-4 h-4" />
                       Tasa de Interés (%)
                     </label>
@@ -373,8 +373,8 @@ export default function NewDebtModal({
                 </div>
 
                 {/* Notes - Campo completo */}
-                <div className="space-y-3">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                     <DocumentTextIcon className="w-4 h-4" />
                     Notas
                   </label>
@@ -382,14 +382,14 @@ export default function NewDebtModal({
                     placeholder="Notas adicionales (opcional)"
                     value={formData.notes}
                     onChange={(e) => handleInputChange("notes", e.target.value)}
-                    className={`${inputClass(false)} min-h-[60px] resize-none`}
+                    className={`${inputClass(false)} min-h-[50px] resize-none`}
                     rows={2}
                   />
                 </div>
 
                 {/* Action Buttons */}
                 <motion.div
-                  className="flex gap-4 pt-6"
+                  className="flex gap-4 pt-4"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.3 }}

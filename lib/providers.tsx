@@ -28,7 +28,7 @@ function ConvexWithClerk({ children }: { children: React.ReactNode }) {
       client={convex}
       useAuth={() => ({
         ...auth,
-        getToken: (opts?: any) => auth.getToken({ template: "convex", ...opts }),
+        getToken: (opts?: { template?: string }) => auth.getToken({ template: "convex", ...opts }),
       })}
     >
       {children}

@@ -12,6 +12,7 @@ export default defineSchema({
     subscribedSince: v.optional(v.number()),
     onboardingCompleted: v.boolean(),
     currency: v.string(), // default: 'USD'
+    numberRounding: v.optional(v.boolean()), // default: false - whether to round numbers (1M, 1K)
     timezone: v.string(),
     language: v.string(),
   })
@@ -141,4 +142,65 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_user_category", ["userId", "category"]),
+
+  // Tabla de contactos
+  contacts: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    address: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    avatar: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_name", ["userId", "name"])
+    .index("by_email", ["email"]),
+
+  // Tabla de recordatorios
+  reminders: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    dueDate: v.number(),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("urgent")
+    ),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("completed"),
+      v.literal("cancelled")
+    ),
+    category: v.union(
+      v.literal("debt"),
+      v.literal("payment"),
+      v.literal("meeting"),
+      v.literal("task"),
+      v.literal("other")
+    ),
+    relatedDebtId: v.optional(v.id("debts")),
+    relatedContactId: v.optional(v.id("contacts")),
+    isRecurring: v.boolean(),
+    recurringFrequency: v.optional(
+      v.union(
+        v.literal("daily"),
+        v.literal("weekly"),
+        v.literal("monthly"),
+        v.literal("yearly")
+      )
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_user_priority", ["userId", "priority"])
+    .index("by_due_date", ["dueDate"])
+    .index("by_debt", ["relatedDebtId"])
+    .index("by_contact", ["relatedContactId"]),
 });

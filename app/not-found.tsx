@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Página no encontrada - Finance Tracker",
@@ -21,12 +22,12 @@ export default function NotFound() {
         <p className="text-gray-600 mb-8">
           La página que buscas no existe o ha sido movida.
         </p>
-        <a
+        <Link
           href="/"
           className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
         >
           Volver al Inicio
-        </a>
+        </Link>
       </div>
     </div>
   );

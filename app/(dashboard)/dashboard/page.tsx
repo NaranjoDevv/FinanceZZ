@@ -13,10 +13,15 @@ import {
   CreditCardIcon,
   BanknotesIcon,
   ChartBarIcon,
-  UserGroupIcon
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon
 } from "@heroicons/react/24/outline";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useDebts } from "@/hooks/use-debts";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { formatCurrency, formatCurrencyWithRounding, toCurrency } from "@/lib/currency";
+import { BalanceTooltip } from "@/components/ui/balance-tooltip";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
@@ -52,6 +57,10 @@ export default function DashboardPage() {
   // Get real data from Convex - MUST be called before any conditional returns
   const { stats: transactionStats, transactions, isLoading: transactionsLoading } = useTransactions({ limit: 5 });
   const { stats: debtStats, isLoading: debtsLoading } = useDebts();
+  const currentUser = useQuery(api.users.getCurrentUser);
+  
+  const userCurrency = toCurrency(currentUser?.currency || 'USD');
+  const isDataLoading = transactionsLoading || debtsLoading || !currentUser;
 
   useEffect(() => {
     if (isLoaded && !user) {
@@ -107,37 +116,56 @@ export default function DashboardPage() {
     );
   }
   
-  const isDataLoading = transactionsLoading || debtsLoading;
-  
   // Calculate stats from real data
+  const useRounding = currentUser?.numberRounding || false;
+  
+
+
   const stats = [
     {
       title: "Balance Total",
-      value: isDataLoading ? "$0.00" : `$${transactionStats?.balance?.toFixed(2) || '0.00'}`,
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(transactionStats?.balance || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(transactionStats?.balance || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : transactionStats?.balance || 0,
       icon: BanknotesIcon,
       color: "bg-green-500",
       change: "+12.5%" // TODO: Calculate real change percentage
     },
     {
       title: "Gastos del Mes",
-      value: isDataLoading ? "$0.00" : `$${transactionStats?.totalExpenses?.toFixed(2) || '0.00'}`,
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(transactionStats?.totalExpenses || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(transactionStats?.totalExpenses || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : transactionStats?.totalExpenses || 0,
       icon: CreditCardIcon,
       color: "bg-red-500",
       change: "-8.2%" // TODO: Calculate real change percentage
     },
     {
       title: "Ingresos del Mes",
-      value: isDataLoading ? "$0.00" : `$${transactionStats?.totalIncome?.toFixed(2) || '0.00'}`,
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(transactionStats?.totalIncome || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(transactionStats?.totalIncome || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : transactionStats?.totalIncome || 0,
       icon: ChartBarIcon,
       color: "bg-blue-500",
       change: "+15.3%" // TODO: Calculate real change percentage
     },
     {
-      title: "Deudas Pendientes",
-      value: isDataLoading ? "$0.00" : `$${debtStats?.netBalance?.toFixed(2) || '0.00'}`,
-      icon: UserGroupIcon,
-      color: "bg-yellow-500",
-      change: debtStats?.netBalance >= 0 ? "+" : "-"
+      title: "Me deben",
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(debtStats?.totalOwedToMe || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(debtStats?.totalOwedToMe || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : debtStats?.totalOwedToMe || 0,
+      icon: ArrowTrendingUpIcon,
+      color: "bg-green-500",
+      change: "+" // TODO: Calculate real change percentage
+    },
+    {
+      title: "Debo",
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(debtStats?.totalIOwe || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(debtStats?.totalIOwe || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : debtStats?.totalIOwe || 0,
+      icon: ArrowTrendingDownIcon,
+      color: "bg-red-500",
+      change: "-" // TODO: Calculate real change percentage
     }
   ];
 
@@ -213,9 +241,17 @@ export default function DashboardPage() {
                   <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1">
                     {stat.title}
                   </h3>
-                  <p className="text-2xl font-black">
-                    {stat.value}
-                  </p>
+                  <BalanceTooltip
+                    value={stat.value}
+                    fullValue={stat.fullValue}
+                    amount={stat.rawAmount}
+                    currency={userCurrency}
+                    useRounding={useRounding}
+                  >
+                    <p className="text-2xl font-black cursor-help">
+                      {stat.value}
+                    </p>
+                  </BalanceTooltip>
                 </Card>
               </motion.div>
             );
@@ -239,7 +275,23 @@ export default function DashboardPage() {
                 Cargando actividad reciente...
               </div>
             ) : transactions && transactions.length > 0 ? (
-              transactions.map((transaction) => (
+              transactions.map((transaction: {
+                _id: string;
+                description: string;
+                amount: number;
+                type: 'income' | 'expense' | 'debt_payment' | 'loan_received';
+                date: number;
+                category?: {
+                  name: string;
+                  _id: string;
+                } | null;
+                subcategory?: {
+                  name: string;
+                  _id: string;
+                } | null;
+                notes?: string;
+                tags?: string;
+              }) => (
                 <div key={transaction._id} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -260,7 +312,7 @@ export default function DashboardPage() {
                   <span className={`font-black ${
                     transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
+                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount), userCurrency).replace(/^[^\d-+]*/, '')}
                   </span>
                 </div>
               ))

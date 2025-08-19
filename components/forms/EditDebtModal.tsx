@@ -6,6 +6,13 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   PencilIcon,
   XMarkIcon,
   CurrencyDollarIcon,
@@ -195,10 +202,7 @@ export default function EditDebtModal({
     ${isError ? "border-red-500" : "border-black"}
   `;
 
-  const selectClass = (isError: boolean) => `
-    brutal-input h-12 font-medium border-black w-full px-4 py-3
-    ${isError ? "border-red-500" : "border-black"}
-  `;
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -245,10 +249,10 @@ export default function EditDebtModal({
 
               {/* Content */}
               <div className="p-6 bg-white max-h-[calc(90vh-120px)] overflow-y-auto">
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Debt Type */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <DocumentTextIcon className="w-4 h-4" />
                       Tipo de Deuda
                     </label>
@@ -276,8 +280,8 @@ export default function EditDebtModal({
 
                   {/* Amounts */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                         <CurrencyDollarIcon className="w-4 h-4" />
                         Monto Original *
                       </label>
@@ -297,8 +301,8 @@ export default function EditDebtModal({
                       )}
                     </div>
 
-                    <div className="space-y-3">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                         <CurrencyDollarIcon className="w-4 h-4" />
                         Monto Actual *
                       </label>
@@ -320,26 +324,30 @@ export default function EditDebtModal({
                   </div>
 
                   {/* Status */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <DocumentTextIcon className="w-4 h-4" />
                       Estado
                     </label>
-                    <select
+                    <Select
                       value={formData.status}
-                      onChange={(e) => handleInputChange("status", e.target.value)}
-                      className={selectClass(false)}
+                      onValueChange={(value) => handleInputChange("status", value)}
                     >
-                      <option value="open">Abierta</option>
-                      <option value="partially_paid">Parcialmente Pagada</option>
-                      <option value="paid">Pagada</option>
-                      <option value="overdue">Vencida</option>
-                    </select>
+                      <SelectTrigger className="brutal-input h-12 font-medium border-black w-full px-4 py-3">
+                        <SelectValue placeholder="Selecciona el estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Abierta</SelectItem>
+                        <SelectItem value="partially_paid">Parcialmente Pagada</SelectItem>
+                        <SelectItem value="paid">Pagada</SelectItem>
+                        <SelectItem value="overdue">Vencida</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Description */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <DocumentTextIcon className="w-4 h-4" />
                       Descripción *
                     </label>
@@ -358,8 +366,8 @@ export default function EditDebtModal({
                   </div>
 
                   {/* Counterparty Name */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <UserIcon className="w-4 h-4" />
                       Persona *
                     </label>
@@ -378,8 +386,8 @@ export default function EditDebtModal({
                   </div>
 
                   {/* Counterparty Contact */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <PhoneIcon className="w-4 h-4" />
                       Contacto
                     </label>
@@ -393,8 +401,8 @@ export default function EditDebtModal({
                   </div>
 
                   {/* Due Date */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <CalendarIcon className="w-4 h-4" />
                       Fecha de Vencimiento
                     </label>
@@ -407,8 +415,8 @@ export default function EditDebtModal({
                   </div>
 
                   {/* Interest Rate */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <PercentBadgeIcon className="w-4 h-4" />
                       Tasa de Interés (%)
                     </label>
@@ -430,8 +438,8 @@ export default function EditDebtModal({
                   </div>
 
                   {/* Notes */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
                       <DocumentTextIcon className="w-4 h-4" />
                       Notas
                     </label>
@@ -439,14 +447,14 @@ export default function EditDebtModal({
                       placeholder="Notas adicionales (opcional)"
                       value={formData.notes}
                       onChange={(e) => handleInputChange("notes", e.target.value)}
-                      className={`${inputClass(false)} min-h-[80px] resize-none`}
-                      rows={3}
+                      className={`${inputClass(false)} min-h-[60px] resize-none`}
+                      rows={2}
                     />
                   </div>
 
                   {/* Action Buttons */}
                   <motion.div
-                    className="flex gap-4 pt-6"
+                    className="flex gap-4 pt-4"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4, duration: 0.3 }}

@@ -32,7 +32,7 @@ const navigation = [
   { name: "Configuración", href: "/settings", icon: CogIcon },
 ];
 
-export default function DashboardLayout({
+export default function ContactsLayout({
   children,
 }: {
   children: React.ReactNode;

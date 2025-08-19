@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React from "react";
 import { SignUp } from "@clerk/nextjs";
 import { AuthModal } from "./AuthModal";
 import { motion } from "framer-motion";
