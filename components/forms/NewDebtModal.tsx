@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -24,6 +24,8 @@ import {
   PhoneIcon,
   PercentBadgeIcon
 } from "@heroicons/react/24/outline";
+import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
+import { toast } from "sonner";
 
 export interface NewDebtModalProps {
   isOpen: boolean;
@@ -41,19 +43,14 @@ interface FormData {
   interestRate: string;
 }
 
-interface FormErrors {
-  amount?: string;
-  description?: string;
-  counterpartyName?: string;
-  dueDate?: string;
-  interestRate?: string;
-}
-
 export default function NewDebtModal({
   isOpen,
   onClose,
 }: NewDebtModalProps) {
-  const [formData, setFormData] = useState<FormData>({
+  const currentUser = useQuery(api.users.getCurrentUser);
+  const createDebt = useMutation(api.debts.createDebt);
+
+  const initialFormData: FormData = {
     type: "i_owe",
     amount: "",
     description: "",
@@ -62,118 +59,101 @@ export default function NewDebtModal({
     dueDate: "",
     notes: "",
     interestRate: "",
+  };
+
+  const validationRules = createValidationRules<FormData>([
+    {
+      field: 'amount',
+      validators: [commonValidationRules.required('Monto'), commonValidationRules.positiveAmount],
+    },
+    {
+      field: 'description',
+      validators: [commonValidationRules.required('Descripción')],
+    },
+    {
+      field: 'counterpartyName',
+      validators: [commonValidationRules.required('Nombre de la contraparte')],
+    },
+    {
+      field: 'interestRate',
+      validators: [
+        (value) => {
+          if (!value) return null;
+          const num = parseFloat(value);
+          if (isNaN(num) || num < 0 || num > 100) {
+            return "La tasa de interés debe estar entre 0 y 100";
+          }
+          return null;
+        }
+      ],
+    },
+  ]);
+
+  const submitDebt = async (data: FormData) => {
+    if (!currentUser) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    const debtData: {
+      userId: Id<"users">;
+      type: "owes_me" | "i_owe";
+      amount: number;
+      description: string;
+      counterpartyName: string;
+      counterpartyContact?: string;
+      dueDate?: number;
+      notes?: string;
+      interestRate?: number;
+    } = {
+      userId: currentUser._id,
+      type: data.type,
+      amount: parseFloat(data.amount),
+      description: data.description.trim(),
+      counterpartyName: data.counterpartyName.trim()
+    };
+    
+    if (data.counterpartyContact.trim()) {
+      debtData.counterpartyContact = data.counterpartyContact.trim();
+    }
+    
+    if (data.dueDate) {
+      debtData.dueDate = new Date(data.dueDate).getTime();
+    }
+    
+    if (data.notes.trim()) {
+      debtData.notes = data.notes.trim();
+    }
+    
+    if (data.interestRate) {
+      debtData.interestRate = parseFloat(data.interestRate);
+    }
+    
+    await createDebt(debtData);
+    toast.success("Deuda creada exitosamente");
+  };
+
+  const {
+    formData,
+    errors,
+    isSubmitting,
+    updateField,
+    handleSubmit,
+    resetForm,
+  } = useFormHandler({
+    initialData: initialFormData,
+    validationRules,
   });
 
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const currentUser = useQuery(api.users.getCurrentUser);
-
-  const createDebt = useMutation(api.debts.createDebt);
-
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    if (errors[field as keyof FormErrors]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = "El monto debe ser mayor a 0";
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = "La descripción es requerida";
-    }
-
-    if (!formData.counterpartyName.trim()) {
-      newErrors.counterpartyName = "El nombre de la persona es requerido";
-    }
-
-    if (formData.interestRate && (parseFloat(formData.interestRate) < 0 || parseFloat(formData.interestRate) > 100)) {
-      newErrors.interestRate = "La tasa de interés debe estar entre 0 y 100";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm() || !currentUser) return;
-
-    setIsSubmitting(true);
-
-    try {
-      const debtData: {
-        userId: Id<"users">;
-        type: "owes_me" | "i_owe";
-        amount: number;
-        description: string;
-        counterpartyName: string;
-        counterpartyContact?: string;
-        dueDate?: number;
-        notes?: string;
-        interestRate?: number;
-      } = {
-        userId: currentUser._id,
-        type: formData.type,
-        amount: parseFloat(formData.amount),
-        description: formData.description.trim(),
-        counterpartyName: formData.counterpartyName.trim()
-      };
-      
-      if (formData.counterpartyContact.trim()) {
-        debtData.counterpartyContact = formData.counterpartyContact.trim();
-      }
-      
-      if (formData.dueDate) {
-        debtData.dueDate = new Date(formData.dueDate).getTime();
-      }
-      
-      if (formData.notes.trim()) {
-        debtData.notes = formData.notes.trim();
-      }
-      
-      if (formData.interestRate) {
-        debtData.interestRate = parseFloat(formData.interestRate);
-      }
-      
-      await createDebt(debtData);
-
-      // Reset form
-      setFormData({
-        type: "i_owe",
-        amount: "",
-        description: "",
-        counterpartyName: "",
-        counterpartyContact: "",
-        dueDate: "",
-        notes: "",
-        interestRate: "",
-      });
-      setErrors({});
-      onClose();
-    } catch (error) {
-      console.error("Error creating debt:", error);
-      // You can add toast notification here
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   useEffect(() => {
     if (!isOpen) {
-      setErrors({});
+      resetForm();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const buttonClass = (type: "owes_me" | "i_owe") => `
@@ -216,7 +196,7 @@ export default function NewDebtModal({
                 </h2>
               </div>
               <motion.button
-                onClick={onClose}
+                onClick={handleClose}
                 className="brutal-button p-2 hover:bg-black hover:text-white transition-all duration-200"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -240,7 +220,7 @@ export default function NewDebtModal({
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
             >
-              <form onSubmit={handleSubmit} className="space-y-3">
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(submitDebt); }} className="space-y-3">
                 {/* Debt Type */}
                 <div className="space-y-2">
                   <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
@@ -252,7 +232,7 @@ export default function NewDebtModal({
                       type="button"
                       variant={formData.type === "owes_me" ? "default" : "outline"}
                       className={buttonClass("owes_me")}
-                      onClick={() => handleInputChange("type", "owes_me")}
+                      onClick={() => updateField("type", "owes_me")}
                     >
                       <PlusIcon className="w-4 h-4 mr-2" />
                       Me Deben
@@ -261,7 +241,7 @@ export default function NewDebtModal({
                       type="button"
                       variant={formData.type === "i_owe" ? "default" : "outline"}
                       className={buttonClass("i_owe")}
-                      onClick={() => handleInputChange("type", "i_owe")}
+                      onClick={() => updateField("type", "i_owe")}
                     >
                       <MinusIcon className="w-4 h-4 mr-2" />
                       Debo
@@ -283,7 +263,7 @@ export default function NewDebtModal({
                       min="0"
                       placeholder="0.00"
                       value={formData.amount}
-                      onChange={(e) => handleInputChange("amount", e.target.value)}
+                      onChange={(e) => updateField("amount", e.target.value)}
                       className={inputClass(!!errors.amount)}
                     />
                     {errors.amount && (
@@ -303,7 +283,7 @@ export default function NewDebtModal({
                       type="text"
                       placeholder="Descripción de la deuda"
                       value={formData.description}
-                      onChange={(e) => handleInputChange("description", e.target.value)}
+                      onChange={(e) => updateField("description", e.target.value)}
                       className={inputClass(!!errors.description)}
                     />
                     {errors.description && (
@@ -326,7 +306,7 @@ export default function NewDebtModal({
                       type="text"
                       placeholder="Nombre de la persona"
                       value={formData.counterpartyName}
-                      onChange={(e) => handleInputChange("counterpartyName", e.target.value)}
+                      onChange={(e) => updateField("counterpartyName", e.target.value)}
                       className={inputClass(!!errors.counterpartyName)}
                     />
                     {errors.counterpartyName && (
@@ -346,7 +326,7 @@ export default function NewDebtModal({
                       type="text"
                       placeholder="Teléfono o email (opcional)"
                       value={formData.counterpartyContact}
-                      onChange={(e) => handleInputChange("counterpartyContact", e.target.value)}
+                      onChange={(e) => updateField("counterpartyContact", e.target.value)}
                       className={inputClass(false)}
                     />
                   </div>
@@ -363,7 +343,7 @@ export default function NewDebtModal({
                     <Input
                       type="date"
                       value={formData.dueDate}
-                      onChange={(e) => handleInputChange("dueDate", e.target.value)}
+                      onChange={(e) => updateField("dueDate", e.target.value)}
                       className={inputClass(!!errors.dueDate)}
                     />
                     {errors.dueDate && (
@@ -386,7 +366,7 @@ export default function NewDebtModal({
                       max="100"
                       placeholder="0.00"
                       value={formData.interestRate}
-                      onChange={(e) => handleInputChange("interestRate", e.target.value)}
+                      onChange={(e) => updateField("interestRate", e.target.value)}
                       className={inputClass(!!errors.interestRate)}
                     />
                     {errors.interestRate && (
@@ -406,7 +386,7 @@ export default function NewDebtModal({
                   <textarea
                     placeholder="Notas adicionales (opcional)"
                     value={formData.notes}
-                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                    onChange={(e) => updateField("notes", e.target.value)}
                     className={`${inputClass(false)} min-h-[50px] resize-none`}
                     rows={2}
                   />
@@ -421,7 +401,7 @@ export default function NewDebtModal({
                 >
                   <button
                     type="button"
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="brutal-button flex-1 min-h-[48px] py-3 px-6 flex items-center justify-center"
                   >
                     Cancelar

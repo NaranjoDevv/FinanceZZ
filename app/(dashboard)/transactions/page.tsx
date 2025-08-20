@@ -105,7 +105,7 @@ function SortableTransaction({ transaction, index, hoveredTransaction, setHovere
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: isDragging ? 0.5 : 1, x: 0 }}
       transition={{ delay: isDragging ? 0 : 0.6 + index * 0.05 }}
-      className={`relative flex items-center justify-between p-4 border-2 transition-all duration-200 group ${
+      className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border-2 transition-all duration-200 group ${
         isDragging 
           ? 'border-blue-500 bg-blue-50 shadow-lg scale-105 rotate-2' 
           : 'border-gray-200 hover:border-black'
@@ -113,86 +113,159 @@ function SortableTransaction({ transaction, index, hoveredTransaction, setHovere
       onMouseEnter={() => !isDragging && setHoveredTransaction(transaction._id)}
       onMouseLeave={() => setHoveredTransaction(null)}
     >
-      {/* Drag Handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className={`flex items-center justify-center w-8 h-8 mr-3 transition-colors rounded ${
-          isDragging 
-            ? 'cursor-grabbing text-blue-600 bg-blue-100' 
-            : 'cursor-grab text-gray-400 hover:bg-gray-100'
-        }`}
-        title="Arrastrar para reordenar"
-      >
-        <Bars3Icon className="w-5 h-5" />
-      </div>
-
-      <div className="flex items-center space-x-4 flex-1">
-        <div className={`p-3 rounded-none ${
-          (transaction.type === 'income' || transaction.type === 'loan_received') ? 'bg-green-500' : 'bg-red-500'
-        } text-white`}>
-          {(transaction.type === 'income' || transaction.type === 'loan_received') ? (
-            <ArrowUpIcon className="h-5 w-5" />
-          ) : (
-            <ArrowDownIcon className="h-5 w-5" />
-          )}
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-bold text-sm uppercase tracking-wide">
+      {/* Mobile Layout */}
+      <div className="flex sm:hidden w-full">
+        {/* Top Row: Icon, Description, Amount */}
+        <div className="flex items-start flex-1 gap-2">
+          <div className={`p-1.5 rounded-none flex-shrink-0 ${
+            (transaction.type === 'income' || transaction.type === 'loan_received') ? 'bg-green-500' : 'bg-red-500'
+          } text-white`}>
+            {(transaction.type === 'income' || transaction.type === 'loan_received') ? (
+              <ArrowUpIcon className="h-3 w-3" />
+            ) : (
+              <ArrowDownIcon className="h-3 w-3" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-xs uppercase tracking-wide truncate leading-tight">
               {transaction.description}
             </h4>
+            <div className="flex flex-col space-y-0.5 text-xs text-gray-600 mt-0.5">
+              <span className="font-medium truncate">{transaction.category?.name || 'Sin categoría'}</span>
+              <span className="text-xs">{new Date(transaction.date).toLocaleDateString()}</span>
+            </div>
           </div>
-          <p className="text-xs text-gray-600 font-medium">
-            {transaction.category?.name || 'Sin categoría'} • {new Date(transaction.date).toLocaleDateString()}
-          </p>
+          <div className="text-right flex-shrink-0 ml-1">
+            <p className={`text-xs font-black ${
+              (transaction.type === 'income' || transaction.type === 'loan_received') ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {(transaction.type === 'income' || transaction.type === 'loan_received') ? '+' : '-'}
+              {formatCurrency(transaction.amount, userCurrency).replace(/^[^\d-+]*/, '')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Row: Notes and Actions */}
+      <div className="flex sm:hidden w-full mt-2 justify-between items-center">
+        <div className="flex-1">
           {transaction.notes && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 truncate">
               {transaction.notes}
             </p>
           )}
         </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="text-right">
-          <p className={`text-lg font-black ${
-            (transaction.type === 'income' || transaction.type === 'loan_received') ? 'text-green-600' : 'text-red-600'
-          }`}>
-            {(transaction.type === 'income' || transaction.type === 'loan_received') ? '+' : '-'}
-            {formatCurrency(transaction.amount, userCurrency).replace(/^[^\d-+]*/, '')}
-          </p>
-        </div>
-
-        {/* Action Buttons - Show on hover (hidden during drag) */}
-        <div className={`flex gap-2 transition-all duration-200 ${
-          hoveredTransaction === transaction._id && !isDragging
-            ? 'opacity-100 translate-x-0'
-            : 'opacity-0 translate-x-4 pointer-events-none'
-        }`}>
+        <div className="flex gap-1 ml-2">
           <motion.button
             onClick={() => {
               setSelectedTransaction(transaction);
               setIsEditModalOpen(true);
             }}
-            className="brutal-button p-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            className="brutal-button p-1.5 bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             title="Editar transacción"
           >
-            <PencilIcon className="w-4 h-4" />
+            <PencilIcon className="w-3 h-3" />
           </motion.button>
           <motion.button
             onClick={() => {
               setSelectedTransaction(transaction);
               setIsDeleteModalOpen(true);
             }}
-            className="brutal-button p-2 bg-red-500 text-white hover:bg-red-600 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            className="brutal-button p-1.5 bg-red-500 text-white hover:bg-red-600 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             title="Eliminar transacción"
           >
-            <TrashIcon className="w-4 h-4" />
+            <TrashIcon className="w-3 h-3" />
           </motion.button>
+        </div>
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden sm:flex items-start w-full">
+        {/* Drag Handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className={`flex items-center justify-center w-6 h-6 md:w-8 md:h-8 mr-2 md:mr-3 transition-colors rounded flex-shrink-0 ${
+            isDragging 
+              ? 'cursor-grabbing text-blue-600 bg-blue-100' 
+              : 'cursor-grab text-gray-400 hover:bg-gray-100'
+          }`}
+          title="Arrastrar para reordenar"
+        >
+          <Bars3Icon className="w-4 h-4 md:w-5 md:h-5" />
+        </div>
+
+        <div className="flex items-start space-x-2 md:space-x-3 flex-1 min-w-0">
+          <div className={`p-2 md:p-3 rounded-none flex-shrink-0 ${
+            (transaction.type === 'income' || transaction.type === 'loan_received') ? 'bg-green-500' : 'bg-red-500'
+          } text-white`}>
+            {(transaction.type === 'income' || transaction.type === 'loan_received') ? (
+              <ArrowUpIcon className="h-4 w-4 md:h-5 md:w-5" />
+            ) : (
+              <ArrowDownIcon className="h-4 w-4 md:h-5 md:w-5" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-sm md:text-base uppercase tracking-wide truncate leading-tight">
+              {transaction.description}
+            </h4>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-xs md:text-sm text-gray-600 mt-0.5">
+              <span className="font-medium truncate">{transaction.category?.name || 'Sin categoría'}</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="text-xs md:text-sm">{new Date(transaction.date).toLocaleDateString()}</span>
+            </div>
+            {transaction.notes && (
+              <p className="text-xs text-gray-500 mt-1 truncate">
+                {transaction.notes}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 ml-2">
+          <div className="text-right">
+            <p className={`text-sm md:text-lg font-black ${
+              (transaction.type === 'income' || transaction.type === 'loan_received') ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {(transaction.type === 'income' || transaction.type === 'loan_received') ? '+' : '-'}
+              {formatCurrency(transaction.amount, userCurrency).replace(/^[^\d-+]*/, '')}
+            </p>
+          </div>
+
+          {/* Action Buttons - Show on hover (hidden during drag) */}
+          <div className={`flex gap-1 md:gap-2 transition-all duration-200 ${
+            hoveredTransaction === transaction._id && !isDragging
+              ? 'opacity-100 translate-x-0'
+              : 'opacity-0 translate-x-4 pointer-events-none'
+          }`}>
+            <motion.button
+              onClick={() => {
+                setSelectedTransaction(transaction);
+                setIsEditModalOpen(true);
+              }}
+              className="brutal-button p-1.5 md:p-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Editar transacción"
+            >
+              <PencilIcon className="w-3 h-3 md:w-4 md:h-4" />
+            </motion.button>
+            <motion.button
+              onClick={() => {
+                setSelectedTransaction(transaction);
+                setIsDeleteModalOpen(true);
+              }}
+              className="brutal-button p-1.5 md:p-2 bg-red-500 text-white hover:bg-red-600 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Eliminar transacción"
+            >
+              <TrashIcon className="w-3 h-3 md:w-4 md:h-4" />
+            </motion.button>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -400,21 +473,21 @@ export default function TransactionsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="brutal-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-500 text-white rounded-none">
-                  <ArrowUpIcon className="h-6 w-6" />
+            <Card className="brutal-card p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-green-500 text-white rounded-none">
+                  <ArrowUpIcon className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Total Ingresos
               </h3>
               <BalanceTooltip
@@ -424,7 +497,7 @@ export default function TransactionsPage() {
                 currency={userCurrency}
                 useRounding={user?.numberRounding || false}
               >
-                <p className="text-2xl font-black text-green-600 transition-colors duration-200 cursor-help">
+                <p className="text-sm sm:text-2xl font-black text-green-600 transition-colors duration-200 cursor-help">
                   {formatCurrencyWithRounding(totalIncome, userCurrency, user?.numberRounding || false)}
                 </p>
               </BalanceTooltip>
@@ -436,13 +509,13 @@ export default function TransactionsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="brutal-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-red-500 text-white rounded-none">
-                  <ArrowDownIcon className="h-6 w-6" />
+            <Card className="brutal-card p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-red-500 text-white rounded-none">
+                  <ArrowDownIcon className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Total Gastos
               </h3>
               <BalanceTooltip
@@ -452,7 +525,7 @@ export default function TransactionsPage() {
                 currency={userCurrency}
                 useRounding={user?.numberRounding || false}
               >
-                <p className="text-2xl font-black text-red-600 transition-colors duration-200 cursor-help">
+                <p className="text-sm sm:text-2xl font-black text-red-600 transition-colors duration-200 cursor-help">
                   {formatCurrencyWithRounding(totalExpenses, userCurrency, user?.numberRounding || false)}
                 </p>
               </BalanceTooltip>
@@ -464,13 +537,13 @@ export default function TransactionsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="brutal-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-500 text-white rounded-none">
-                  <CalendarIcon className="h-6 w-6" />
+            <Card className="brutal-card p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-blue-500 text-white rounded-none">
+                  <CalendarIcon className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Balance
               </h3>
               <BalanceTooltip
@@ -480,7 +553,7 @@ export default function TransactionsPage() {
                 currency={userCurrency}
                 useRounding={user?.numberRounding || false}
               >
-                <p className={`text-2xl font-black transition-colors duration-200 cursor-help ${balance >= 0 ? 'text-green-600' : 'text-red-600'
+                <p className={`text-sm sm:text-2xl font-black transition-colors duration-200 cursor-help ${balance >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
                   {formatCurrencyWithRounding(balance, userCurrency, user?.numberRounding || false)}
                 </p>
@@ -493,16 +566,16 @@ export default function TransactionsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="brutal-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-500 text-white rounded-none">
-                  <Bars3Icon className="h-6 w-6" />
+            <Card className="brutal-card p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-purple-500 text-white rounded-none">
+                  <Bars3Icon className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Total Transacciones
               </h3>
-              <p className="text-2xl font-black text-purple-600 transition-colors duration-200">
+              <p className="text-sm sm:text-2xl font-black text-purple-600 transition-colors duration-200">
                 {filteredTransactions.length}
               </p>
             </Card>
@@ -522,27 +595,27 @@ export default function TransactionsPage() {
                ease: "easeInOut",
                height: { delay: 0.1, duration: 0.3 }
              }}
-             className="mb-8"
+             className="mb-6 sm:mb-8"
            >
             <Card className="brutal-card p-6">
               <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                 <div className="flex flex-col sm:flex-row gap-4 flex-1">
                   {/* Search */}
                   <div className="relative flex-1 max-w-md">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                     <input
                       type="text"
                       placeholder="Buscar transacciones..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border-2 border-black font-medium focus:outline-none focus:ring-0 focus:border-gray-600"
+                      className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 border-2 border-black font-medium focus:outline-none focus:ring-0 focus:border-gray-600 text-sm sm:text-base"
                     />
                   </div>
 
                   {/* Filters */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 w-full sm:w-auto">
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className="w-full sm:w-48 h-10 sm:h-12 text-sm sm:text-base">
                         <SelectValue placeholder="Categoría" />
                       </SelectTrigger>
                       <SelectContent>
@@ -553,7 +626,7 @@ export default function TransactionsPage() {
                     </Select>
 
                     <Select value={selectedType} onValueChange={setSelectedType}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-full sm:w-40 h-10 sm:h-12 text-sm sm:text-base">
                         <SelectValue placeholder="Tipo" />
                       </SelectTrigger>
                       <SelectContent>
@@ -644,14 +717,16 @@ export default function TransactionsPage() {
         transaction={selectedTransaction}
       />
 
-      <DeleteTransactionModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setSelectedTransaction(null);
-        }}
-        transaction={selectedTransaction}
-      />
+      {selectedTransaction && (
+        <DeleteTransactionModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setSelectedTransaction(null);
+          }}
+          transaction={selectedTransaction}
+        />
+      )}
     </div>
   );
 }
