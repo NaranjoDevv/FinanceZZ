@@ -358,14 +358,16 @@ export default function Categories() {
         category={selectedCategory}
       />
 
-      <DeleteCategoryModal
-        isOpen={isDeleteCategoryModalOpen}
-        onClose={() => {
-          setIsDeleteCategoryModalOpen(false);
-          setSelectedCategory(null);
-        }}
-        category={selectedCategory}
-      />
+      {selectedCategory && (
+        <DeleteCategoryModal
+          isOpen={isDeleteCategoryModalOpen}
+          onClose={() => {
+            setIsDeleteCategoryModalOpen(false);
+            setSelectedCategory(null);
+          }}
+          category={selectedCategory}
+        />
+      )}
     </div>
   );
 }

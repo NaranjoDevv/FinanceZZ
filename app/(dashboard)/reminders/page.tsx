@@ -1,34 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  BellIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  CalendarIcon,
-  PlusIcon,
-  MagnifyingGlassIcon,
-  AdjustmentsHorizontalIcon,
-  PencilIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import CreateReminderModal from "@/components/forms/CreateReminderModal";
-import EditReminderModal from "@/components/forms/EditReminderModal";
-import DeleteReminderModal from "@/components/forms/DeleteReminderModal";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  BellIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+  AdjustmentsHorizontalIcon,
+  CalendarIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
+import CreateReminderModal from "@/components/forms/CreateReminderModal";
+import EditReminderModal from "@/components/forms/EditReminderModal";
+import DeleteReminderModal from "@/components/forms/DeleteReminderModal";
 import { Id } from "@/convex/_generated/dataModel";
 
 interface Reminder {
@@ -48,42 +57,19 @@ interface Reminder {
 }
 
 export default function RemindersPage() {
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "completed" | "cancelled">("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
   const [deletingReminder, setDeletingReminder] = useState<Reminder | null>(null);
 
-  const currentUser = useQuery(api.users.getCurrentUser);
-  const reminders = useQuery(
-    api.reminders.getReminders,
-    currentUser?._id ? { userId: currentUser._id } : "skip"
-  ) || [];
-  const upcomingReminders = useQuery(
-    api.reminders.getUpcomingReminders,
-    currentUser?._id ? { userId: currentUser._id, days: 7 } : "skip"
-  ) || [];
-
-  const filteredReminders = reminders.filter((reminder: Reminder) => {
-    const matchesSearch = reminder.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reminder.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || reminder.status === statusFilter;
-    const matchesPriority = priorityFilter === "all" || reminder.priority === priorityFilter;
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
-
-  const stats = {
-    total: reminders.length,
-    pending: reminders.filter((r: Reminder) => r.status === "pending").length,
-    completed: reminders.filter((r: Reminder) => r.status === "completed").length,
-    overdue: reminders.filter((r: Reminder) => r.status === "pending" && new Date(r.dueDate) < new Date()).length,
-    upcoming: upcomingReminders.length,
-  };
-
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("es-ES", {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString("es-ES", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -94,56 +80,123 @@ export default function RemindersPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "urgent": return "bg-red-600";
-      case "high": return "bg-orange-500";
-      case "medium": return "bg-yellow-500";
-      case "low": return "bg-green-500";
-      default: return "bg-gray-500";
+      case "urgent":
+        return "bg-red-600";
+      case "high":
+        return "bg-orange-500";
+      case "medium":
+        return "bg-yellow-500";
+      case "low":
+        return "bg-green-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
   const getPriorityText = (priority: string) => {
     switch (priority) {
-      case "urgent": return "Urgente";
-      case "high": return "Alta";
-      case "medium": return "Media";
-      case "low": return "Baja";
-      default: return "Sin prioridad";
+      case "urgent":
+        return "URGENTE";
+      case "high":
+        return "ALTA";
+      case "medium":
+        return "MEDIA";
+      case "low":
+        return "BAJA";
+      default:
+        return "NORMAL";
     }
   };
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "debt": return "💰";
-      case "payment": return "💳";
-      case "meeting": return "👥";
-      case "task": return "📋";
-      default: return "📝";
+    switch (category.toLowerCase()) {
+      case "trabajo":
+        return "💼";
+      case "personal":
+        return "👤";
+      case "salud":
+        return "🏥";
+      case "finanzas":
+        return "💰";
+      case "educación":
+        return "📚";
+      case "hogar":
+        return "🏠";
+      default:
+        return "📋";
     }
   };
 
   const isOverdue = (dueDate: number) => {
-    return new Date(dueDate) < new Date() && dueDate !== 0;
+    const now = new Date();
+    const due = new Date(dueDate);
+    return due < now;
   };
 
-  const isLoading = !currentUser;
+  useEffect(() => {
+    // Simular carga de datos
+    setTimeout(() => {
+      setReminders([
+        {
+          _id: "1" as Id<"reminders">,
+          title: "Reunión con el equipo",
+          description: "Revisar el progreso del proyecto Q4",
+          dueDate: new Date("2024-01-15T10:00:00Z").getTime(),
+          priority: "high",
+          category: "meeting",
+          status: "pending",
+          isRecurring: false,
+          createdAt: new Date("2024-01-01T00:00:00Z").getTime(),
+          updatedAt: new Date("2024-01-01T00:00:00Z").getTime(),
+        },
+        {
+          _id: "2" as Id<"reminders">,
+          title: "Cita médica",
+          description: "Chequeo anual",
+          dueDate: new Date("2024-01-20T14:30:00Z").getTime(),
+          priority: "medium",
+          category: "other",
+          status: "pending",
+          isRecurring: true,
+          recurringFrequency: "yearly",
+          createdAt: new Date("2024-01-01T00:00:00Z").getTime(),
+          updatedAt: new Date("2024-01-01T00:00:00Z").getTime(),
+        },
+      ]);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+
+  const filteredReminders = reminders.filter((reminder) => {
+    const matchesSearch = reminder.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (reminder.description && reminder.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === "all" || reminder.status === statusFilter;
+    const matchesPriority = priorityFilter === "all" || reminder.priority === priorityFilter;
+    
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
+  const stats = {
+    total: reminders.length,
+    pending: reminders.filter(r => r.status === "pending").length,
+    completed: reminders.filter(r => r.status === "completed").length,
+    overdue: reminders.filter(r => r.status === "pending" && isOverdue(r.dueDate)).length,
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <motion.div 
-          className="text-center space-y-4"
+          className="flex items-center justify-between"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">
-            Recordatorios
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Mantén el control de tus tareas y nunca olvides lo importante
-          </p>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Recordatorios</h1>
+            <p className="text-gray-600 mt-1">Gestiona tus recordatorios y tareas importantes</p>
+          </div>
         </motion.div>
 
         {/* Stats Cards */}
@@ -170,7 +223,7 @@ export default function RemindersPage() {
                  </TooltipProvider>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-blue-600">
                   {stats.total}
                 </div>
               </CardContent>

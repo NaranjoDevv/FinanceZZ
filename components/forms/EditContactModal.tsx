@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 import { User, Mail, Phone, MapPin, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
+import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
 
 interface Contact {
   _id: Id<"contacts">;
@@ -34,75 +35,85 @@ interface EditContactModalProps {
   contact: Contact;
 }
 
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  notes: string;
+}
+
 export default function EditContactModal({
   isOpen,
   onClose,
   contact,
 }: EditContactModalProps) {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    notes: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const updateContact = useMutation(api.contacts.updateContact);
 
-  // Cargar datos del contacto cuando se abre el modal
-  useEffect(() => {
-    if (contact) {
-      setFormData({
-        name: contact.name || "",
-        email: contact.email || "",
-        phone: contact.phone || "",
-        address: contact.address || "",
-        notes: contact.notes || "",
-      });
-    }
-  }, [contact]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim()) {
-      toast.error("El nombre es requerido");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const updateData: {
-        id: Id<"contacts">;
-        name: string;
-        email?: string;
-        phone?: string;
-        address?: string;
-        notes?: string;
-      } = {
-        id: contact._id,
-        name: formData.name.trim(),
-      };
-      
-      if (formData.email.trim()) updateData.email = formData.email.trim();
-      if (formData.phone.trim()) updateData.phone = formData.phone.trim();
-      if (formData.address.trim()) updateData.address = formData.address.trim();
-      if (formData.notes.trim()) updateData.notes = formData.notes.trim();
-      
-      await updateContact(updateData);
-      
-      toast.success("Contacto actualizado exitosamente");
-      onClose();
-    } catch (error) {
-      console.error("Error updating contact:", error);
-      toast.error("Error al actualizar el contacto");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const initialFormData: FormData = {
+    name: contact?.name || "",
+    email: contact?.email || "",
+    phone: contact?.phone || "",
+    address: contact?.address || "",
+    notes: contact?.notes || "",
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const validationRules = createValidationRules<FormData>([
+    {
+      field: 'name',
+      validators: [commonValidationRules.required('Nombre')],
+    },
+  ]);
+
+  const submitContact = async (data: FormData) => {
+    const updateData: {
+      id: Id<"contacts">;
+      name: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      notes?: string;
+    } = {
+      id: contact._id,
+      name: data.name.trim(),
+    };
+    
+    if (data.email.trim()) updateData.email = data.email.trim();
+    if (data.phone.trim()) updateData.phone = data.phone.trim();
+    if (data.address.trim()) updateData.address = data.address.trim();
+    if (data.notes.trim()) updateData.notes = data.notes.trim();
+    
+    await updateContact(updateData);
+    toast.success("Contacto actualizado exitosamente");
+  };
+
+  const {
+    formData,
+    errors,
+    isSubmitting,
+    updateField,
+    handleSubmit,
+    resetForm,
+  } = useFormHandler({
+    initialData: initialFormData,
+    validationRules,
+  });
+
+  // Cargar datos del contacto cuando cambie
+  useEffect(() => {
+    if (contact) {
+      updateField("name", contact.name || "");
+      updateField("email", contact.email || "");
+      updateField("phone", contact.phone || "");
+      updateField("address", contact.address || "");
+      updateField("notes", contact.notes || "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contact]);
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   // Clases CSS
@@ -121,7 +132,10 @@ export default function EditContactModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit(submitContact);
+        }} className="space-y-4">
           {/* Nombre */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-black flex items-center gap-2">
@@ -131,11 +145,16 @@ export default function EditContactModal({
             <Input
               type="text"
               value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
+              onChange={(e) => updateField("name", e.target.value)}
               placeholder="Nombre completo"
-              className={inputClass}
+              className={`${inputClass} ${errors.name ? 'border-red-500' : ''}`}
               required
             />
+            {errors.name && (
+              <p className="text-red-500 text-sm font-medium">
+                {errors.name}
+              </p>
+            )}
           </div>
 
           {/* Email */}
@@ -147,7 +166,7 @@ export default function EditContactModal({
             <Input
               type="email"
               value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
+              onChange={(e) => updateField("email", e.target.value)}
               placeholder="correo@ejemplo.com"
               className={inputClass}
             />
@@ -162,7 +181,7 @@ export default function EditContactModal({
             <Input
               type="tel"
               value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
+              onChange={(e) => updateField("phone", e.target.value)}
               placeholder="+1 234 567 8900"
               className={inputClass}
             />
@@ -177,7 +196,7 @@ export default function EditContactModal({
             <Input
               type="text"
               value={formData.address}
-              onChange={(e) => handleInputChange("address", e.target.value)}
+              onChange={(e) => updateField("address", e.target.value)}
               placeholder="Dirección completa"
               className={inputClass}
             />
@@ -191,7 +210,7 @@ export default function EditContactModal({
             </label>
             <Textarea
               value={formData.notes}
-              onChange={(e) => handleInputChange("notes", e.target.value)}
+              onChange={(e) => updateField("notes", e.target.value)}
               placeholder="Notas adicionales sobre el contacto..."
               className={`${inputClass} min-h-[80px] resize-none`}
               rows={3}
@@ -202,7 +221,7 @@ export default function EditContactModal({
           <div className="flex gap-4 pt-3 border-t-4 border-black">
             <Button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               variant="outline"
               className={`${buttonClass} flex-1`}
               disabled={isSubmitting}

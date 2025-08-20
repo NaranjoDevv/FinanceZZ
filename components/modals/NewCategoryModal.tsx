@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { useCategories } from "@/hooks/use-categories";
 import { toast } from "sonner";
-import { XMarkIcon, TagIcon } from "@heroicons/react/24/outline";
+import { TagIcon } from "@heroicons/react/24/outline";
+import { BrutalFormModal } from "@/components/ui/brutal-form-modal";
+import { BrutalInput } from "@/components/ui/brutal-input";
+import { BrutalSelect } from "@/components/ui/brutal-select";
 
 interface NewCategoryModalProps {
   isOpen: boolean;
@@ -38,9 +39,7 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
     isExpense: true,
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!formData.name.trim()) {
       toast.error("El nombre de la categoría es requerido");
       return;
@@ -56,17 +55,11 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
         isExpense: formData.isExpense,
       });
 
-      // Reset form
-      setFormData({
-        name: "",
-        icon: "📁",
-        color: "#6B7280",
-        isExpense: true,
-      });
-
-      onClose();
+      toast.success("Categoría creada exitosamente");
+      handleClose();
     } catch (error) {
       console.error("Error creating category:", error);
+      toast.error("Error al crear la categoría");
     } finally {
       setIsLoading(false);
     }
@@ -85,79 +78,39 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={handleClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-[500px] w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-black text-white">
-                    <TagIcon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-black">Nueva Categoría</h2>
-                    <p className="text-sm text-gray-600">Crea una nueva categoría para organizar tus transacciones</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleClose}
-                  className="p-2 hover:bg-gray-100 transition-colors"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
-              </div>
+    <BrutalFormModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+      title="Nueva Categoría"
+      subtitle="Crea una nueva categoría para organizar tus transacciones"
+      submitText="Crear Categoría"
+      cancelText="Cancelar"
+      isLoading={isLoading}
+      variant="create"
+      icon={<TagIcon className="h-5 w-5" />}
+      size="lg"
+    >
+        <BrutalInput
+          label="Nombre *"
+          value={formData.name}
+          onChange={(value) => setFormData({ ...formData, name: value })}
+          placeholder="Ej: Alimentación, Transporte, Salario..."
+          disabled={isLoading}
+          required
+        />
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <Label htmlFor="name" className="block text-sm font-medium text-black mb-2">
-                    Nombre *
-                  </Label>
-                  <input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-3 border-4 border-black bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-black transition-all"
-                    placeholder="Ej: Alimentación, Transporte, Salario..."
-                    disabled={isLoading}
-
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="type" className="block text-sm font-medium text-black mb-2">
-                    Tipo *
-                  </Label>
-                  <Select
-                    value={formData.isExpense ? "expense" : "income"}
-                    onValueChange={(value) => setFormData({ ...formData, isExpense: value === "expense" })}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="w-full px-4 py-3 border-4 border-black bg-white text-black focus:outline-none focus:ring-0 focus:border-black">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="expense">💸 Gasto</SelectItem>
-                      <SelectItem value="income">💰 Ingreso</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        <BrutalSelect
+          label="Tipo *"
+          value={formData.isExpense ? "expense" : "income"}
+          onChange={(value) => setFormData({ ...formData, isExpense: value === "expense" })}
+          placeholder="Selecciona el tipo"
+          disabled={isLoading}
+          options={[
+            { value: "expense", label: "💸 Gasto" },
+            { value: "income", label: "💰 Ingreso" }
+          ]}
+        />
 
                 <div>
                   <Label htmlFor="icon" className="block text-sm font-medium text-black mb-2">
@@ -269,29 +222,6 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
                   )}
                 </div>
 
-                {/* Footer */}
-                <div className="flex justify-end gap-3 mt-8">
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    disabled={isLoading}
-                    className="px-6 py-3 border-4 border-black bg-gray-200 text-black font-bold hover:bg-gray-300 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="px-6 py-3 border-4 border-black bg-black text-white font-bold hover:bg-gray-800 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? "Creando..." : "Crear Categoría"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </BrutalFormModal>
   );
 }
