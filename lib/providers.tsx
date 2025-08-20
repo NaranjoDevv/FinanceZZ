@@ -4,16 +4,19 @@ import React from "react";
 import { ClerkProvider, useAuth } from "@clerk/nextjs";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { useRouter } from "next/navigation";
 
 // Inicializa el cliente Convex usando tu URL pública
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  
   return (
     <ClerkProvider
-      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      signInUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL}
-      signUpUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
+      routerPush={(to: string) => router.push(to)}
+      routerReplace={(to: string) => router.replace(to)}
     >
       <ConvexWithClerk>{children}</ConvexWithClerk>
     </ClerkProvider>

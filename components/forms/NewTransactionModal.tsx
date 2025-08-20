@@ -67,7 +67,7 @@ export default function NewTransactionModal({
     description: "",
     categoryId: null,
     subcategoryId: null,
-    date: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().split("T")[0] || "",
     notes: "",
     tags: "",
   });
@@ -88,9 +88,9 @@ export default function NewTransactionModal({
 
   const subcategories = useQuery(
     api.categories.getSubcategories,
-    currentUser?._id ? {
+    currentUser?._id && formData.categoryId ? {
       userId: currentUser._id,
-      categoryId: formData.categoryId || undefined
+      categoryId: formData.categoryId
     } : "skip"
   ) || [];
 
@@ -140,17 +140,44 @@ export default function NewTransactionModal({
     setIsSubmitting(true);
 
     try {
-      await createTransaction({
+      const transactionData: {
+        userId: Id<"users">;
+        type: "income" | "expense";
+        amount: number;
+        description: string;
+        date: number;
+        categoryId?: Id<"categories">;
+        subcategoryId?: Id<"subcategories">;
+        notes?: string;
+        tags?: string;
+      } = {
         userId: currentUser._id,
         type: formData.type,
         amount: parseFloat(formData.amount),
         description: formData.description,
-        categoryId: formData.categoryId || undefined,
-        subcategoryId: formData.subcategoryId || undefined,
-        date: new Date(formData.date).getTime(),
-        notes: formData.notes || undefined,
-        tags: formData.tags ? formData.tags.split(",").map(tag => tag.trim()).filter(tag => tag).join(",") : undefined,
-      });
+        date: new Date(formData.date).getTime()
+      };
+      
+      if (formData.categoryId) {
+        transactionData.categoryId = formData.categoryId;
+      }
+      
+      if (formData.subcategoryId) {
+        transactionData.subcategoryId = formData.subcategoryId;
+      }
+      
+      if (formData.notes) {
+        transactionData.notes = formData.notes;
+      }
+      
+      if (formData.tags) {
+        const processedTags = formData.tags.split(",").map(tag => tag.trim()).filter(tag => tag).join(",");
+        if (processedTags) {
+          transactionData.tags = processedTags;
+        }
+      }
+      
+      await createTransaction(transactionData);
 
       setFormData({
         type: "expense",
@@ -158,7 +185,7 @@ export default function NewTransactionModal({
         description: "",
         categoryId: null,
         subcategoryId: null,
-        date: new Date().toISOString().split("T")[0],
+        date: new Date().toISOString().split("T")[0] || "",
         notes: "",
         tags: "",
       });

@@ -123,18 +123,32 @@ export const createOrUpdateUser = mutation({
       return existingUser._id;
     } else {
       // Crear nuevo usuario
-      const userId = await ctx.db.insert("users", {
+      const userData: {
+        tokenIdentifier: string;
+        email: string;
+        name: string;
+        plan: "free" | "pro" | "enterprise";
+        onboardingCompleted: boolean;
+        currency: string;
+        numberRounding: boolean;
+        timezone: string;
+        language: string;
+        imageUrl?: string;
+      } = {
         tokenIdentifier: args.tokenIdentifier,
         email: args.email,
         name: args.name,
-        imageUrl: args.imageUrl,
         plan: "free",
         onboardingCompleted: false,
         currency: "USD",
         numberRounding: false,
         timezone: "UTC",
         language: "en",
-      });
+      };
+
+      if (args.imageUrl) userData.imageUrl = args.imageUrl;
+
+      const userId = await ctx.db.insert("users", userData);
       return userId;
     }
   },
@@ -221,10 +235,18 @@ export const updateUserPlan = mutation({
       throw new Error("Usuario no encontrado");
     }
 
-    await ctx.db.patch(user._id, {
+    const updateData: {
+      plan: "free" | "pro" | "enterprise";
+      subscribedSince?: number;
+    } = {
       plan: args.plan,
-      subscribedSince: args.plan !== "free" ? Date.now() : undefined,
-    });
+    };
+
+    if (args.plan !== "free") {
+      updateData.subscribedSince = Date.now();
+    }
+
+    await ctx.db.patch(user._id, updateData);
 
     return user._id;
   },

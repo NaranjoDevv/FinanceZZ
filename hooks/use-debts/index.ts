@@ -21,11 +21,20 @@ export function useDebts(filters?: DebtFilters) {
   // Get user debts
   const debts = useQuery(
     api.debts.getUserDebts,
-    currentUser?._id ? {
-      userId: currentUser._id,
-      type: filters?.type,
-      status: filters?.status
-    } : "skip"
+    currentUser?._id ? (() => {
+      const queryArgs: {
+        userId: Id<"users">;
+        type?: "owes_me" | "i_owe";
+        status?: "open" | "paid" | "overdue" | "partially_paid";
+      } = {
+        userId: currentUser._id,
+      };
+      
+      if (filters?.type) queryArgs.type = filters.type;
+      if (filters?.status) queryArgs.status = filters.status;
+      
+      return queryArgs;
+    })() : "skip"
   );
   
   // Get debt statistics

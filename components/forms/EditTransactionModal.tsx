@@ -83,7 +83,7 @@ export default function EditTransactionModal({
     type: "expense",
     categoryId: "",
     subcategoryId: "",
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0] || "",
     notes: "",
     tags: ""
   });
@@ -97,7 +97,7 @@ export default function EditTransactionModal({
         type: transaction.type,
         categoryId: transaction.category?._id || "",
         subcategoryId: transaction.subcategory?._id || "",
-        date: new Date(transaction.date).toISOString().split('T')[0],
+        date: new Date(transaction.date).toISOString().split('T')[0] || "",
         notes: transaction.notes || "",
         tags: transaction.tags || ""
       });
@@ -110,18 +110,44 @@ export default function EditTransactionModal({
 
     try {
       setIsSubmitting(true);
-      await updateTransaction({
+      
+      const updateData: {
+        id: Id<"transactions">;
+        userId: Id<"users">;
+        description: string;
+        amount: number;
+        type: 'income' | 'expense' | 'debt_payment' | 'loan_received';
+        date: number;
+        categoryId?: Id<"categories">;
+        subcategoryId?: Id<"subcategories">;
+        notes?: string;
+        tags?: string;
+      } = {
         id: transaction._id as Id<"transactions">,
         userId: currentUser._id,
         description: formData.description,
         amount: parseFloat(formData.amount),
         type: formData.type,
-        categoryId: formData.categoryId ? formData.categoryId as Id<"categories"> : undefined,
-        subcategoryId: formData.subcategoryId ? formData.subcategoryId as Id<"subcategories"> : undefined,
-        date: new Date(formData.date).getTime(),
-        notes: formData.notes || undefined,
-        tags: formData.tags || undefined
-      });
+        date: new Date(formData.date).getTime()
+      };
+      
+      if (formData.categoryId) {
+        updateData.categoryId = formData.categoryId as Id<"categories">;
+      }
+      
+      if (formData.subcategoryId) {
+        updateData.subcategoryId = formData.subcategoryId as Id<"subcategories">;
+      }
+      
+      if (formData.notes) {
+        updateData.notes = formData.notes;
+      }
+      
+      if (formData.tags) {
+        updateData.tags = formData.tags;
+      }
+      
+      await updateTransaction(updateData);
       onClose();
     } catch (error) {
       console.error("Error updating transaction:", error);

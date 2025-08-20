@@ -94,7 +94,7 @@ export default function EditReminderModal({ isOpen, onClose, reminder }: EditRem
       
       // Convertir timestamp a fecha y hora
       const date = new Date(reminder.dueDate);
-      setDueDate(date.toISOString().split('T')[0]);
+      setDueDate(date.toISOString().split('T')[0] || "");
       setDueTime(date.toTimeString().slice(0, 5));
       
       setPriority(reminder.priority);
@@ -126,19 +126,42 @@ export default function EditReminderModal({ isOpen, onClose, reminder }: EditRem
       // Combinar fecha y hora
       const dateTime = new Date(`${dueDate}T${dueTime || '09:00'}`);
       
-      await updateReminder({
+      const updateData: {
+        id: Id<"reminders">;
+        title: string;
+        dueDate: number;
+        priority: "low" | "medium" | "high" | "urgent";
+        status: "pending" | "completed" | "cancelled";
+        category: "debt" | "payment" | "meeting" | "task" | "other";
+        isRecurring: boolean;
+        description?: string;
+        relatedDebtId?: Id<"debts">;
+        relatedContactId?: Id<"contacts">;
+        recurringFrequency?: "daily" | "weekly" | "monthly" | "yearly";
+      } = {
         id: reminder._id,
         title: title.trim(),
-        description: description.trim() || undefined,
         dueDate: dateTime.getTime(),
         priority,
         status,
         category,
-        relatedDebtId: relatedDebtId ? relatedDebtId as Id<"debts"> : undefined,
-        relatedContactId: relatedContactId ? relatedContactId as Id<"contacts"> : undefined,
         isRecurring,
-        recurringFrequency: isRecurring ? recurringFrequency : undefined,
-      });
+      };
+
+      if (description.trim()) {
+        updateData.description = description.trim();
+      }
+      if (relatedDebtId) {
+        updateData.relatedDebtId = relatedDebtId as Id<"debts">;
+      }
+      if (relatedContactId) {
+        updateData.relatedContactId = relatedContactId as Id<"contacts">;
+      }
+      if (isRecurring && recurringFrequency) {
+        updateData.recurringFrequency = recurringFrequency;
+      }
+
+      await updateReminder(updateData);
 
       toast.success("Recordatorio actualizado exitosamente");
       onClose();
@@ -153,19 +176,42 @@ export default function EditReminderModal({ isOpen, onClose, reminder }: EditRem
   const handleMarkCompleted = async () => {
     setIsLoading(true);
     try {
-      await updateReminder({
+      const updateData: {
+        id: Id<"reminders">;
+        title: string;
+        dueDate: number;
+        priority: "low" | "medium" | "high" | "urgent";
+        status: "pending" | "completed" | "cancelled";
+        category: "debt" | "payment" | "meeting" | "task" | "other";
+        isRecurring: boolean;
+        description?: string;
+        relatedDebtId?: Id<"debts">;
+        relatedContactId?: Id<"contacts">;
+        recurringFrequency?: "daily" | "weekly" | "monthly" | "yearly";
+      } = {
         id: reminder._id,
         title: reminder.title,
-        description: reminder.description,
         dueDate: reminder.dueDate,
         priority: reminder.priority,
         status: "completed",
         category: reminder.category,
-        relatedDebtId: reminder.relatedDebtId,
-        relatedContactId: reminder.relatedContactId,
         isRecurring: reminder.isRecurring,
-        recurringFrequency: reminder.recurringFrequency,
-      });
+      };
+
+      if (reminder.description) {
+        updateData.description = reminder.description;
+      }
+      if (reminder.relatedDebtId) {
+        updateData.relatedDebtId = reminder.relatedDebtId;
+      }
+      if (reminder.relatedContactId) {
+        updateData.relatedContactId = reminder.relatedContactId;
+      }
+      if (reminder.recurringFrequency) {
+        updateData.recurringFrequency = reminder.recurringFrequency;
+      }
+
+      await updateReminder(updateData);
       toast.success("Recordatorio marcado como completado");
       onClose();
     } catch (error) {

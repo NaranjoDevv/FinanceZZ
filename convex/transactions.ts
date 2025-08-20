@@ -142,20 +142,32 @@ export const createTransaction = mutation({
       }
     }
 
-    const transactionId = await ctx.db.insert("transactions", {
+    const transactionData: {
+      userId: Id<"users">;
+      type: "income" | "expense" | "debt_payment" | "loan_received";
+      amount: number;
+      description: string;
+      date: number;
+      isRecurring: boolean;
+      categoryId?: Id<"categories">;
+      subcategoryId?: Id<"subcategories">;
+      notes?: string;
+      tags?: string;
+    } = {
       userId: args.userId,
       type: args.type,
       amount: args.amount,
       description: args.description,
-      categoryId: args.categoryId,
-      subcategoryId: args.subcategoryId,
       date: args.date,
-      notes: args.notes,
-      tags: args.tags,
       isRecurring: false,
-      attachments: undefined,
-      debtId: undefined,
-    });
+    };
+
+    if (args.categoryId) transactionData.categoryId = args.categoryId;
+    if (args.subcategoryId) transactionData.subcategoryId = args.subcategoryId;
+    if (args.notes) transactionData.notes = args.notes;
+    if (args.tags) transactionData.tags = args.tags;
+
+    const transactionId = await ctx.db.insert("transactions", transactionData);
 
     return transactionId;
   },

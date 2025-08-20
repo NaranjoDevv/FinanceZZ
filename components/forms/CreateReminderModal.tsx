@@ -94,18 +94,32 @@ export default function CreateReminderModal({ isOpen, onClose }: CreateReminderM
         return;
       }
 
-      await createReminder({
+      const reminderData: {
+        userId: Id<"users">;
+        title: string;
+        description?: string;
+        dueDate: number;
+        priority: "low" | "medium" | "high" | "urgent";
+        category: "task" | "payment" | "meeting" | "debt" | "other";
+        relatedDebtId?: Id<"debts">;
+        relatedContactId?: Id<"contacts">;
+        isRecurring: boolean;
+        recurringFrequency?: "daily" | "weekly" | "monthly" | "yearly";
+      } = {
         userId: currentUser._id,
         title: title.trim(),
-        description: description.trim() || undefined,
         dueDate: dateTime.getTime(),
         priority,
         category,
-        relatedDebtId: relatedDebtId ? relatedDebtId as Id<"debts"> : undefined,
-        relatedContactId: relatedContactId ? relatedContactId as Id<"contacts"> : undefined,
         isRecurring,
-        recurringFrequency: isRecurring ? recurringFrequency : undefined,
-      });
+      };
+      
+      if (description.trim()) reminderData.description = description.trim();
+      if (relatedDebtId) reminderData.relatedDebtId = relatedDebtId as Id<"debts">;
+      if (relatedContactId) reminderData.relatedContactId = relatedContactId as Id<"contacts">;
+      if (isRecurring && recurringFrequency) reminderData.recurringFrequency = recurringFrequency;
+      
+      await createReminder(reminderData);
 
       toast.success("Recordatorio creado exitosamente");
       handleClose();

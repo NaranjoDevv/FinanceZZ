@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,14 +51,24 @@ export default function CreateContactModal({
 
     setIsSubmitting(true);
     try {
-      await createContact({
+      const contactData: {
+        userId: Id<"users">;
+        name: string;
+        email?: string;
+        phone?: string;
+        address?: string;
+        notes?: string;
+      } = {
         userId: currentUser._id,
         name: formData.name.trim(),
-        email: formData.email.trim() || undefined,
-        phone: formData.phone.trim() || undefined,
-        address: formData.address.trim() || undefined,
-        notes: formData.notes.trim() || undefined,
-      });
+      };
+      
+      if (formData.email.trim()) contactData.email = formData.email.trim();
+      if (formData.phone.trim()) contactData.phone = formData.phone.trim();
+      if (formData.address.trim()) contactData.address = formData.address.trim();
+      if (formData.notes.trim()) contactData.notes = formData.notes.trim();
+      
+      await createContact(contactData);
       
       toast.success("Contacto creado exitosamente");
       setFormData({

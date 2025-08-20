@@ -105,20 +105,36 @@ export const createDebt = mutation({
       throw new Error("Counterparty name is required");
     }
 
-    const debtId = await ctx.db.insert("debts", {
+    const debtData: {
+      userId: Id<"users">;
+      type: "owes_me" | "i_owe";
+      originalAmount: number;
+      currentAmount: number;
+      description: string;
+      counterpartyName: string;
+      startDate: number;
+      status: "open";
+      counterpartyContact?: string;
+      dueDate?: number;
+      notes?: string;
+      interestRate?: number;
+    } = {
       userId: args.userId,
       type: args.type,
       originalAmount: args.amount,
       currentAmount: args.amount,
       description: args.description.trim(),
       counterpartyName: args.counterpartyName.trim(),
-      counterpartyContact: args.counterpartyContact?.trim(),
       startDate: Date.now(),
-      dueDate: args.dueDate,
-      notes: args.notes?.trim(),
-      interestRate: args.interestRate,
       status: "open",
-    });
+    };
+
+    if (args.counterpartyContact?.trim()) debtData.counterpartyContact = args.counterpartyContact.trim();
+    if (args.dueDate) debtData.dueDate = args.dueDate;
+    if (args.notes?.trim()) debtData.notes = args.notes.trim();
+    if (args.interestRate) debtData.interestRate = args.interestRate;
+
+    const debtId = await ctx.db.insert("debts", debtData);
 
     return debtId;
   },

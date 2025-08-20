@@ -72,14 +72,24 @@ export default function EditContactModal({
 
     setIsSubmitting(true);
     try {
-      await updateContact({
+      const updateData: {
+        id: Id<"contacts">;
+        name: string;
+        email?: string;
+        phone?: string;
+        address?: string;
+        notes?: string;
+      } = {
         id: contact._id,
         name: formData.name.trim(),
-        email: formData.email.trim() || undefined,
-        phone: formData.phone.trim() || undefined,
-        address: formData.address.trim() || undefined,
-        notes: formData.notes.trim() || undefined,
-      });
+      };
+      
+      if (formData.email.trim()) updateData.email = formData.email.trim();
+      if (formData.phone.trim()) updateData.phone = formData.phone.trim();
+      if (formData.address.trim()) updateData.address = formData.address.trim();
+      if (formData.notes.trim()) updateData.notes = formData.notes.trim();
+      
+      await updateContact(updateData);
       
       toast.success("Contacto actualizado exitosamente");
       onClose();

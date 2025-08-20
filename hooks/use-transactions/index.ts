@@ -29,11 +29,20 @@ export function useTransactions(filters?: TransactionFilters) {
   // Get transaction statistics
   const stats = useQuery(
     api.transactions.getTransactionStats,
-    currentUser?._id ? {
-      userId: currentUser._id,
-      startDate: filters?.startDate,
-      endDate: filters?.endDate
-    } : "skip"
+    currentUser?._id ? (() => {
+      const queryArgs: {
+        userId: Id<"users">;
+        startDate?: number;
+        endDate?: number;
+      } = {
+        userId: currentUser._id,
+      };
+      
+      if (filters?.startDate) queryArgs.startDate = filters.startDate;
+      if (filters?.endDate) queryArgs.endDate = filters.endDate;
+      
+      return queryArgs;
+    })() : "skip"
   );
   
   const isLoading = !user || currentUser === undefined || 

@@ -103,7 +103,7 @@ export default function EditDebtModal({
         description: debt.description,
         counterpartyName: debt.counterpartyName,
         counterpartyContact: debt.counterpartyContact || "",
-        dueDate: debt.dueDate ? new Date(debt.dueDate).toISOString().split('T')[0] : "",
+        dueDate: debt.dueDate ? new Date(debt.dueDate).toISOString().split('T')[0] || "" : "",
         notes: debt.notes || "",
         interestRate: debt.interestRate?.toString() || "",
         status: debt.status
@@ -157,7 +157,20 @@ export default function EditDebtModal({
     setIsSubmitting(true);
 
     try {
-      await updateDebt({
+      const updateData: {
+        id: Id<"debts">;
+        userId: Id<"users">;
+        type: 'owes_me' | 'i_owe';
+        originalAmount: number;
+        currentAmount: number;
+        description: string;
+        counterpartyName: string;
+        status: 'open' | 'paid' | 'overdue' | 'partially_paid';
+        counterpartyContact?: string;
+        dueDate?: number;
+        notes?: string;
+        interestRate?: number;
+      } = {
         id: debt._id as Id<"debts">,
         userId: currentUser._id,
         type: formData.type,
@@ -165,12 +178,23 @@ export default function EditDebtModal({
         currentAmount: parseFloat(formData.currentAmount),
         description: formData.description.trim(),
         counterpartyName: formData.counterpartyName.trim(),
-        counterpartyContact: formData.counterpartyContact.trim() || undefined,
-        dueDate: formData.dueDate ? new Date(formData.dueDate).getTime() : undefined,
-        notes: formData.notes.trim() || undefined,
-        interestRate: formData.interestRate ? parseFloat(formData.interestRate) : undefined,
         status: formData.status,
-      });
+      };
+
+      if (formData.counterpartyContact.trim()) {
+        updateData.counterpartyContact = formData.counterpartyContact.trim();
+      }
+      if (formData.dueDate) {
+        updateData.dueDate = new Date(formData.dueDate).getTime();
+      }
+      if (formData.notes.trim()) {
+        updateData.notes = formData.notes.trim();
+      }
+      if (formData.interestRate) {
+        updateData.interestRate = parseFloat(formData.interestRate);
+      }
+
+      await updateDebt(updateData);
 
       onClose();
     } catch (error) {

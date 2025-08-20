@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import {
   Dialog,
   DialogContent,
@@ -112,17 +113,41 @@ export default function NewDebtModal({
     setIsSubmitting(true);
 
     try {
-      await createDebt({
+      const debtData: {
+        userId: Id<"users">;
+        type: "owes_me" | "i_owe";
+        amount: number;
+        description: string;
+        counterpartyName: string;
+        counterpartyContact?: string;
+        dueDate?: number;
+        notes?: string;
+        interestRate?: number;
+      } = {
         userId: currentUser._id,
         type: formData.type,
         amount: parseFloat(formData.amount),
         description: formData.description.trim(),
-        counterpartyName: formData.counterpartyName.trim(),
-        counterpartyContact: formData.counterpartyContact.trim() || undefined,
-        dueDate: formData.dueDate ? new Date(formData.dueDate).getTime() : undefined,
-        notes: formData.notes.trim() || undefined,
-        interestRate: formData.interestRate ? parseFloat(formData.interestRate) : undefined,
-      });
+        counterpartyName: formData.counterpartyName.trim()
+      };
+      
+      if (formData.counterpartyContact.trim()) {
+        debtData.counterpartyContact = formData.counterpartyContact.trim();
+      }
+      
+      if (formData.dueDate) {
+        debtData.dueDate = new Date(formData.dueDate).getTime();
+      }
+      
+      if (formData.notes.trim()) {
+        debtData.notes = formData.notes.trim();
+      }
+      
+      if (formData.interestRate) {
+        debtData.interestRate = parseFloat(formData.interestRate);
+      }
+      
+      await createDebt(debtData);
 
       // Reset form
       setFormData({

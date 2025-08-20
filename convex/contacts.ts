@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 // Obtener todos los contactos del usuario
 export const getContacts = query({
@@ -59,17 +60,30 @@ export const createContact = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    return await ctx.db.insert("contacts", {
+    const contactData: {
+      userId: Id<"users">;
+      name: string;
+      createdAt: number;
+      updatedAt: number;
+      email?: string;
+      phone?: string;
+      address?: string;
+      notes?: string;
+      avatar?: string;
+    } = {
       userId: args.userId,
       name: args.name,
-      email: args.email,
-      phone: args.phone,
-      address: args.address,
-      notes: args.notes,
-      avatar: args.avatar,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+
+    if (args.email) contactData.email = args.email;
+    if (args.phone) contactData.phone = args.phone;
+    if (args.address) contactData.address = args.address;
+    if (args.notes) contactData.notes = args.notes;
+    if (args.avatar) contactData.avatar = args.avatar;
+
+    return await ctx.db.insert("contacts", contactData);
   },
 });
 
@@ -93,15 +107,26 @@ export const updateContact = mutation({
       throw new Error("Contacto no encontrado");
     }
 
-    await ctx.db.patch(args.id, {
+    const updateData: {
+      name: string;
+      updatedAt: number;
+      email?: string;
+      phone?: string;
+      address?: string;
+      notes?: string;
+      avatar?: string;
+    } = {
       name: args.name,
-      email: args.email,
-      phone: args.phone,
-      address: args.address,
-      notes: args.notes,
-      avatar: args.avatar,
       updatedAt: Date.now(),
-    });
+    };
+
+    if (args.email) updateData.email = args.email;
+    if (args.phone) updateData.phone = args.phone;
+    if (args.address) updateData.address = args.address;
+    if (args.notes) updateData.notes = args.notes;
+    if (args.avatar) updateData.avatar = args.avatar;
+
+    await ctx.db.patch(args.id, updateData);
   },
 });
 

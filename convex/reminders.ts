@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 // Obtener todos los recordatorios del usuario
 export const getReminders = query({
@@ -86,21 +87,38 @@ export const createReminder = mutation({
 
     const now = Date.now();
 
-    return await ctx.db.insert("reminders", {
+    const reminderData: {
+      userId: Id<"users">;
+      title: string;
+      dueDate: number;
+      priority: "low" | "medium" | "high" | "urgent";
+      status: "pending";
+      category: "debt" | "payment" | "meeting" | "task" | "other";
+      isRecurring: boolean;
+      createdAt: number;
+      updatedAt: number;
+      description?: string;
+      relatedDebtId?: Id<"debts">;
+      relatedContactId?: Id<"contacts">;
+      recurringFrequency?: "daily" | "weekly" | "monthly" | "yearly";
+    } = {
       userId: args.userId,
       title: args.title,
-      description: args.description,
       dueDate: args.dueDate,
       priority: args.priority,
       status: "pending",
       category: args.category,
-      relatedDebtId: args.relatedDebtId,
-      relatedContactId: args.relatedContactId,
       isRecurring: args.isRecurring,
-      recurringFrequency: args.recurringFrequency,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+
+    if (args.description) reminderData.description = args.description;
+    if (args.relatedDebtId) reminderData.relatedDebtId = args.relatedDebtId;
+    if (args.relatedContactId) reminderData.relatedContactId = args.relatedContactId;
+    if (args.recurringFrequency) reminderData.recurringFrequency = args.recurringFrequency;
+
+    return await ctx.db.insert("reminders", reminderData);
   },
 });
 
@@ -128,19 +146,34 @@ export const updateReminder = mutation({
       throw new Error("Recordatorio no encontrado");
     }
 
-    await ctx.db.patch(args.id, {
+    const updateData: {
+      title: string;
+      dueDate: number;
+      priority: "low" | "medium" | "high" | "urgent";
+      status: "pending" | "completed" | "cancelled";
+      category: "debt" | "payment" | "meeting" | "task" | "other";
+      isRecurring: boolean;
+      updatedAt: number;
+      description?: string;
+      relatedDebtId?: Id<"debts">;
+      relatedContactId?: Id<"contacts">;
+      recurringFrequency?: "daily" | "weekly" | "monthly" | "yearly";
+    } = {
       title: args.title,
-      description: args.description,
       dueDate: args.dueDate,
       priority: args.priority,
       status: args.status,
       category: args.category,
-      relatedDebtId: args.relatedDebtId,
-      relatedContactId: args.relatedContactId,
       isRecurring: args.isRecurring,
-      recurringFrequency: args.recurringFrequency,
       updatedAt: Date.now(),
-    });
+    };
+
+    if (args.description) updateData.description = args.description;
+    if (args.relatedDebtId) updateData.relatedDebtId = args.relatedDebtId;
+    if (args.relatedContactId) updateData.relatedContactId = args.relatedContactId;
+    if (args.recurringFrequency) updateData.recurringFrequency = args.recurringFrequency;
+
+    await ctx.db.patch(args.id, updateData);
   },
 });
 
