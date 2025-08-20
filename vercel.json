@@ -2,22 +2,13 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "env": {
-    "NEXT_PUBLIC_CONVEX_URL": "@convex_url",
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "@clerk_publishable_key",
-    "CLERK_SECRET_KEY": "@clerk_secret_key",
-    "NEXT_PUBLIC_CLERK_SIGN_IN_URL": "/sign-in",
-    "NEXT_PUBLIC_CLERK_SIGN_UP_URL": "/sign-up",
-    "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL": "/dashboard",
-    "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL": "/dashboard",
-    "CONVEX_DEPLOY_KEY": "@convex_deploy_key",
-    "CLERK_JWT_ISSUER_DOMAIN": "@clerk_jwt_issuer_domain"
-  },
   "functions": {
     "app/**/*.{js,ts,tsx}": {
       "maxDuration": 30
     }
   },
-  "regions": ["iad1"],
+  "regions": [
+    "iad1"
+  ],
   "outputDirectory": ".next"
 }
