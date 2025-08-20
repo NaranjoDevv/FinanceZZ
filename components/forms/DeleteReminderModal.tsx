@@ -3,10 +3,17 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Trash2, AlertTriangle, Clock } from "lucide-react";
+import { 
+  TrashIcon, 
+  ExclamationTriangleIcon, 
+  ClockIcon, 
+  XMarkIcon,
+  CreditCardIcon,
+  UserGroupIcon,
+  ClipboardDocumentListIcon,
+  DocumentTextIcon
+} from "@heroicons/react/24/outline";
 import { Id } from "@/convex/_generated/dataModel";
 
 interface Reminder {
@@ -81,11 +88,11 @@ export default function DeleteReminderModal({ isOpen, onClose, reminder }: Delet
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case "debt": return "💰";
-      case "payment": return "💳";
-      case "meeting": return "👥";
-      case "task": return "📋";
-      default: return "📝";
+      case "debt": return <CreditCardIcon className="h-8 w-8 text-gray-600" />;
+      case "payment": return <CreditCardIcon className="h-8 w-8 text-gray-600" />;
+      case "meeting": return <UserGroupIcon className="h-8 w-8 text-gray-600" />;
+      case "task": return <ClipboardDocumentListIcon className="h-8 w-8 text-gray-600" />;
+      default: return <DocumentTextIcon className="h-8 w-8 text-gray-600" />;
     }
   };
 
@@ -108,110 +115,135 @@ export default function DeleteReminderModal({ isOpen, onClose, reminder }: Delet
     }
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] bg-[#f5f5dc] border-4 border-black shadow-[8px_8px_0px_0px_#000]">
-        <DialogHeader className="border-b-4 border-black pb-4 mb-6">
-          <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-red-600">
-            <div className="p-2 bg-red-600 text-white rounded-lg">
-              <Trash2 className="h-5 w-5" />
-            </div>
-            Eliminar Recordatorio
-          </DialogTitle>
-        </DialogHeader>
+  if (!isOpen) return null;
 
-        <div className="space-y-6">
-          {/* Advertencia */}
-          <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <h3 className="font-bold text-red-800">¡Atención!</h3>
+  return (
+    <>
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
+      
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="bg-red-500 border-b-4 border-black p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-black border-2 border-white">
+                  <TrashIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-white uppercase tracking-wide">Eliminar Recordatorio</h2>
+                  <p className="text-red-100 text-sm font-bold">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+              
+              <button
+                onClick={onClose}
+                className="p-2 bg-black border-2 border-white hover:bg-white hover:text-black transition-colors font-black"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
             </div>
-            <p className="text-red-700 text-sm">
-              Esta acción no se puede deshacer. El recordatorio será eliminado permanentemente.
-            </p>
           </div>
 
-          {/* Información del recordatorio */}
-          <div className="bg-white p-6 rounded-lg border-2 border-black">
-            <div className="flex items-start gap-4">
-              <div className="text-3xl">{getCategoryIcon(reminder.category)}</div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-bold text-black text-lg">{reminder.title}</h3>
-                  <div className={`px-2 py-1 rounded text-xs font-bold text-white ${getPriorityColor(reminder.priority)}`}>
-                    {getPriorityText(reminder.priority)}
-                  </div>
+          <div className="p-6 space-y-6">
+            {/* Advertencia */}
+            <div className="bg-red-100 border-4 border-red-500 p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
+                <h3 className="font-black text-red-800 uppercase tracking-wide">¡Atención!</h3>
+              </div>
+              <p className="text-red-700 text-sm font-bold">
+                Esta acción no se puede deshacer. El recordatorio será eliminado permanentemente.
+              </p>
+            </div>
+
+            {/* Información del recordatorio */}
+            <div className="bg-gray-100 border-4 border-black p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-white border-2 border-black">
+                  {getCategoryIcon(reminder.category)}
                 </div>
-                
-                {reminder.description && (
-                  <p className="text-gray-600 mb-3">{reminder.description}</p>
-                )}
-                
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">
-                      Vencimiento: {formatDate(reminder.dueDate)}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <span className="text-gray-600">
-                      Categoría: {getCategoryText(reminder.category)}
-                    </span>
-                    <span className="text-gray-600">
-                      Estado: {getStatusText(reminder.status)}
-                    </span>
-                  </div>
-                  
-                  {reminder.isRecurring && (
-                    <div className="text-gray-600">
-                      Recurrente: {reminder.recurringFrequency}
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-black text-gray-900 text-lg uppercase tracking-wide">{reminder.title}</h3>
+                    <div className={`px-3 py-1 border-2 border-black text-xs font-black text-white uppercase tracking-wide ${getPriorityColor(reminder.priority)}`}>
+                      {getPriorityText(reminder.priority)}
                     </div>
+                  </div>
+                  
+                  {reminder.description && (
+                    <p className="text-gray-600 mb-3 font-bold">
+                      {reminder.description}
+                    </p>
                   )}
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <ClockIcon className="h-4 w-4 text-gray-500" />
+                      <span className="text-gray-600 font-bold">
+                        Vencimiento: {formatDate(reminder.dueDate)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <span className="text-gray-600 font-bold">
+                        Categoría: {getCategoryText(reminder.category)}
+                      </span>
+                      <span className="text-gray-600 font-bold">
+                        Estado: {getStatusText(reminder.status)}
+                      </span>
+                    </div>
+                    
+                    {reminder.isRecurring && (
+                      <div className="text-gray-600 font-bold">
+                        Recurrente: {reminder.recurringFrequency}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Confirmación */}
-          <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
-            <p className="text-gray-700 text-sm text-center">
-              ¿Estás seguro de que deseas eliminar el recordatorio <strong>&quot;{reminder.title}&quot;</strong>?
-            </p>
-          </div>
+            {/* Confirmación */}
+            <div className="bg-yellow-100 border-4 border-yellow-500 p-4">
+              <p className="text-gray-700 text-sm text-center font-black uppercase tracking-wide">
+                ¿Estás seguro de que deseas eliminar el recordatorio <strong>&quot;{reminder.title}&quot;</strong>?
+              </p>
+            </div>
 
-          {/* Botones */}
-          <div className="flex gap-4 pt-4 border-t-4 border-black">
-            <Button
-              onClick={onClose}
-              variant="outline"
-              className="flex-1 brutal-button"
-              disabled={isLoading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleDelete}
-              className="flex-1 brutal-button bg-red-600 text-white hover:bg-red-700"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Eliminando...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Trash2 className="h-4 w-4" />
-                  Eliminar Recordatorio
-                </div>
-              )}
-            </Button>
+            {/* Botones */}
+            <div className="flex gap-4 pt-6 border-t-4 border-black">
+              <button
+                onClick={onClose}
+                className="flex-1 h-12 bg-white border-4 border-black hover:bg-gray-100 font-black uppercase tracking-wide transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+                disabled={isLoading}
+              >
+                Cancelar
+              </button>
+              
+              <button
+                onClick={handleDelete}
+                className="flex-1 h-12 bg-red-500 border-4 border-black text-white hover:bg-red-600 font-black uppercase tracking-wide transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Eliminando...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <TrashIcon className="h-4 w-4" />
+                    Eliminar Recordatorio
+                  </div>
+                )}
+              </button>
+            </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </>
   );
 }
