@@ -6,9 +6,9 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   ExclamationTriangleIcon,
-  XMarkIcon,
   TrashIcon
 } from "@heroicons/react/24/outline";
+import { X } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
@@ -87,22 +87,35 @@ export default function DeleteTransactionModal({
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 bg-red-500 text-white border-b-4 border-black">
-                <div className="flex items-center gap-3">
+              <motion.div 
+                className="flex items-center justify-between p-6 bg-gradient-to-r from-red-500 to-red-600 text-white border-b-4 border-black"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.div 
+                  className="flex items-center gap-3"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3 }}
+                >
                   <ExclamationTriangleIcon className="w-6 h-6" />
                   <h2 className="text-xl font-black uppercase tracking-wider">
                     Eliminar Transacción
                   </h2>
-                </div>
+                </motion.div>
                 <motion.button
                   onClick={onClose}
-                  className="brutal-button p-2 bg-white text-black hover:bg-gray-100 transition-all duration-200"
+                  className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 group"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
                 >
-                  <XMarkIcon className="w-4 h-4" />
+                  <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
                 </motion.button>
-              </div>
+              </motion.div>
 
               {/* Decorative line */}
               <motion.div
@@ -119,24 +132,38 @@ export default function DeleteTransactionModal({
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.3 }}
               >
-                <div className="text-center space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-red-100 rounded-none flex items-center justify-center">
+                <div className="text-center space-y-6">
+                  <motion.div 
+                    className="mx-auto w-16 h-16 bg-red-100 border-2 border-red-200 flex items-center justify-center"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
+                  >
                     <TrashIcon className="w-8 h-8 text-red-500" />
-                  </div>
+                  </motion.div>
                   
-                  <div>
-                    <h3 className="text-lg font-black uppercase tracking-wide mb-2">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.3 }}
+                  >
+                    <h3 className="text-lg font-black uppercase tracking-wide mb-2 text-gray-900">
                       ¿Estás seguro?
                     </h3>
                     <p className="text-gray-600 font-medium mb-4">
                       Esta acción no se puede deshacer. Se eliminará permanentemente la siguiente transacción:
                     </p>
-                  </div>
+                  </motion.div>
 
                   {/* Transaction Details */}
-                  <div className="bg-gray-50 border-2 border-gray-200 p-4 text-left">
+                  <motion.div 
+                    className="bg-gray-50 border-2 border-gray-200 p-4 text-left rounded-lg"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.3 }}
+                  >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-sm uppercase tracking-wide">
+                      <span className="font-bold text-sm uppercase tracking-wide text-gray-900">
                         {transaction.description}
                       </span>
                       <span className={`font-black text-lg ${
@@ -153,43 +180,57 @@ export default function DeleteTransactionModal({
                         {transaction.notes}
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 </div>
               </motion.div>
 
               {/* Actions */}
               <motion.div
-                className="flex gap-3 p-6 bg-gray-50 border-t-4 border-black"
+                className="flex gap-4 p-6 bg-gray-50 border-t-4 border-black"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.3 }}
+                transition={{ delay: 0.7, duration: 0.3 }}
               >
-                <Button
-                  type="button"
-                  onClick={onClose}
-                  className="brutal-button flex-1 bg-white text-black border-2 border-black hover:bg-gray-100"
-                  disabled={isDeleting}
+                <motion.div
+                  className="flex-1"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.8, duration: 0.3 }}
                 >
-                  Cancelar
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleDelete}
-                  className="brutal-button flex-1 bg-red-500 text-white hover:bg-red-600"
-                  disabled={isDeleting}
+                  <Button
+                    type="button"
+                    onClick={onClose}
+                    className="w-full px-6 py-3 bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 font-semibold transition-all duration-200 focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+                    disabled={isDeleting}
+                  >
+                    Cancelar
+                  </Button>
+                </motion.div>
+                <motion.div
+                  className="flex-1"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.9, duration: 0.3 }}
                 >
-                  {isDeleting ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Eliminando...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <TrashIcon className="w-4 h-4" />
-                      Eliminar
-                    </div>
-                  )}
-                </Button>
+                  <Button
+                    type="button"
+                    onClick={handleDelete}
+                    className="w-full px-6 py-3 bg-red-500 text-white hover:bg-red-600 font-semibold transition-all duration-200 focus:ring-2 focus:ring-red-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Eliminando...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2">
+                        <TrashIcon className="w-4 h-4" />
+                        <span>Eliminar</span>
+                      </div>
+                    )}
+                  </Button>
+                </motion.div>
               </motion.div>
             </motion.div>
           </motion.div>

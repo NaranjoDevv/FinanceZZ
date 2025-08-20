@@ -3,14 +3,11 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Trash2, AlertTriangle } from "lucide-react";
+  TrashIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
 
@@ -55,77 +52,129 @@ export default function DeleteContactModal({
     }
   };
 
-  // Clases CSS
-  const buttonClass = "min-h-[48px] py-3 px-6 flex items-center justify-center brutal-button";
+  // Clases CSS brutalistas
+  const buttonClass = "bg-blue-500 hover:bg-blue-600 text-white font-black py-4 px-6 border-4 border-black uppercase tracking-wider transform hover:scale-105 transition-all duration-200";
+
+  if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[400px] bg-[#f5f5dc] border-4 border-black shadow-[8px_8px_0px_0px_#000]">
-        <DialogHeader className="border-b-4 border-black pb-4 mb-6">
-          <DialogTitle className="text-2xl font-bold text-black flex items-center gap-3">
-            <div className="p-2 bg-red-600 text-white rounded-lg">
-              <Trash2 className="h-5 w-5" />
+    <>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+          <div className="relative w-full max-w-[450px] mx-4 bg-white border-4 border-black shadow-2xl">
+            {/* Header brutalista */}
+            <div className="bg-red-500 border-b-4 border-black px-6 py-5 relative">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-black border-2 border-black">
+                    <TrashIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-wide">
+                    Eliminar Contacto
+                  </h2>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 bg-black border-2 border-black hover:bg-gray-800 transition-colors"
+                  disabled={isDeleting}
+                >
+                  <XMarkIcon className="h-5 w-5 text-white" />
+                </button>
+              </div>
             </div>
-            Eliminar Contacto
-          </DialogTitle>
-        </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Warning */}
-          <div className="bg-red-50 border-2 border-red-600 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="font-bold text-red-800 mb-1">¡Atención!</h3>
-                <p className="text-sm text-red-700">
-                  Esta acción no se puede deshacer. El contacto será eliminado permanentemente.
-                </p>
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <div className="space-y-6">
+                {/* Mensaje de advertencia brutalista */}
+                <div className="bg-yellow-300 border-4 border-black p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-red-500 border-2 border-black">
+                      <ExclamationTriangleIcon className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-black text-black mb-3 text-xl uppercase tracking-wide">
+                        ¿Estás seguro?
+                      </h3>
+                      <p className="text-black font-bold text-base leading-relaxed">
+                        Esta acción no se puede deshacer. Se eliminará permanentemente el
+                        contacto y todos sus datos asociados.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información del contacto brutalista */}
+                {contact && (
+                  <div className="bg-gray-200 border-4 border-black p-6">
+                    <h4 className="font-black text-black mb-4 text-xl uppercase tracking-wide">
+                      Contacto a eliminar:
+                    </h4>
+                    <div className="space-y-3 text-base text-black">
+                      <div className="flex items-center gap-3">
+                        <span className="font-black text-black uppercase tracking-wide min-w-[80px]">
+                          Nombre:
+                        </span>
+                        <span className="font-bold text-black bg-white px-3 py-1 border-2 border-black">
+                          {contact.name}
+                        </span>
+                      </div>
+                      {contact.email && (
+                        <div className="flex items-center gap-3">
+                          <span className="font-black text-black uppercase tracking-wide min-w-[80px]">
+                            Email:
+                          </span>
+                          <span className="font-bold text-black bg-white px-3 py-1 border-2 border-black">
+                            {contact.email}
+                          </span>
+                        </div>
+                      )}
+                      {contact.phone && (
+                        <div className="flex items-center gap-3">
+                          <span className="font-black text-black uppercase tracking-wide min-w-[80px]">
+                            Teléfono:
+                          </span>
+                          <span className="font-bold text-black bg-white px-3 py-1 border-2 border-black">
+                            {contact.phone}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Botones brutalistas */}
+                <div className="flex gap-4 pt-6 border-t-4 border-black">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className={buttonClass + " flex-1 bg-gray-500 hover:bg-gray-600 text-white"}
+                    disabled={isDeleting}
+                  >
+                    CANCELAR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className={buttonClass + " flex-1 bg-red-500 hover:bg-red-600 text-white"}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ELIMINANDO...
+                      </div>
+                    ) : (
+                      "ELIMINAR"
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Contact Info */}
-          <div className="bg-white border-2 border-black rounded-lg p-4">
-            <h4 className="font-bold text-black mb-2">Contacto a eliminar:</h4>
-            <div className="space-y-1">
-              <p className="text-black font-medium">{contact.name}</p>
-              {contact.email && (
-                <p className="text-sm text-gray-600">{contact.email}</p>
-              )}
-              {contact.phone && (
-                <p className="text-sm text-gray-600">{contact.phone}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Confirmation */}
-          <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-4">
-            <p className="text-sm text-gray-700">
-              ¿Estás seguro de que deseas eliminar este contacto? Esta acción es irreversible.
-            </p>
-          </div>
-
-          {/* Botones */}
-          <div className="flex gap-4 pt-4 border-t-4 border-black">
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="outline"
-              className={`${buttonClass} flex-1`}
-              disabled={isDeleting}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleDelete}
-              className={`${buttonClass} flex-1 bg-red-600 text-white hover:bg-red-700`}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Eliminando..." : "Eliminar"}
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </>
   );
 }

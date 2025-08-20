@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -12,15 +11,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  PencilIcon,
-  XMarkIcon,
-  CurrencyDollarIcon,
-  DocumentTextIcon,
-  TagIcon,
-  CalendarIcon,
-  FolderIcon,
-  ChatBubbleLeftRightIcon
-} from "@heroicons/react/24/outline";
+  Edit,
+  X,
+  DollarSign,
+  FileText,
+  Tag,
+  Calendar,
+  Folder,
+  MessageSquare,
+  TrendingUp,
+  TrendingDown,
+  CreditCard,
+  Banknote
+} from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Category, Subcategory } from "@/hooks/use-categories";
@@ -110,13 +113,12 @@ export default function EditTransactionModal({
 
     try {
       setIsSubmitting(true);
-      
       const updateData: {
         id: Id<"transactions">;
         userId: Id<"users">;
         description: string;
         amount: number;
-        type: 'income' | 'expense' | 'debt_payment' | 'loan_received';
+        type: "income" | "expense" | "debt_payment" | "loan_received";
         date: number;
         categoryId?: Id<"categories">;
         subcategoryId?: Id<"subcategories">;
@@ -128,7 +130,7 @@ export default function EditTransactionModal({
         description: formData.description,
         amount: parseFloat(formData.amount),
         type: formData.type,
-        date: new Date(formData.date).getTime()
+        date: new Date(formData.date).getTime(),
       };
       
       if (formData.categoryId) {
@@ -156,20 +158,7 @@ export default function EditTransactionModal({
     }
   };
 
-  const buttonClass = (type: 'income' | 'expense') => {
-    const isSelected = formData.type === type;
-    const baseClass = "brutal-button flex-1 font-black uppercase tracking-wider transition-all duration-200";
-    
-    if (type === 'income') {
-      return `${baseClass} ${isSelected 
-        ? 'bg-green-500 text-white border-green-500' 
-        : 'bg-white text-green-500 border-green-500 hover:bg-green-50'}`;
-    } else {
-      return `${baseClass} ${isSelected 
-        ? 'bg-red-500 text-white border-red-500' 
-        : 'bg-white text-red-500 border-red-500 hover:bg-red-50'}`;
-    }
-  };
+
 
   const filteredSubcategories = subcategories?.filter(
     (sub: Subcategory) => sub.categoryId === formData.categoryId
@@ -197,30 +186,39 @@ export default function EditTransactionModal({
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 bg-blue-500 text-white border-b-4 border-black">
-                <div className="flex items-center gap-3">
-                  <PencilIcon className="w-6 h-6" />
-                  <h2 className="text-xl font-black uppercase tracking-wider">
-                    Editar Transacción
-                  </h2>
+              <motion.div
+                className="flex items-center justify-between p-6 bg-gradient-to-r from-emerald-500 to-blue-600 text-white relative overflow-hidden"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="absolute inset-0 bg-black/10" />
+                <div className="relative flex items-center gap-3">
+                  <motion.div
+                    initial={{ rotate: -10, scale: 0.8 }}
+                    animate={{ rotate: 0, scale: 1 }}
+                    transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                    className="p-2 bg-white/20 backdrop-blur-sm rounded-xl"
+                  >
+                    <Edit className="w-6 h-6" />
+                  </motion.div>
+                  <div>
+                    <h2 className="text-2xl font-bold">
+                      Editar Transacción
+                    </h2>
+                    <p className="text-emerald-100 text-sm">Modifica los detalles de tu transacción</p>
+                  </div>
                 </div>
-                <motion.button
+                <button
                   onClick={onClose}
-                  className="brutal-button p-2 bg-white text-black hover:bg-gray-100 transition-all duration-200"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors relative z-10"
                 >
-                  <XMarkIcon className="w-4 h-4" />
-                </motion.button>
-              </div>
+                  <X className="w-5 h-5" />
+                </button>
+              </motion.div>
 
               {/* Decorative line */}
-              <motion.div
-                className="w-full h-1 bg-black"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-              />
+              <div className="h-1 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500" />
 
               {/* Content */}
               <motion.div
@@ -231,42 +229,92 @@ export default function EditTransactionModal({
               >
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Transaction Type */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <DocumentTextIcon className="w-4 h-4" />
-                      Tipo de Transacción
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        type="button"
-                        variant={formData.type === "income" ? "default" : "outline"}
-                        className={buttonClass("income")}
-                        onClick={() => setFormData({ ...formData, type: "income" })}
-                      >
-                        + INGRESO
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={formData.type === "expense" ? "default" : "outline"}
-                        className={buttonClass("expense")}
-                        onClick={() => setFormData({ ...formData, type: "expense" })}
-                      >
-                        - GASTO
-                      </Button>
+                  <motion.div 
+                    className="space-y-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-100 rounded-lg">
+                        <CreditCard className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Tipo de Transacción
+                      </label>
                     </div>
-                  </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'income' })}
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 ${
+                          formData.type === 'income'
+                            ? 'border-green-500 bg-green-50 text-green-700'
+                            : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+                        }`}
+                      >
+                        <TrendingUp className="w-5 h-5" />
+                        <span className="font-medium">Ingreso</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'expense' })}
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 ${
+                          formData.type === 'expense'
+                            ? 'border-red-500 bg-red-50 text-red-700'
+                            : 'border-gray-300 hover:border-red-400 hover:bg-red-50'
+                        }`}
+                      >
+                        <TrendingDown className="w-5 h-5" />
+                        <span className="font-medium">Gasto</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'debt_payment' })}
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 ${
+                          formData.type === 'debt_payment'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                        }`}
+                      >
+                        <CreditCard className="w-5 h-5" />
+                        <span className="font-medium">Pago de Deuda</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'loan_received' })}
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 ${
+                          formData.type === 'loan_received'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        <Banknote className="w-5 h-5" />
+                        <span className="font-medium">Préstamo</span>
+                      </button>
+                    </div>
+                  </motion.div>
 
                   {/* Amount and Description */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <motion.div 
+                    className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.3 }}
+                  >
                     <div className="space-y-3">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                        <CurrencyDollarIcon className="w-4 h-4" />
-                        Monto *
-                      </label>
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <DollarSign className="w-5 h-5 text-green-600" />
+                        </div>
+                        <label className="text-lg font-bold text-gray-800">
+                          Monto *
+                        </label>
+                      </div>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-bold text-sm">
+                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-bold text-lg">
                           $
-                        </span>
+                        </div>
                         <input
                           type="number"
                           step="0.01"
@@ -274,40 +322,53 @@ export default function EditTransactionModal({
                           required
                           value={formData.amount}
                           onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                          className="brutal-input w-full pl-12 pr-4 py-3"
-                          placeholder="000"
+                          className="w-full pl-12 pr-4 py-4 text-lg font-semibold border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-200 bg-white"
+                          placeholder="0.00"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                        <DocumentTextIcon className="w-4 h-4" />
-                        Descripción *
-                      </label>
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <FileText className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <label className="text-lg font-bold text-gray-800">
+                          Descripción *
+                        </label>
+                      </div>
                       <input
                         type="text"
                         required
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        className="brutal-input w-full px-4 py-3"
+                        className="w-full px-4 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-white"
                         placeholder="¿En qué gastaste o ganaste?"
                       />
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Category and Subcategory */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                        <FolderIcon className="w-4 h-4" />
-                        Categoría
-                      </label>
+                  <motion.div 
+                    className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.3 }}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <Folder className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <label className="text-lg font-bold text-gray-800">
+                          Categoría
+                        </label>
+                      </div>
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => setFormData({ ...formData, categoryId: value, subcategoryId: "" })}
                       >
-                        <SelectTrigger className="brutal-input">
+                        <SelectTrigger className="w-full px-4 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-200 bg-white">
                           <SelectValue placeholder="Seleccionar categoría" />
                         </SelectTrigger>
                         <SelectContent>
@@ -320,17 +381,21 @@ export default function EditTransactionModal({
                       </Select>
                     </div>
 
-                    <div className="space-y-3">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                        <FolderIcon className="w-4 h-4" />
-                        Subcategoría
-                      </label>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-100 rounded-lg">
+                          <Folder className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <label className="text-lg font-bold text-gray-800">
+                          Subcategoría
+                        </label>
+                      </div>
                       <Select
                         value={formData.subcategoryId}
                         onValueChange={(value) => setFormData({ ...formData, subcategoryId: value })}
                         disabled={!formData.categoryId}
                       >
-                        <SelectTrigger className="brutal-input">
+                        <SelectTrigger className="w-full px-4 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all duration-200 bg-white">
                           <SelectValue placeholder="Sin subcategoría" />
                         </SelectTrigger>
                         <SelectContent>
@@ -342,88 +407,119 @@ export default function EditTransactionModal({
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Date */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <CalendarIcon className="w-4 h-4" />
-                      Fecha *
-                    </label>
+                  <motion.div 
+                    className="space-y-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <Calendar className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Fecha *
+                      </label>
+                    </div>
                     <input
                       type="date"
                       required
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="brutal-input w-full px-4 py-3"
+                      className="w-full px-4 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all duration-200 bg-white"
                     />
-                  </div>
+                  </motion.div>
 
                   {/* Notes and Tags */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                        <ChatBubbleLeftRightIcon className="w-4 h-4" />
-                        Notas
-                      </label>
+                  <motion.div 
+                    className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.3 }}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gray-100 rounded-lg">
+                          <MessageSquare className="w-5 h-5 text-gray-600" />
+                        </div>
+                        <label className="text-lg font-bold text-gray-800">
+                          Notas
+                        </label>
+                      </div>
                       <textarea
                         value={formData.notes}
                         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        className="brutal-input w-full px-4 py-3 h-24 resize-none"
+                        className="w-full px-4 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-gray-500 focus:ring-4 focus:ring-gray-100 transition-all duration-200 bg-white h-24 resize-none"
                         placeholder="Notas adicionales..."
                       />
                     </div>
 
-                    <div className="space-y-3">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                        <TagIcon className="w-4 h-4" />
-                        Etiquetas
-                      </label>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-pink-100 rounded-lg">
+                          <Tag className="w-5 h-5 text-pink-600" />
+                        </div>
+                        <label className="text-lg font-bold text-gray-800">
+                          Etiquetas
+                        </label>
+                      </div>
                       <input
                         type="text"
                         value={formData.tags}
                         onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                        className="brutal-input w-full px-4 py-3"
+                        className="w-full px-4 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-pink-500 focus:ring-4 focus:ring-pink-100 transition-all duration-200 bg-white"
                         placeholder="trabajo, personal, urgente"
                       />
                     </div>
-                  </div>
+                  </motion.div>
                 </form>
               </motion.div>
 
               {/* Actions */}
               <motion.div
-                className="flex gap-3 p-6 bg-gray-50 border-t-4 border-black"
+                className="flex gap-4 p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.3 }}
+                transition={{ delay: 0.6, duration: 0.3 }}
               >
-                <Button
+                <motion.button
                   type="button"
                   onClick={onClose}
-                  className="brutal-button flex-1 bg-white text-black border-2 border-black hover:bg-gray-100"
+                  className="flex-1 px-6 py-4 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 font-bold text-lg rounded-xl border-2 border-gray-300 hover:from-gray-200 hover:to-gray-300 hover:border-gray-400 transition-all duration-200 flex items-center justify-center gap-3"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   disabled={isSubmitting}
                 >
+                  <X className="w-5 h-5" />
                   Cancelar
-                </Button>
-                <Button
+                </motion.button>
+                <motion.button
                   type="submit"
                   onClick={handleSubmit}
-                  className="brutal-button flex-1 bg-blue-500 text-white hover:bg-blue-600"
+                  className="flex-1 px-6 py-4 bg-gradient-to-r from-emerald-500 to-blue-600 text-white font-bold text-lg rounded-xl border-2 border-transparent hover:from-emerald-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-3"
+                  whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+                  whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <>
+                      <motion.div 
+                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
                       Actualizando...
-                    </div>
+                    </>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <PencilIcon className="w-4 h-4" />
-                      Actualizar
-                    </div>
+                    <>
+                      <Edit className="w-5 h-5" />
+                      Actualizar Transacción
+                    </>
                   )}
-                </Button>
+                </motion.button>
               </motion.div>
             </motion.div>
           </motion.div>

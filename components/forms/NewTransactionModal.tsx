@@ -222,22 +222,22 @@ export default function NewTransactionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="brutal-card p-0 border-4 border-black shadow-brutal max-w-3xl w-full sm:max-w-2xl overflow-hidden [&>button]:hidden">
+      <DialogContent className="brutal-card p-0 border-4 border-black shadow-brutal max-w-3xl w-full sm:max-w-2xl h-[90vh] sm:h-auto max-h-[90vh] overflow-hidden [&>button]:hidden flex flex-col">
         <DialogTitle className="sr-only">Nueva Transacción</DialogTitle>
         <AnimatePresence mode="wait">
           <motion.div
             key="new-transaction"
-            className="relative"
+            className="relative flex flex-col h-full"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b-4 border-black bg-white">
-              <div className="flex items-center gap-3">
-                <CurrencyDollarIcon className="w-6 h-6" />
-                <h2 className="text-xl font-black uppercase tracking-wider">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b-4 border-black bg-white flex-shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <CurrencyDollarIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                <h2 className="text-lg sm:text-xl font-black uppercase tracking-wider">
                   Nueva Transacción
                 </h2>
               </div>
@@ -253,53 +253,54 @@ export default function NewTransactionModal({
 
             {/* Decorative line */}
             <motion.div
-              className="w-full h-1 bg-black"
+              className="w-full h-1 bg-black flex-shrink-0"
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             />
 
-            {/* Content */}
+            {/* Scrollable Content */}
             <motion.div
-              className="p-6 bg-white"
+              className="flex-1 overflow-y-auto bg-white"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
             >
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="p-4 sm:p-6">
+                <form id="transaction-form" onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                 {/* Transaction Type */}
-                <div className="space-y-3">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                    <DocumentTextIcon className="w-4 h-4" />
+                <div className="space-y-2 sm:space-y-3">
+                  <label className="text-xs sm:text-sm font-black uppercase tracking-wider text-black flex items-center gap-2 sm:gap-3">
+                    <DocumentTextIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                     Tipo de Transacción
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <Button
                       type="button"
                       variant={formData.type === "income" ? "default" : "outline"}
-                      className={buttonClass("income")}
+                      className={buttonClass("income") + " h-10 sm:h-12 text-xs sm:text-base"}
                       onClick={() => handleInputChange("type", "income")}
                     >
-                      <PlusIcon className="w-4 h-4 mr-2" />
+                      <PlusIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       Ingreso
                     </Button>
                     <Button
                       type="button"
                       variant={formData.type === "expense" ? "default" : "outline"}
-                      className={buttonClass("expense")}
+                      className={buttonClass("expense") + " h-10 sm:h-12 text-xs sm:text-base"}
                       onClick={() => handleInputChange("type", "expense")}
                     >
-                      <MinusIcon className="w-4 h-4 mr-2" />
+                      <MinusIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       Gasto
                     </Button>
                   </div>
                 </div>
 
                 {/* Amount and Description */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <CurrencyDollarIcon className="w-4 h-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-2 sm:space-y-3">
+                    <label className="text-xs sm:text-sm font-black uppercase tracking-wider text-black flex items-center gap-2 sm:gap-3">
+                      <CurrencyDollarIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       Monto *
                     </label>
                     <div className="relative">
@@ -310,7 +311,7 @@ export default function NewTransactionModal({
                         placeholder="5000"
                         value={formData.amount}
                         onChange={(e) => handleInputChange("amount", e.target.value)}
-                        className={`${inputClass(!!errors.amount)} pl-12`}
+                        className={`${inputClass(!!errors.amount)} pl-10 sm:pl-12 h-10 sm:h-12 text-sm sm:text-base`}
                       />
                     </div>
                     {errors.amount && (
@@ -320,9 +321,9 @@ export default function NewTransactionModal({
                     )}
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <PencilSquareIcon className="w-4 h-4" />
+                  <div className="space-y-2 sm:space-y-3">
+                    <label className="text-xs sm:text-sm font-black uppercase tracking-wider text-black flex items-center gap-2 sm:gap-3">
+                      <PencilSquareIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       Descripción *
                     </label>
                     <Input
@@ -330,7 +331,7 @@ export default function NewTransactionModal({
                       placeholder="¿En qué gastaste o ganaste?"
                       value={formData.description}
                       onChange={(e) => handleInputChange("description", e.target.value)}
-                      className={inputClass(!!errors.description)}
+                      className={inputClass(!!errors.description) + " h-10 sm:h-12 text-sm sm:text-base"}
                     />
                     {errors.description && (
                       <p className="text-red-600 text-xs font-black uppercase tracking-wide">
@@ -341,10 +342,10 @@ export default function NewTransactionModal({
                 </div>
 
                 {/* Category and Subcategory */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <FolderIcon className="w-4 h-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-2 sm:space-y-3">
+                    <label className="text-xs sm:text-sm font-black uppercase tracking-wider text-black flex items-center gap-2 sm:gap-3">
+                      <FolderIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       Categoría
                     </label>
                     <Select
@@ -356,7 +357,7 @@ export default function NewTransactionModal({
                         )
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-10 sm:h-12 text-sm sm:text-base">
                         <SelectValue placeholder="Seleccionar categoría" />
                       </SelectTrigger>
                       <SelectContent>
@@ -369,9 +370,9 @@ export default function NewTransactionModal({
                     </Select>
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <FolderIcon className="w-4 h-4" />
+                  <div className="space-y-2 sm:space-y-3">
+                    <label className="text-xs sm:text-sm font-black uppercase tracking-wider text-black flex items-center gap-2 sm:gap-3">
+                      <FolderIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       Subcategoría
                     </label>
                     <Select
@@ -384,7 +385,7 @@ export default function NewTransactionModal({
                       }
                       disabled={!subcategories || subcategories.length === 0}
                     >
-                      <SelectTrigger className={!subcategories || subcategories.length === 0 ? "opacity-50" : ""}>
+                      <SelectTrigger className={`h-10 sm:h-12 text-sm sm:text-base ${!subcategories || subcategories.length === 0 ? "opacity-50" : ""}`}>
                         <SelectValue 
                           placeholder={
                             !subcategories || subcategories.length === 0 
@@ -405,16 +406,16 @@ export default function NewTransactionModal({
                 </div>
 
                 {/* Date */}
-                <div className="space-y-3">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                    <CalendarDaysIcon className="w-4 h-4" />
+                <div className="space-y-2 sm:space-y-3">
+                  <label className="text-xs sm:text-sm font-black uppercase tracking-wider text-black flex items-center gap-2 sm:gap-3">
+                    <CalendarDaysIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                     Fecha *
                   </label>
                   <Input
                     type="date"
                     value={formData.date}
                     onChange={(e) => handleInputChange("date", e.target.value)}
-                    className={inputClass(!!errors.date)}
+                    className={inputClass(!!errors.date) + " h-10 sm:h-12 text-sm sm:text-base"}
                   />
                   {errors.date && (
                     <p className="text-red-600 text-xs font-black uppercase tracking-wide">
@@ -424,24 +425,24 @@ export default function NewTransactionModal({
                 </div>
 
                 {/* Notes and Tags */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <DocumentTextIcon className="w-4 h-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-2 sm:space-y-3">
+                    <label className="text-xs sm:text-sm font-black uppercase tracking-wider text-black flex items-center gap-2 sm:gap-3">
+                      <DocumentTextIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       Notas
                     </label>
                     <textarea
                       placeholder="Notas adicionales..."
                       value={formData.notes}
                       onChange={(e) => handleInputChange("notes", e.target.value)}
-                      className="brutal-textarea font-medium border-black w-full h-20 resize-none px-4 py-3"
+                      className="brutal-textarea font-medium border-black w-full h-16 sm:h-20 resize-none px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base"
                       rows={3}
                     />
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                      <TagIcon className="w-4 h-4" />
+                  <div className="space-y-2 sm:space-y-3">
+                    <label className="text-xs sm:text-sm font-black uppercase tracking-wider text-black flex items-center gap-2 sm:gap-3">
+                      <TagIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       Etiquetas
                     </label>
                     <Input
@@ -449,32 +450,35 @@ export default function NewTransactionModal({
                       placeholder="trabajo, personal, urgente"
                       value={formData.tags}
                       onChange={(e) => handleInputChange("tags", e.target.value)}
-                      className="brutal-input h-12 font-medium border-black px-4 py-3"
+                      className="brutal-input h-10 sm:h-12 font-medium border-black px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base"
                     />
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t-4 border-black">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onClose}
-                    className="brutal-button flex-1 h-12 font-black uppercase tracking-wide border-black hover:bg-black hover:text-white transition-all duration-200"
-                    disabled={isSubmitting}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    className={buttonClass(formData.type) + " flex-1"}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Guardando..." : formData.type === "income" ? "Crear Ingreso" : "Crear Gasto"}
-                  </Button>
-                </div>
-              </form>
+                </form>
+              </div>
             </motion.div>
+
+            {/* Fixed Action Buttons */}
+            <div className="flex gap-3 sm:gap-4 p-4 sm:p-6 border-t-4 border-black bg-white flex-shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="brutal-button flex-1 h-10 sm:h-12 text-sm sm:text-base font-black uppercase tracking-wide border-black hover:bg-black hover:text-white transition-all duration-200"
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                form="transaction-form"
+                className={buttonClass(formData.type) + " flex-1 h-10 sm:h-12 text-sm sm:text-base"}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Guardando..." : formData.type === "income" ? "Crear Ingreso" : "Crear Gasto"}
+              </Button>
+            </div>
           </motion.div>
         </AnimatePresence>
       </DialogContent>

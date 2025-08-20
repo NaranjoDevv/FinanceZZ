@@ -12,18 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  PencilIcon,
-  XMarkIcon,
-  CurrencyDollarIcon,
-  DocumentTextIcon,
-  CalendarIcon,
-  UserIcon,
-  PhoneIcon,
-  PercentBadgeIcon,
-  PlusIcon,
-  MinusIcon
-} from "@heroicons/react/24/outline";
+  Edit,
+  X,
+  DollarSign,
+  FileText,
+  Calendar,
+  User,
+  Phone,
+  Percent,
+  Plus,
+  Minus
+} from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -160,12 +161,12 @@ export default function EditDebtModal({
       const updateData: {
         id: Id<"debts">;
         userId: Id<"users">;
-        type: 'owes_me' | 'i_owe';
+        type: "owes_me" | "i_owe";
         originalAmount: number;
         currentAmount: number;
         description: string;
         counterpartyName: string;
-        status: 'open' | 'paid' | 'overdue' | 'partially_paid';
+        status: "open" | "paid" | "overdue" | "partially_paid";
         counterpartyContact?: string;
         dueDate?: number;
         notes?: string;
@@ -180,20 +181,23 @@ export default function EditDebtModal({
         counterpartyName: formData.counterpartyName.trim(),
         status: formData.status,
       };
-
+      
       if (formData.counterpartyContact.trim()) {
         updateData.counterpartyContact = formData.counterpartyContact.trim();
       }
+      
       if (formData.dueDate) {
         updateData.dueDate = new Date(formData.dueDate).getTime();
       }
+      
       if (formData.notes.trim()) {
         updateData.notes = formData.notes.trim();
       }
+      
       if (formData.interestRate) {
         updateData.interestRate = parseFloat(formData.interestRate);
       }
-
+      
       await updateDebt(updateData);
 
       onClose();
@@ -211,20 +215,7 @@ export default function EditDebtModal({
     }
   }, [isOpen]);
 
-  const buttonClass = (type: "owes_me" | "i_owe") => `
-    brutal-button h-12 font-black uppercase tracking-wide transition-all duration-200
-    ${formData.type === type
-      ? type === "owes_me"
-        ? "bg-green-500 hover:bg-green-600 text-white border-green-500"
-        : "bg-red-500 hover:bg-red-600 text-white border-red-500"
-      : "border-black hover:bg-black hover:text-white"
-    }
-  `;
 
-  const inputClass = (isError: boolean) => `
-    brutal-input h-12 font-medium border-black w-full px-4 py-3
-    ${isError ? "border-red-500" : "border-black"}
-  `;
 
 
 
@@ -246,22 +237,55 @@ export default function EditDebtModal({
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b-4 border-black bg-white">
-                <div className="flex items-center gap-3">
-                  <PencilIcon className="w-6 h-6" />
-                  <h2 className="text-xl font-black uppercase tracking-wider">
-                    Editar Deuda
-                  </h2>
+              <motion.div 
+                className="relative px-8 py-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white overflow-hidden"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="absolute inset-0 bg-black/10" />
+                <div className="relative z-10 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <motion.div 
+                      className="p-3 bg-white/20 rounded-xl backdrop-blur-sm"
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ delay: 0.2, duration: 0.5, type: "spring" }}
+                    >
+                      <Edit className="w-6 h-6" />
+                    </motion.div>
+                    <div>
+                      <motion.h2 
+                        className="text-2xl font-bold"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3, duration: 0.3 }}
+                      >
+                        Editar Deuda
+                      </motion.h2>
+                      <motion.p 
+                        className="text-blue-100 text-sm"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4, duration: 0.3 }}
+                      >
+                        Modifica los detalles de tu deuda
+                      </motion.p>
+                    </div>
+                  </div>
+                  <motion.button
+                    onClick={onClose}
+                    className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    initial={{ opacity: 0, rotate: 90 }}
+                    animate={{ opacity: 1, rotate: 0 }}
+                    transition={{ delay: 0.5, duration: 0.3 }}
+                  >
+                    <X className="w-5 h-5" />
+                  </motion.button>
                 </div>
-                <motion.button
-                  onClick={onClose}
-                  className="brutal-button p-2 hover:bg-black hover:text-white transition-all duration-200"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <XMarkIcon className="w-4 h-4" />
-                </motion.button>
-              </div>
+              </motion.div>
 
               {/* Decorative line */}
               <motion.div
@@ -275,40 +299,68 @@ export default function EditDebtModal({
               <div className="p-6 bg-white max-h-[calc(90vh-120px)] overflow-y-auto">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Debt Type */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <DocumentTextIcon className="w-4 h-4" />
-                      Tipo de Deuda
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        type="button"
-                        variant={formData.type === "owes_me" ? "default" : "outline"}
-                        className={buttonClass("owes_me")}
-                        onClick={() => handleInputChange("type", "owes_me")}
-                      >
-                        <PlusIcon className="w-4 h-4 mr-2" />
-                        Me Deben
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={formData.type === "i_owe" ? "default" : "outline"}
-                        className={buttonClass("i_owe")}
-                        onClick={() => handleInputChange("type", "i_owe")}
-                      >
-                        <MinusIcon className="w-4 h-4 mr-2" />
-                        Debo
-                      </Button>
+                  <motion.div 
+                    className="space-y-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Tipo de Deuda
+                      </label>
                     </div>
-                  </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <motion.button
+                        type="button"
+                        onClick={() => handleInputChange("type", "owes_me")}
+                        className={`h-14 px-6 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-3 ${
+                          formData.type === "owes_me"
+                            ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Plus className="w-5 h-5" />
+                        Me Deben
+                      </motion.button>
+                      <motion.button
+                        type="button"
+                        onClick={() => handleInputChange("type", "i_owe")}
+                        className={`h-14 px-6 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-3 ${
+                          formData.type === "i_owe"
+                            ? "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Minus className="w-5 h-5" />
+                        Debo
+                      </motion.button>
+                    </div>
+                  </motion.div>
 
                   {/* Amounts */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                        <CurrencyDollarIcon className="w-4 h-4" />
-                        Monto Original *
-                      </label>
+                  <motion.div 
+                    className="grid grid-cols-2 gap-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.3 }}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <DollarSign className="w-5 h-5 text-green-600" />
+                        </div>
+                        <label className="text-lg font-bold text-gray-800">
+                          Monto Original *
+                        </label>
+                      </div>
                       <Input
                         type="number"
                         step="0.01"
@@ -316,20 +368,32 @@ export default function EditDebtModal({
                         placeholder="0.00"
                         value={formData.originalAmount}
                         onChange={(e) => handleInputChange("originalAmount", e.target.value)}
-                        className={inputClass(!!errors.originalAmount)}
+                        className={`h-12 text-lg border-2 rounded-xl transition-all duration-200 ${
+                          errors.originalAmount 
+                            ? "border-red-400 bg-red-50 focus:border-red-500" 
+                            : "border-gray-300 focus:border-blue-500 focus:bg-blue-50"
+                        }`}
                       />
                       {errors.originalAmount && (
-                        <p className="text-red-500 text-sm font-medium">
+                        <motion.p 
+                          className="text-red-500 text-sm font-medium flex items-center gap-2"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
                           {errors.originalAmount}
-                        </p>
+                        </motion.p>
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                        <CurrencyDollarIcon className="w-4 h-4" />
-                        Monto Actual *
-                      </label>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <DollarSign className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <label className="text-lg font-bold text-gray-800">
+                          Monto Actual *
+                        </label>
+                      </div>
                       <Input
                         type="number"
                         step="0.01"
@@ -337,27 +401,44 @@ export default function EditDebtModal({
                         placeholder="0.00"
                         value={formData.currentAmount}
                         onChange={(e) => handleInputChange("currentAmount", e.target.value)}
-                        className={inputClass(!!errors.currentAmount)}
+                        className={`h-12 text-lg border-2 rounded-xl transition-all duration-200 ${
+                          errors.currentAmount 
+                            ? "border-red-400 bg-red-50 focus:border-red-500" 
+                            : "border-gray-300 focus:border-blue-500 focus:bg-blue-50"
+                        }`}
                       />
                       {errors.currentAmount && (
-                        <p className="text-red-500 text-sm font-medium">
+                        <motion.p 
+                          className="text-red-500 text-sm font-medium flex items-center gap-2"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
                           {errors.currentAmount}
-                        </p>
+                        </motion.p>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Status */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <DocumentTextIcon className="w-4 h-4" />
-                      Estado
-                    </label>
+                  <motion.div 
+                    className="space-y-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <FileText className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Estado
+                      </label>
+                    </div>
                     <Select
                       value={formData.status}
                       onValueChange={(value) => handleInputChange("status", value)}
                     >
-                      <SelectTrigger className="brutal-input h-12 font-medium border-black w-full px-4 py-3">
+                      <SelectTrigger className="h-12 text-lg border-2 rounded-xl border-gray-300 focus:border-blue-500 focus:bg-blue-50 transition-all duration-200">
                         <SelectValue placeholder="Selecciona el estado" />
                       </SelectTrigger>
                       <SelectContent>
@@ -367,83 +448,144 @@ export default function EditDebtModal({
                         <SelectItem value="overdue">Vencida</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                  </motion.div>
 
                   {/* Description */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <DocumentTextIcon className="w-4 h-4" />
-                      Descripción *
-                    </label>
+                  <motion.div 
+                    className="space-y-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <FileText className="w-5 h-5 text-green-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Descripción *
+                      </label>
+                    </div>
                     <Input
                       type="text"
                       placeholder="Descripción de la deuda"
                       value={formData.description}
                       onChange={(e) => handleInputChange("description", e.target.value)}
-                      className={inputClass(!!errors.description)}
+                      className={`h-12 text-lg border-2 rounded-xl transition-all duration-200 ${
+                        errors.description 
+                          ? "border-red-400 bg-red-50 focus:border-red-500" 
+                          : "border-gray-300 focus:border-blue-500 focus:bg-blue-50"
+                      }`}
                     />
                     {errors.description && (
-                      <p className="text-red-500 text-sm font-medium">
+                      <motion.p 
+                        className="text-red-500 text-sm font-medium flex items-center gap-2"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
                         {errors.description}
-                      </p>
+                      </motion.p>
                     )}
-                  </div>
+                  </motion.div>
 
                   {/* Counterparty Name */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <UserIcon className="w-4 h-4" />
-                      Persona *
-                    </label>
+                  <motion.div 
+                    className="space-y-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-indigo-100 rounded-lg">
+                        <User className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Persona *
+                      </label>
+                    </div>
                     <Input
                       type="text"
                       placeholder="Nombre de la persona"
                       value={formData.counterpartyName}
                       onChange={(e) => handleInputChange("counterpartyName", e.target.value)}
-                      className={inputClass(!!errors.counterpartyName)}
+                      className={`h-12 text-lg border-2 rounded-xl transition-all duration-200 ${
+                        errors.counterpartyName 
+                          ? "border-red-400 bg-red-50 focus:border-red-500" 
+                          : "border-gray-300 focus:border-blue-500 focus:bg-blue-50"
+                      }`}
                     />
                     {errors.counterpartyName && (
-                      <p className="text-red-500 text-sm font-medium">
+                      <motion.p 
+                        className="text-red-500 text-sm font-medium flex items-center gap-2"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
                         {errors.counterpartyName}
-                      </p>
+                      </motion.p>
                     )}
-                  </div>
+                  </motion.div>
 
                   {/* Counterparty Contact */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <PhoneIcon className="w-4 h-4" />
-                      Contacto
-                    </label>
+                  <motion.div 
+                    className="space-y-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <Phone className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Contacto
+                      </label>
+                    </div>
                     <Input
                       type="text"
                       placeholder="Teléfono o email (opcional)"
                       value={formData.counterpartyContact}
                       onChange={(e) => handleInputChange("counterpartyContact", e.target.value)}
-                      className={inputClass(false)}
+                      className="h-12 text-lg border-2 rounded-xl border-gray-300 focus:border-blue-500 focus:bg-blue-50 transition-all duration-200"
                     />
-                  </div>
+                  </motion.div>
 
                   {/* Due Date */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <CalendarIcon className="w-4 h-4" />
-                      Fecha de Vencimiento
-                    </label>
+                  <motion.div 
+                    className="space-y-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-pink-100 rounded-lg">
+                        <Calendar className="w-5 h-5 text-pink-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Fecha de Vencimiento
+                      </label>
+                    </div>
                     <Input
                       type="date"
                       value={formData.dueDate}
                       onChange={(e) => handleInputChange("dueDate", e.target.value)}
-                      className={inputClass(false)}
+                      className="h-12 text-lg border-2 rounded-xl border-gray-300 focus:border-blue-500 focus:bg-blue-50 transition-all duration-200"
                     />
-                  </div>
+                  </motion.div>
 
                   {/* Interest Rate */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <PercentBadgeIcon className="w-4 h-4" />
-                      Tasa de Interés (%)
-                    </label>
+                  <motion.div 
+                    className="space-y-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-yellow-100 rounded-lg">
+                        <Percent className="w-5 h-5 text-yellow-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Tasa de Interés (%)
+                      </label>
+                    </div>
                     <Input
                       type="number"
                       step="0.01"
@@ -452,51 +594,80 @@ export default function EditDebtModal({
                       placeholder="0.00"
                       value={formData.interestRate}
                       onChange={(e) => handleInputChange("interestRate", e.target.value)}
-                      className={inputClass(!!errors.interestRate)}
+                      className={`h-12 text-lg border-2 rounded-xl transition-all duration-200 ${
+                        errors.interestRate 
+                          ? 'border-red-400 bg-red-50 focus:border-red-500' 
+                          : 'border-gray-300 focus:border-blue-500 focus:bg-blue-50'
+                      }`}
                     />
                     {errors.interestRate && (
-                      <p className="text-red-500 text-sm font-medium">
+                      <motion.p 
+                        className="text-red-500 text-sm font-medium"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
                         {errors.interestRate}
-                      </p>
+                      </motion.p>
                     )}
-                  </div>
+                  </motion.div>
 
                   {/* Notes */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <DocumentTextIcon className="w-4 h-4" />
-                      Notas
-                    </label>
-                    <textarea
+                  <motion.div 
+                    className="space-y-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9, duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gray-100 rounded-lg">
+                        <FileText className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <label className="text-lg font-bold text-gray-800">
+                        Notas
+                      </label>
+                    </div>
+                    <Textarea
                       placeholder="Notas adicionales (opcional)"
                       value={formData.notes}
                       onChange={(e) => handleInputChange("notes", e.target.value)}
-                      className={`${inputClass(false)} min-h-[60px] resize-none`}
-                      rows={2}
+                      className="min-h-[80px] text-lg border-2 rounded-xl border-gray-300 focus:border-blue-500 focus:bg-blue-50 transition-all duration-200 resize-none"
+                      rows={3}
                     />
-                  </div>
+                  </motion.div>
 
                   {/* Action Buttons */}
-                  <motion.div
-                    className="flex gap-4 pt-4"
+                  <motion.div 
+                    className="flex gap-4 pt-8"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 0.3 }}
+                    transition={{ delay: 1.0, duration: 0.3 }}
                   >
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       onClick={onClose}
-                      className="brutal-button flex-1 min-h-[48px] py-3 px-6 flex items-center justify-center"
+                      className="flex-1 h-14 text-lg font-bold border-2 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 rounded-xl flex items-center justify-center gap-2"
                     >
+                      <X className="w-5 h-5" />
                       Cancelar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="brutal-button brutal-button--primary flex-1 min-h-[48px] py-3 px-6 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 rounded-xl flex items-center justify-center gap-2"
                     >
-                      {isSubmitting ? "Actualizando..." : "Actualizar Deuda"}
-                    </button>
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Actualizando...
+                        </>
+                      ) : (
+                        <>
+                          <Edit className="w-5 h-5" />
+                          Actualizar Deuda
+                        </>
+                      )}
+                    </Button>
                   </motion.div>
                 </form>
               </div>

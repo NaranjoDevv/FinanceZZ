@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -203,6 +203,7 @@ export default function TransactionsPage() {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [selectedType, setSelectedType] = useState("Todos");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [isNewTransactionModalOpen, setIsNewTransactionModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -292,10 +293,11 @@ export default function TransactionsPage() {
           <Skeleton className="h-10 w-64 mb-2" />
           <Skeleton className="h-4 w-96" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
         </div>
         <Skeleton className="h-96" />
       </div>
@@ -383,7 +385,10 @@ export default function TransactionsPage() {
             <PlusIcon className="w-5 h-5 mr-2" />
             Nueva Transacción
           </Button>
-          <Button className="brutal-button">
+          <Button 
+            className={`brutal-button ${showFilters ? 'bg-black text-white' : ''}`}
+            onClick={() => setShowFilters(!showFilters)}
+          >
             <FunnelIcon className="w-5 h-5 mr-2" />
             Filtros
           </Button>
@@ -397,7 +402,7 @@ export default function TransactionsPage() {
         transition={{ duration: 0.5, delay: 0.4 }}
         className="mb-8"
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -482,59 +487,88 @@ export default function TransactionsPage() {
               </BalanceTooltip>
             </Card>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="brutal-card p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500 text-white rounded-none">
+                  <Bars3Icon className="h-6 w-6" />
+                </div>
+              </div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+                Total Transacciones
+              </h3>
+              <p className="text-2xl font-black text-purple-600 transition-colors duration-200">
+                {filteredTransactions.length}
+              </p>
+            </Card>
+          </motion.div>
         </div>
       </motion.div>
 
       {/* Controls */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-        className="mb-8"
-      >
-        <Card className="brutal-card p-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              {/* Search */}
-              <div className="relative flex-1 max-w-md">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar transacciones..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border-2 border-black font-medium focus:outline-none focus:ring-0 focus:border-gray-600"
-                />
-              </div>
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+             initial={{ opacity: 0, y: -20, height: 0 }}
+             animate={{ opacity: 1, y: 0, height: "auto" }}
+             exit={{ opacity: 0, y: -20, height: 0 }}
+             transition={{ 
+               duration: 0.4,
+               ease: "easeInOut",
+               height: { delay: 0.1, duration: 0.3 }
+             }}
+             className="mb-8"
+           >
+            <Card className="brutal-card p-6">
+              <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                  {/* Search */}
+                  <div className="relative flex-1 max-w-md">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar transacciones..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border-2 border-black font-medium focus:outline-none focus:ring-0 focus:border-gray-600"
+                    />
+                  </div>
 
-              {/* Filters */}
-              <div className="flex gap-2">
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {/* Filters */}
+                  <div className="flex gap-2">
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(category => (
+                          <SelectItem key={category} value={category}>{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {types.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <Select value={selectedType} onValueChange={setSelectedType}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {types.map(type => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Transactions List */}
       <motion.div

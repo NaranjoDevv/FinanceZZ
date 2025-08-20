@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -274,7 +274,11 @@ export default function DebtsPage() {
 
           <Button
             onClick={() => setShowFilters(!showFilters)}
-            className={`brutal-button h-12 ${showFilters ? 'bg-black text-white' : ''}`}
+            className={`brutal-button h-12 transition-all duration-200 ${
+              showFilters 
+                ? 'bg-black text-white border-black shadow-lg transform scale-105' 
+                : 'hover:bg-gray-50'
+            }`}
           >
             <FunnelIcon className="w-5 h-5 mr-2" />
             Filtros
@@ -282,13 +286,26 @@ export default function DebtsPage() {
         </div>
 
         {/* Filters */}
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
-          >
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ 
+                opacity: 0, 
+                height: 0,
+                transition: {
+                  duration: 0.4,
+                  ease: "easeInOut",
+                  height: {
+                    delay: 0.1,
+                    duration: 0.3
+                  }
+                }
+              }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+              className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
             <div>
               <label className="text-sm font-black uppercase tracking-wider text-gray-600 mb-2 block">
                 Estado
@@ -324,6 +341,7 @@ export default function DebtsPage() {
             </div>
           </motion.div>
         )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Debts List */}

@@ -2,12 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
-import {
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
-import { AuthButtons } from "@/components/auth/AuthButtons";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
