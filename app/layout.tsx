@@ -33,12 +33,12 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased`}>
         <Providers>
           <header className="fixed top-0 right-0 z-50 p-4">
-            <SignedOut>
+            {/* <SignedOut>
               <AuthButtons />
             </SignedOut>
             <SignedIn>
               <UserButton />
-            </SignedIn>
+            </SignedIn> */}
           </header>
           {children}
         </Providers>
