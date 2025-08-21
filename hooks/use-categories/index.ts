@@ -3,6 +3,7 @@ import { api } from "@/convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
+import { useMemo } from "react";
 
 export interface Category {
   _id: Id<"categories">;
@@ -28,21 +29,23 @@ export function useCategories() {
   const { user } = useUser();
   const currentUser = useQuery(api.users.getCurrentUser);
   
+  // Memoize query arguments to prevent unnecessary re-queries
+  const queryArgs = useMemo(() => {
+    return currentUser?._id ? { userId: currentUser._id } : "skip";
+  }, [currentUser?._id]);
+
+  const expenseQueryArgs = useMemo(() => {
+    return currentUser?._id ? { userId: currentUser._id, isExpense: true } : "skip";
+  }, [currentUser?._id]);
+
+  const incomeQueryArgs = useMemo(() => {
+    return currentUser?._id ? { userId: currentUser._id, isExpense: false } : "skip";
+  }, [currentUser?._id]);
+  
   // Queries
-  const categories = useQuery(
-    api.categories.getUserCategories,
-    currentUser?._id ? { userId: currentUser._id } : "skip"
-  );
-  
-  const expenseCategories = useQuery(
-    api.categories.getUserCategories,
-    currentUser?._id ? { userId: currentUser._id, isExpense: true } : "skip"
-  );
-  
-  const incomeCategories = useQuery(
-    api.categories.getUserCategories,
-    currentUser?._id ? { userId: currentUser._id, isExpense: false } : "skip"
-  );
+  const categories = useQuery(api.categories.getUserCategories, queryArgs);
+  const expenseCategories = useQuery(api.categories.getUserCategories, expenseQueryArgs);
+  const incomeCategories = useQuery(api.categories.getUserCategories, incomeQueryArgs);
   
   // Mutations
   const createCategoryMutation = useMutation(api.categories.createCategory);
@@ -199,7 +202,8 @@ export function useCategories() {
     }
   };
   
-  return {
+  // Memoize return object to prevent unnecessary re-renders
+  return useMemo(() => ({
     // Data
     categories: categories || [],
     expenseCategories: expenseCategories || [],
@@ -215,5 +219,17 @@ export function useCategories() {
     createSubcategory,
     updateSubcategory,
     deleteSubcategory,
-  };
+  }), [
+    categories,
+    expenseCategories,
+    incomeCategories,
+    currentUser,
+    user,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    createSubcategory,
+    updateSubcategory,
+    deleteSubcategory,
+  ]);
 }

@@ -94,7 +94,9 @@ export default function DashboardLayout({
             <ul className="space-y-2">
               {navigation.map((item) => {
                 const IconComponent = item.icon;
-                const isActive = pathname === item.href;
+                // Check if current path matches the item href or if it's a subcategory of categories
+                const isActive = pathname === item.href || 
+                  (item.href === '/categories' && pathname.startsWith('/categories/'));
 
                 return (
                   <li key={item.name}>
@@ -170,7 +172,9 @@ export default function DashboardLayout({
             <ul className="space-y-1 sm:space-y-2">
               {navigation.map((item) => {
                 const IconComponent = item.icon;
-                const isActive = pathname === item.href;
+                // Check if current path matches the item href or if it's a subcategory of categories
+                const isActive = pathname === item.href || 
+                  (item.href === '/categories' && pathname.startsWith('/categories/'));
 
                 return (
                   <li key={item.name}>
