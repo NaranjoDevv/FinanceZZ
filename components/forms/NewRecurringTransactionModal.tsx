@@ -179,20 +179,16 @@ export default function NewRecurringTransactionModal({
 
   return (
     <BaseModal isOpen={isOpen} onClose={onClose} title="NUEVA TRANSACCIÓN RECURRENTE">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Transaction Type */}
-        <div className="space-y-2">
+      <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Tipo y Monto en una fila */}
+        <div className="grid grid-cols-2 gap-3">
           <BrutalSelect
-            label="TIPO DE TRANSACCIÓN *"
+            label="TIPO *"
             value={formData.type}
             onChange={(value) => updateField("type", value)}
             placeholder="Selecciona el tipo"
             options={TYPE_OPTIONS}
           />
-        </div>
-
-        {/* Amount */}
-        <div className="space-y-2">
           <BrutalInput
             label="MONTO *"
             icon={<CurrencyDollarIcon className="h-4 w-4" />}
@@ -208,21 +204,19 @@ export default function NewRecurringTransactionModal({
           />
         </div>
 
-        {/* Description */}
-        <div className="space-y-2">
-          <BrutalInput
-            label="DESCRIPCIÓN *"
-            type="text"
-            value={formData.description}
-            onChange={(value) => updateField("description", value)}
-            placeholder="Ej: Salario mensual, Renta, Suscripción Netflix"
-            error={errors.description}
-            required
-          />
-        </div>
+        {/* Descripción */}
+        <BrutalInput
+          label="DESCRIPCIÓN *"
+          type="text"
+          value={formData.description}
+          onChange={(value) => updateField("description", value)}
+          placeholder="Ej: Salario mensual, Renta, Suscripción Netflix"
+          error={errors.description}
+          required
+        />
 
-        {/* Frequency */}
-        <div className="space-y-2">
+        {/* Frecuencia y Fecha de inicio en una fila */}
+        <div className="grid grid-cols-2 gap-3">
           <BrutalSelect
             label="FRECUENCIA *"
             icon={<ClockIcon className="h-4 w-4" />}
@@ -231,10 +225,6 @@ export default function NewRecurringTransactionModal({
             placeholder="Selecciona la frecuencia"
             options={FREQUENCY_OPTIONS}
           />
-        </div>
-
-        {/* Start Date */}
-        <div className="space-y-2">
           <BrutalInput
             label="FECHA DE INICIO *"
             icon={<CalendarIcon className="h-4 w-4" />}
@@ -246,8 +236,8 @@ export default function NewRecurringTransactionModal({
           />
         </div>
 
-        {/* Category */}
-        <div className="space-y-2">
+        {/* Categoría y Subcategoría en una fila */}
+        <div className="grid grid-cols-2 gap-3">
           <BrutalSelect
             label="CATEGORÍA"
             value={formData.categoryId}
@@ -261,11 +251,7 @@ export default function NewRecurringTransactionModal({
               label: cat.name
             })) || []}
           />
-        </div>
-
-        {/* Subcategory */}
-        {formData.categoryId && subcategories && subcategories.length > 0 && (
-          <div className="space-y-2">
+          {formData.categoryId && subcategories && subcategories.length > 0 ? (
             <BrutalSelect
               label="SUBCATEGORÍA"
               value={formData.subcategoryId}
@@ -276,28 +262,29 @@ export default function NewRecurringTransactionModal({
                 label: sub.name
               }))}
             />
-          </div>
-        )}
-
-
+          ) : (
+            <div></div>
+          )}
+        </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-4 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="flex-1 border-4 border-black font-black uppercase tracking-wide hover:bg-gray-100"
-          >
-            CANCELAR
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1 bg-black text-white border-4 border-black hover:bg-white hover:text-black transition-all duration-200 font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]"
-          >
-            {isSubmitting ? "CREANDO..." : "CREAR RECURRENTE"}
-          </Button>
+        <div className="border-t-4 border-black pt-3 mt-4">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="brutal-button flex-1 bg-white text-black border-black hover:bg-gray-100"
+            >
+              CANCELAR
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="brutal-button flex-1 bg-black text-white border-black hover:bg-white hover:text-black"
+            >
+              {isSubmitting ? "CREANDO..." : "CREAR RECURRENTE"}
+            </button>
+          </div>
         </div>
       </form>
     </BaseModal>

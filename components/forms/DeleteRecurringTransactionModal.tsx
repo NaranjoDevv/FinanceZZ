@@ -119,73 +119,72 @@ export default function DeleteRecurringTransactionModal({
 
   return (
     <BaseModal isOpen={isOpen} onClose={onClose} title="ELIMINAR TRANSACCIÓN RECURRENTE">
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Warning Header */}
-        <div className="flex items-center gap-3 p-4 border-4 border-red-600 bg-red-50">
-          <ExclamationTriangleIcon className="h-8 w-8 text-red-600 flex-shrink-0" />
+        <div className="flex items-center gap-2 p-3 border-4 border-red-600 bg-white shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]">
+          <ExclamationTriangleIcon className="h-6 w-6 text-red-600 flex-shrink-0" />
           <div>
-            <h3 className="font-black uppercase text-red-600">
+            <h3 className="font-black uppercase text-red-600 text-sm">
               ¡ACCIÓN IRREVERSIBLE!
             </h3>
-            <p className="text-sm text-red-700 font-medium">
-              Esta acción no se puede deshacer. La transacción recurrente será eliminada permanentemente.
+            <p className="text-xs text-red-700 font-medium">
+              Esta acción no se puede deshacer. La transacción será eliminada permanentemente.
             </p>
           </div>
         </div>
 
         {/* Transaction Details */}
-        <div className="p-4 border-4 border-black bg-gray-50">
-          <h4 className="font-black uppercase text-black mb-4">DETALLES DE LA TRANSACCIÓN</h4>
+        <div className="p-3 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <h4 className="font-black uppercase text-black mb-2 text-sm">DETALLES DE LA TRANSACCIÓN</h4>
           
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Description and Type */}
             <div className="flex justify-between items-start">
               <div>
-                <h5 className="font-black text-lg text-black">{transaction.description}</h5>
-                <span className={`text-sm font-bold uppercase ${getTypeColor(transaction.type)}`}>
+                <h5 className="font-black text-base text-black">{transaction.description}</h5>
+                <span className={`text-xs font-bold uppercase ${getTypeColor(transaction.type)}`}>
                   {TYPE_LABELS[transaction.type]}
                 </span>
               </div>
               <div className="text-right">
-                <div className="font-black text-xl text-black">
+                <div className="font-black text-lg text-black">
                   {formatCurrency(transaction.amount)}
                 </div>
-                <div className="text-sm text-gray-600 font-medium">
+                <div className="text-xs text-gray-600 font-medium">
                   {FREQUENCY_LABELS[transaction.recurringFrequency]}
                 </div>
               </div>
             </div>
 
-            {/* Status */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">Estado:</span>
-              <span className={`px-2 py-1 text-xs font-black uppercase border-2 ${
-                transaction.isActive
-                  ? "border-green-600 bg-green-100 text-green-600"
-                  : "border-gray-600 bg-gray-100 text-gray-600"
-              }`}>
-                {transaction.isActive ? "ACTIVA" : "PAUSADA"}
-              </span>
-            </div>
-
-            {/* Next Execution */}
-            <div className="flex items-center gap-2">
-              <ClockIcon className="h-4 w-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-600">Próxima ejecución:</span>
-              <span className="font-bold text-black">
-                {transaction.nextExecutionDate ? new Date(transaction.nextExecutionDate).toLocaleDateString() : 'No programada'}
-              </span>
+            {/* Status and Next Execution Row */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t-2 border-gray-300">
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-medium text-gray-600">Estado:</span>
+                <span className={`px-1 py-0.5 text-xs font-black uppercase border-2 ${
+                  transaction.isActive
+                    ? "border-green-600 bg-green-100 text-green-600"
+                    : "border-gray-600 bg-gray-100 text-gray-600"
+                }`}>
+                  {transaction.isActive ? "ACTIVA" : "PAUSADA"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ClockIcon className="h-3 w-3 text-gray-600" />
+                <span className="text-xs font-bold text-black">
+                  {transaction.nextExecutionDate ? new Date(transaction.nextExecutionDate).toLocaleDateString() : 'No programada'}
+                </span>
+              </div>
             </div>
 
             {/* Execution Stats */}
-            <div className="grid grid-cols-2 gap-4 pt-2 border-t-2 border-gray-300">
+            <div className="grid grid-cols-2 gap-2 pt-1">
               <div>
-                <span className="text-sm font-medium text-gray-600">Total ejecutada:</span>
-                <div className="font-black text-black">{transaction.totalExecutions} veces</div>
+                <span className="text-xs font-medium text-gray-600">Ejecutada:</span>
+                <div className="font-black text-black text-sm">{transaction.totalExecutions} veces</div>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-600">Última ejecución:</span>
-                <div className="font-black text-black">
+                <span className="text-xs font-medium text-gray-600">Última vez:</span>
+                <div className="font-black text-black text-sm">
                   {transaction.lastExecutionDate 
                     ? new Date(transaction.lastExecutionDate).toLocaleDateString()
                     : "Nunca"}
@@ -196,47 +195,46 @@ export default function DeleteRecurringTransactionModal({
         </div>
 
         {/* Financial Impact */}
-        <div className="p-4 border-4 border-orange-600 bg-orange-50">
-          <h4 className="font-black uppercase text-orange-600 mb-3 flex items-center gap-2">
-            <CurrencyDollarIcon className="h-5 w-5" />
+        <div className="p-3 border-4 border-orange-600 bg-white shadow-[4px_4px_0px_0px_rgba(234,88,12,1)]">
+          <h4 className="font-black uppercase text-orange-600 mb-2 flex items-center gap-1 text-sm">
+            <CurrencyDollarIcon className="h-4 w-4" />
             IMPACTO FINANCIERO
           </h4>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div className="text-center">
-              <div className="text-sm font-medium text-gray-600">Impacto Mensual</div>
-              <div className="font-black text-lg text-orange-600">
+              <div className="text-xs font-medium text-gray-600">Mensual</div>
+              <div className="font-black text-base text-orange-600">
                 {formatCurrency(Math.abs(impact.monthly))}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm font-medium text-gray-600">Impacto Anual</div>
-              <div className="font-black text-lg text-orange-600">
+              <div className="text-xs font-medium text-gray-600">Anual</div>
+              <div className="font-black text-base text-orange-600">
                 {formatCurrency(Math.abs(impact.yearly))}
               </div>
             </div>
           </div>
           
           <p className="text-xs text-orange-700 font-medium mt-2 text-center">
-            Al eliminar esta transacción, {transaction.type === "income" ? "dejarás de recibir" : "dejarás de gastar"} estos montos automáticamente.
+            {transaction.type === "income" ? "Dejarás de recibir" : "Dejarás de gastar"} estos montos automáticamente.
           </p>
         </div>
 
         {/* Confirmation Message */}
-        <div className="p-4 border-4 border-black bg-white">
-          <p className="text-center font-medium text-black">
-            ¿Estás seguro de que deseas eliminar la transacción recurrente 
+        <div className="p-3 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <p className="text-center font-medium text-black text-sm">
+            ¿Estás seguro de que deseas eliminar 
             <span className="font-black">&quot;{transaction.description}&quot;</span>?
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-4 pt-4">
+        <div className="flex gap-3 pt-4 border-t-4 border-black mt-4">
           <Button
             type="button"
-            variant="outline"
             onClick={onClose}
-            className="flex-1 border-4 border-black font-black uppercase tracking-wide hover:bg-gray-100"
+            className="flex-1 brutal-button bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-800 font-black uppercase text-xs py-2"
           >
             CANCELAR
           </Button>
@@ -244,9 +242,9 @@ export default function DeleteRecurringTransactionModal({
             type="button"
             onClick={handleDelete}
             disabled={isDeleting}
-            className="flex-1 bg-red-600 text-white border-4 border-red-600 hover:bg-white hover:text-red-600 transition-all duration-200 font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_rgba(220,38,38,1)] hover:shadow-[2px_2px_0px_0px_rgba(220,38,38,1)] hover:translate-x-[2px] hover:translate-y-[2px]"
+            className="flex-1 brutal-button bg-red-200 hover:bg-red-300 text-red-800 border-red-800 font-black uppercase text-xs py-2 disabled:opacity-50 flex items-center justify-center gap-1"
           >
-            <TrashIcon className="h-4 w-4 mr-2" />
+            <TrashIcon className="h-3 w-3" />
             {isDeleting ? "ELIMINANDO..." : "ELIMINAR"}
           </Button>
         </div>

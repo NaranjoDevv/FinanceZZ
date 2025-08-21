@@ -27,6 +27,10 @@ export const CURRENCIES: Record<Currency, {
 
 // Función para formatear moneda
 export function formatCurrency(amount: number, currency: Currency = 'USD'): string {
+  if (isNaN(amount) || !isFinite(amount)) {
+    amount = 0;
+  }
+  
   const config = CURRENCIES[currency];
   
   return new Intl.NumberFormat(config.locale, {
@@ -75,6 +79,10 @@ export function toCurrency(currency: string): Currency {
 
 // Función para formatear números con redondeo (1M, 1K, etc.)
 export function formatNumberWithRounding(amount: number): string {
+  if (isNaN(amount) || !isFinite(amount)) {
+    return '0';
+  }
+  
   const absAmount = Math.abs(amount);
   const sign = amount < 0 ? '-' : '';
   

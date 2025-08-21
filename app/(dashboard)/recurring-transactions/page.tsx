@@ -1,298 +1,586 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-    PlusIcon,
-    ClockIcon,
-    ArrowPathIcon,
-    PauseIcon,
-    PlayIcon,
-    TrashIcon,
-    PencilIcon,
-} from "@heroicons/react/24/outline";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Id } from "@/convex/_generated/dataModel";
-import { formatCurrency } from "@/lib/currency";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RecurringTransaction } from "@/hooks/useRecurringTransactions";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
+  TrashIcon,
+  FunnelIcon,
+  ChevronDownIcon,
+  PlayIcon,
+  PauseIcon,
+  ArrowPathIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
+} from "@heroicons/react/24/outline";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import NewRecurringTransactionModal from "@/components/forms/NewRecurringTransactionModal";
 import EditRecurringTransactionModal from "@/components/forms/EditRecurringTransactionModal";
 import DeleteRecurringTransactionModal from "@/components/forms/DeleteRecurringTransactionModal";
-import { RecurringTransaction as BaseRecurringTransaction } from "@/hooks/useRecurringTransactions";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/currency";
 
-interface RecurringTransaction extends BaseRecurringTransaction {
-  categoryName?: string;
-  subcategoryName?: string;
-}
+
 
 const FREQUENCY_LABELS = {
-    daily: "Diario",
-    weekly: "Semanal",
-    monthly: "Mensual",
-    yearly: "Anual",
+  daily: "Diario",
+  weekly: "Semanal",
+  monthly: "Mensual",
+  yearly: "Anual",
 };
 
 const TYPE_LABELS = {
-    income: "Ingreso",
-    expense: "Gasto",
-    debt_payment: "Pago de Deuda",
-    loan_received: "Préstamo Recibido",
-};
-
-// Helper function to convert extended transaction to base transaction
-const toBaseTransaction = (transaction: RecurringTransaction): BaseRecurringTransaction => {
-    const { categoryName, subcategoryName, ...baseTransaction } = transaction;
-    return baseTransaction;
+  income: "Ingreso",
+  expense: "Gasto",
 };
 
 export default function RecurringTransactionsPage() {
-    const [showNewModal, setShowNewModal] = useState(false);
-    const [editingTransaction, setEditingTransaction] = useState<RecurringTransaction | null>(null);
-    const [deletingTransaction, setDeletingTransaction] = useState<RecurringTransaction | null>(null);
-    const [filter, setFilter] = useState<"all" | "active" | "paused">("all");
-    const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
+  const recurringTransactions = useQuery(api.recurringTransactions.getRecurringTransactions) || [];
+  const isLoading = recurringTransactions === undefined;
 
-    const recurringTransactions = useQuery(api.recurringTransactions.getRecurringTransactions) as RecurringTransaction[] | undefined;
 
-    const filteredTransactions = recurringTransactions?.filter((transaction) => {
-        if (filter === "active" && !transaction.isActive) return false;
-        if (filter === "paused" && transaction.isActive) return false;
-        if (typeFilter === "income" && transaction.type !== "income") return false;
-        if (typeFilter === "expense" && !(["expense", "debt_payment"].includes(transaction.type))) return false;
-        return true;
+  // Modal states
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<RecurringTransaction | null>(null);
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [frequencyFilter, setFrequencyFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  // Memoized filtered transactions
+  const filteredTransactions = useMemo(() => {
+    return recurringTransactions.filter((transaction) => {
+      const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" ||
+        (statusFilter === "active" && transaction.isActive) ||
+        (statusFilter === "paused" && !transaction.isActive);
+      const matchesType = typeFilter === "all" || transaction.type === typeFilter;
+      const matchesFrequency = frequencyFilter === "all" || transaction.recurringFrequency === frequencyFilter;
+
+      return matchesSearch && matchesStatus && matchesType && matchesFrequency;
     });
+  }, [recurringTransactions, searchTerm, statusFilter, typeFilter, frequencyFilter]);
 
-    const activeCount = recurringTransactions?.filter(t => t.isActive).length || 0;
-    const pausedCount = recurringTransactions?.filter(t => !t.isActive).length || 0;
-    const totalMonthlyAmount = recurringTransactions?.reduce((sum, t) => {
-        if (!t.isActive) return sum;
-        const multiplier = t.recurringFrequency === "daily" ? 30 :
-            t.recurringFrequency === "weekly" ? 4.33 :
-                t.recurringFrequency === "monthly" ? 1 : 0.083;
-        return sum + (t.type === "income" ? t.amount : -t.amount) * multiplier;
-    }, 0) || 0;
+  // Memoized statistics
+  const stats = useMemo(() => {
+    const activeTransactions = recurringTransactions.filter(t => t.isActive);
+    const pausedTransactions = recurringTransactions.filter(t => !t.isActive);
+    
+    const monthlyImpact = activeTransactions.reduce((total, transaction) => {
+      let monthlyAmount = 0;
+      switch (transaction.recurringFrequency) {
+        case "daily":
+          monthlyAmount = transaction.amount * 30;
+          break;
+        case "weekly":
+          monthlyAmount = transaction.amount * 4;
+          break;
+        case "monthly":
+          monthlyAmount = transaction.amount;
+          break;
+        case "yearly":
+          monthlyAmount = transaction.amount / 12;
+          break;
+      }
+      return total + (transaction.type === "expense" ? -monthlyAmount : monthlyAmount);
+    }, 0);
 
-    if (recurringTransactions === undefined) {
-        return (
-            <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                    <Skeleton className="h-8 w-64" />
-                    <Skeleton className="h-10 w-32" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[...Array(3)].map((_, i) => (
-                        <Skeleton key={i} className="h-24" />
-                    ))}
-                </div>
-                <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                        <Skeleton key={i} className="h-20" />
-                    ))}
-                </div>
-            </div>
-        );
-    }
+    return {
+      active: activeTransactions.length,
+      paused: pausedTransactions.length,
+      monthlyImpact,
+    };
+  }, [recurringTransactions]);
 
+  const handleEditTransaction = (transaction: RecurringTransaction) => {
+    setSelectedTransaction(transaction);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteTransaction = (transaction: RecurringTransaction) => {
+    setSelectedTransaction(transaction);
+    setIsDeleteModalOpen(true);
+  };
+
+
+
+  if (isLoading) {
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-black uppercase tracking-tight">
-                        TRANSACCIONES RECURRENTES
-                    </h1>
-                    <p className="text-gray-600 font-medium mt-1">
-                        Automatiza tus ingresos y gastos regulares
-                    </p>
-                </div>
-                <Button
-                    onClick={() => setShowNewModal(true)}
-                    className="bg-black text-white border-4 border-black hover:bg-white hover:text-black transition-all duration-200 font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]"
-                >
-                    <PlusIcon className="h-5 w-5 mr-2" />
-                    NUEVA RECURRENTE
-                </Button>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-black uppercase text-gray-600">ACTIVAS</p>
-                            <p className="text-2xl font-black text-green-600">{activeCount}</p>
-                        </div>
-                        <PlayIcon className="h-8 w-8 text-green-600" />
-                    </div>
-                </Card>
-
-                <Card className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-black uppercase text-gray-600">PAUSADAS</p>
-                            <p className="text-2xl font-black text-orange-600">{pausedCount}</p>
-                        </div>
-                        <PauseIcon className="h-8 w-8 text-orange-600" />
-                    </div>
-                </Card>
-
-                <Card className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-black uppercase text-gray-600">IMPACTO MENSUAL</p>
-                            <p className={`text-2xl font-black ${totalMonthlyAmount >= 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                {formatCurrency(Math.abs(totalMonthlyAmount))}
-                            </p>
-                        </div>
-                        <ArrowPathIcon className="h-8 w-8 text-blue-600" />
-                    </div>
-                </Card>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4">
-                <div className="flex gap-2">
-                    {["all", "active", "paused"].map((filterOption) => (
-                        <Button
-                            key={filterOption}
-                            variant={filter === filterOption ? "default" : "outline"}
-                            onClick={() => setFilter(filterOption as typeof filter)}
-                            className="font-black uppercase tracking-wide border-2 border-black"
-                        >
-                            {filterOption === "all" ? "TODAS" :
-                                filterOption === "active" ? "ACTIVAS" : "PAUSADAS"}
-                        </Button>
-                    ))}
-                </div>
-
-                <div className="flex gap-2">
-                    {["all", "income", "expense"].map((typeOption) => (
-                        <Button
-                            key={typeOption}
-                            variant={typeFilter === typeOption ? "default" : "outline"}
-                            onClick={() => setTypeFilter(typeOption as typeof typeFilter)}
-                            className="font-black uppercase tracking-wide border-2 border-black"
-                        >
-                            {typeOption === "all" ? "TODOS" :
-                                typeOption === "income" ? "INGRESOS" : "GASTOS"}
-                        </Button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Transactions List */}
-            <div className="space-y-4">
-                {filteredTransactions?.length === 0 ? (
-                    <Card className="p-8 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-center">
-                        <ClockIcon className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-xl font-black uppercase text-gray-600 mb-2">
-                            NO HAY TRANSACCIONES RECURRENTES
-                        </h3>
-                        <p className="text-gray-500 font-medium">
-                            Crea tu primera transacción recurrente para automatizar tus finanzas
-                        </p>
-                    </Card>
-                ) : (
-                    filteredTransactions?.map((transaction) => (
-                        <motion.div
-                            key={transaction._id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="group"
-                        >
-                            <Card className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className={`px-3 py-1 text-xs font-black uppercase border-2 border-black ${transaction.type === "income" ? "bg-green-100 text-green-800" :
-                                                "bg-red-100 text-red-800"
-                                                }`}>
-                                                {TYPE_LABELS[transaction.type]}
-                                            </span>
-                                            <span className="px-3 py-1 text-xs font-black uppercase border-2 border-black bg-blue-100 text-blue-800">
-                                                {FREQUENCY_LABELS[transaction.recurringFrequency]}
-                                            </span>
-                                            <span className={`px-3 py-1 text-xs font-black uppercase border-2 border-black ${transaction.isActive ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"
-                                                }`}>
-                                                {transaction.isActive ? "ACTIVA" : "PAUSADA"}
-                                            </span>
-                                        </div>
-
-                                        <h3 className="text-lg font-black text-black uppercase">
-                                            {transaction.description}
-                                        </h3>
-
-                                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                                            <span className="font-medium">
-                                                Próxima ejecución: {transaction.nextExecutionDate ? new Date(transaction.nextExecutionDate).toLocaleDateString() : 'No programada'}
-                                            </span>
-                                            <span className="font-medium">
-                                                Ejecutada {transaction.totalExecutions} veces
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-right">
-                                            <p className={`text-2xl font-black ${transaction.type === "income" ? "text-green-600" : "text-red-600"
-                                                }`}>
-                                                {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => setEditingTransaction(transaction)}
-                                                className="border-2 border-black hover:bg-black hover:text-white font-black"
-                                            >
-                                                <PencilIcon className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => setDeletingTransaction(transaction)}
-                                                className="border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white font-black"
-                                            >
-                                                <TrashIcon className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Card>
-                        </motion.div>
-                    ))
-                )}
-            </div>
-
-            {/* Modals */}
-            {showNewModal && (
-                <NewRecurringTransactionModal
-                    isOpen={showNewModal}
-                    onClose={() => setShowNewModal(false)}
-                />
-            )}
-
-            {editingTransaction && (
-                <EditRecurringTransactionModal
-                    isOpen={!!editingTransaction}
-                    onClose={() => setEditingTransaction(null)}
-                    transaction={toBaseTransaction(editingTransaction)}
-                />
-            )}
-
-            {deletingTransaction && (
-                <DeleteRecurringTransactionModal
-                    isOpen={!!deletingTransaction}
-                    onClose={() => setDeletingTransaction(null)}
-                    transaction={deletingTransaction}
-                />
-            )}
+      <div className="px-6 py-0">
+        <div className="mb-8 pt-6">
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-4 w-96" />
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
+        <Skeleton className="h-96" />
+      </div>
     );
+  }
+
+  return (
+    <div className="px-6 py-0">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-6 pt-6"
+      >
+        <h1 className="text-4xl font-black uppercase tracking-wider mb-2 text-black transition-colors duration-200">
+          Transacciones Recurrentes
+        </h1>
+        <p className="text-gray-600 font-medium transition-colors duration-200">
+          Automatiza tus finanzas • Controla tu futuro
+        </p>
+        <div className="w-20 h-1 bg-black mt-4"></div>
+      </motion.div>
+
+      {/* Actions */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="mb-6"
+      >
+        <div className="flex flex-wrap gap-3">
+          <Button
+            className="brutal-button brutal-button--primary"
+            onClick={() => setIsNewModalOpen(true)}
+          >
+            <PlusIcon className="w-5 h-5 mr-2" />
+            Nueva Recurrente
+          </Button>
+
+          <Button 
+            className={`brutal-button transition-all duration-300 ${
+              showFilters 
+                ? 'bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] scale-105' 
+                : 'bg-white text-black border-black hover:bg-gray-100 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:scale-105'
+            }`}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <FunnelIcon className="w-5 h-5 mr-2" />
+            FILTROS
+            <ChevronDownIcon className={`w-4 h-4 ml-2 transition-transform duration-300 ${
+              showFilters ? 'rotate-180' : 'rotate-0'
+            }`} />
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Summary Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="mb-6"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="brutal-card p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-500 text-white rounded-none">
+                  <PlayIcon className="h-6 w-6" />
+                </div>
+              </div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+                Transacciones Activas
+              </h3>
+              <p className="text-2xl font-black text-green-600 transition-colors duration-200">{stats.active}</p>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="brutal-card p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-orange-500 text-white rounded-none">
+                  <PauseIcon className="h-6 w-6" />
+                </div>
+              </div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+                Transacciones Pausadas
+              </h3>
+              <p className="text-2xl font-black text-orange-600 transition-colors duration-200">{stats.paused}</p>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="brutal-card p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-red-500 text-white rounded-none">
+                  <ArrowPathIcon className="h-6 w-6" />
+                </div>
+              </div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+                Impacto Mensual
+              </h3>
+              <p className={`text-2xl font-black transition-colors duration-200 ${
+                stats.monthlyImpact >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {formatCurrency(stats.monthlyImpact)}
+              </p>
+            </Card>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Filters */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -20 }}
+            animate={{ 
+              opacity: 1, 
+              height: "auto", 
+              y: 0,
+              transition: {
+                duration: 0.4,
+                ease: "easeInOut",
+                height: { delay: 0.1, duration: 0.3 }
+              }
+            }}
+            exit={{ 
+              opacity: 0, 
+              height: 0, 
+              y: -20,
+              transition: {
+                duration: 0.3,
+                ease: "easeInOut",
+                height: { delay: 0.1, duration: 0.2 }
+              }
+            }}
+            className="mb-6 overflow-hidden"
+          >
+            <Card className="brutal-card p-5 border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-6 h-6 bg-black flex items-center justify-center">
+                  <FunnelIcon className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-lg font-black uppercase tracking-wider text-black">
+                  FILTROS AVANZADOS
+                </h3>
+                <div className="flex-1 h-1 bg-black"></div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-3">
+                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
+                    <MagnifyingGlassIcon className="w-4 h-4" />
+                    BUSCAR TRANSACCIONES
+                  </label>
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="BUSCAR TRANSACCIONES..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 border-4 border-black font-black text-black placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-gray-600 bg-white uppercase tracking-wide text-sm transition-all duration-200 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <label className="text-sm font-black uppercase tracking-wider text-black">
+                    ESTADO
+                  </label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full h-12 border-4 border-black font-black text-black bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-200">
+                      <SelectValue placeholder="SELECCIONAR ESTADO" />
+                    </SelectTrigger>
+                    <SelectContent className="border-4 border-black">
+                      <SelectItem value="all" className="font-black uppercase">TODAS</SelectItem>
+                      <SelectItem value="active" className="font-black uppercase text-green-600">ACTIVAS</SelectItem>
+                      <SelectItem value="paused" className="font-black uppercase text-orange-600">PAUSADAS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-black uppercase tracking-wider text-black">
+                    TIPO
+                  </label>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-full h-12 border-4 border-black font-black text-black bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-200">
+                      <SelectValue placeholder="SELECCIONAR TIPO" />
+                    </SelectTrigger>
+                    <SelectContent className="border-4 border-black">
+                      <SelectItem value="all" className="font-black uppercase">TODOS</SelectItem>
+                      <SelectItem value="income" className="font-black uppercase text-green-600">INGRESOS</SelectItem>
+                      <SelectItem value="expense" className="font-black uppercase text-red-600">GASTOS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-black uppercase tracking-wider text-black">
+                    FRECUENCIA
+                  </label>
+                  <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
+                    <SelectTrigger className="w-full h-12 border-4 border-black font-black text-black bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-200">
+                      <SelectValue placeholder="SELECCIONAR FRECUENCIA" />
+                    </SelectTrigger>
+                    <SelectContent className="border-4 border-black">
+                      <SelectItem value="all" className="font-black uppercase">TODAS</SelectItem>
+                      <SelectItem value="daily" className="font-black uppercase">DIARIO</SelectItem>
+                      <SelectItem value="weekly" className="font-black uppercase">SEMANAL</SelectItem>
+                      <SelectItem value="monthly" className="font-black uppercase">MENSUAL</SelectItem>
+                      <SelectItem value="yearly" className="font-black uppercase">ANUAL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {/* Filter Summary */}
+              <div className="mt-5 pt-4 border-t-4 border-black">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-sm font-black uppercase tracking-wide">
+                    <span className="text-gray-600">RESULTADOS:</span>
+                    <span className="text-black">{filteredTransactions.length} TRANSACCIONES</span>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setStatusFilter("all");
+                      setTypeFilter("all");
+                      setFrequencyFilter("all");
+                    }}
+                    className="bg-gray-100 text-black border-2 border-black font-black text-xs px-3 py-1 hover:bg-gray-200 transition-colors duration-200 uppercase tracking-wide"
+                  >
+                    LIMPIAR FILTROS
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* View Mode Selector */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+        className="mb-5"
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-black uppercase tracking-wide text-black">
+            Vista de Transacciones
+          </h3>
+          <div className="flex gap-2">
+            <Button
+              className={`brutal-button brutal-button--small ${
+                viewMode === "list" 
+                  ? 'bg-black text-white border-black' 
+                  : 'bg-white text-black border-black hover:bg-gray-100'
+              }`}
+              onClick={() => setViewMode("list")}
+            >
+              <ListBulletIcon className="w-4 h-4 mr-2" />
+              LISTA
+            </Button>
+            <Button
+              className={`brutal-button brutal-button--small ${
+                viewMode === "grid" 
+                  ? 'bg-black text-white border-black' 
+                  : 'bg-white text-black border-black hover:bg-gray-100'
+              }`}
+              onClick={() => setViewMode("grid")}
+            >
+              <Squares2X2Icon className="w-4 h-4 mr-2" />
+              GRID
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center justify-end mt-2">
+          <span className="text-sm font-black uppercase tracking-wide text-gray-600">
+            TOTAL: {filteredTransactions.length} TRANSACCIONES
+          </span>
+        </div>
+      </motion.div>
+
+      {/* Transactions List */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.8 }}
+      >
+        <Card className="brutal-card p-5">
+          <h3 className="text-lg font-black uppercase tracking-wide mb-5 text-black transition-colors duration-200">
+            Transacciones Recurrentes ({filteredTransactions.length})
+          </h3>
+          {filteredTransactions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="text-6xl mb-4">🔄</div>
+              <h3 className="text-lg font-black uppercase tracking-wide mb-2">No hay transacciones recurrentes</h3>
+              <p className="text-gray-600 font-medium mb-4">
+                {searchTerm || statusFilter !== "all" || typeFilter !== "all" || frequencyFilter !== "all"
+                  ? "No se encontraron transacciones con los filtros aplicados"
+                  : "Comienza creando tu primera transacción recurrente"}
+              </p>
+              {!searchTerm && statusFilter === "all" && typeFilter === "all" && frequencyFilter === "all" && (
+                <Button 
+                  className="brutal-button brutal-button--primary"
+                  onClick={() => setIsNewModalOpen(true)}
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Crear Primera Transacción
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className={viewMode === "grid" 
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" 
+              : "space-y-2"
+            }>
+              {filteredTransactions.map((transaction, index) => (
+                <motion.div
+                  key={transaction._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="group brutal-card p-3 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                  whileHover={{ scale: 1.01 }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        transaction.isActive ? 'bg-green-500' : 'bg-red-500'
+                      }`} />
+                      <h4 className="font-black text-sm uppercase tracking-wide truncate max-w-[150px]">
+                        {transaction.description}
+                      </h4>
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        className="brutal-button brutal-button--small px-2 py-1"
+                        onClick={() => handleEditTransaction(transaction)}
+                      >
+                        <PencilIcon className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        className="brutal-button brutal-button--small brutal-button--danger px-2 py-1"
+                        onClick={() => handleDeleteTransaction(transaction)}
+                      >
+                        <TrashIcon className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mb-2">
+                     <div className={`text-lg font-black ${
+                       transaction.type === "expense" ? "text-red-600" : "text-green-600"
+                     }`}>
+                       {transaction.type === "expense" ? "-" : "+"}{formatCurrency(transaction.amount)}
+                     </div>
+                    <div className="flex gap-1">
+                      <Badge
+                        className={`font-bold uppercase text-xs border-2 px-1 py-0 ${
+                          transaction.type === "expense"
+                            ? "bg-red-100 text-red-800 border-red-800"
+                            : "bg-green-100 text-green-800 border-green-800"
+                        }`}
+                      >
+                        {transaction.type === "expense" ? "GAS" : "ING"}
+                      </Badge>
+                      <Badge
+                        className="font-bold uppercase text-xs border-2 px-1 py-0 bg-gray-100 text-gray-800 border-gray-800"
+                      >
+                        {transaction.recurringFrequency === "daily" ? "DIA" :
+        transaction.recurringFrequency === "weekly" ? "SEM" :
+        transaction.recurringFrequency === "monthly" ? "MES" : "AÑO"}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <div>
+                      <strong>Próxima:</strong> {transaction.nextExecutionDate ? new Date(transaction.nextExecutionDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }) : 'N/A'}
+                    </div>
+                    <div>
+                      <strong>Ejecuciones:</strong> {transaction.totalExecutions}
+                    </div>
+                  </div>
+                  
+                  {transaction.categoryName && (
+                    <div className="mt-1 text-xs text-gray-600 truncate">
+                      <strong>Cat:</strong> {transaction.categoryName || 'Sin categoría'}
+        {transaction.subcategoryName && ` > ${transaction.subcategoryName}`}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </motion.div>
+
+      {/* Modals */}
+      <NewRecurringTransactionModal
+        isOpen={isNewModalOpen}
+        onClose={() => setIsNewModalOpen(false)}
+      />
+
+      {selectedTransaction && (
+        <EditRecurringTransactionModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedTransaction(null);
+          }}
+          transaction={selectedTransaction}
+        />
+      )}
+
+      {selectedTransaction && (
+        <DeleteRecurringTransactionModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setSelectedTransaction(null);
+          }}
+          transaction={selectedTransaction}
+        />
+      )}
+    </div>
+  );
 }

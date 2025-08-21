@@ -13,8 +13,8 @@ export interface RecurringTransaction {
   description: string;
   categoryId?: Id<"categories">;
   subcategoryId?: Id<"subcategories">;
-  categoryName?: string;
-  subcategoryName?: string;
+  categoryName?: string | undefined;
+  subcategoryName?: string | undefined;
   recurringFrequency: RecurringFrequency;
   nextExecutionDate?: number;
   isActive: boolean;
@@ -24,6 +24,7 @@ export interface RecurringTransaction {
   userId: Id<"users">;
   tags?: string;
   notes?: string;
+  _creationTime: number;
 }
 
 export interface RecurringTransactionStats {

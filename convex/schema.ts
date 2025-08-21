@@ -226,6 +226,8 @@ export default defineSchema({
     isActive: v.boolean(),
     nextExecutionDate: v.number(),
     totalExecutions: v.number(),
+    tags: v.optional(v.string()),
+    notes: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

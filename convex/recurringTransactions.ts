@@ -53,6 +53,68 @@ export const getRecurringTransactions = query({
   },
 });
 
+// Utility mutation to clean up invalid category references
+export const cleanupInvalidCategoryReferences = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const recurringTransactions = await ctx.db
+      .query("recurringTransactions")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    let cleanedCount = 0;
+
+    for (const transaction of recurringTransactions) {
+      let needsUpdate = false;
+      const updateData: any = {};
+
+      // Check if categoryId exists
+      if (transaction.categoryId) {
+        const category = await ctx.db.get(transaction.categoryId);
+        if (!category) {
+          updateData.categoryId = undefined;
+          needsUpdate = true;
+          console.log(`Removing invalid categoryId ${transaction.categoryId} from transaction ${transaction._id}`);
+        }
+      }
+
+      // Check if subcategoryId exists
+      if (transaction.subcategoryId) {
+        const subcategory = await ctx.db.get(transaction.subcategoryId);
+        if (!subcategory) {
+          updateData.subcategoryId = undefined;
+          needsUpdate = true;
+          console.log(`Removing invalid subcategoryId ${transaction.subcategoryId} from transaction ${transaction._id}`);
+        }
+      }
+
+      if (needsUpdate) {
+        await ctx.db.patch(transaction._id, updateData);
+        cleanedCount++;
+      }
+    }
+
+    return {
+      message: `Cleaned ${cleanedCount} transactions with invalid category references`,
+      cleanedCount
+    };
+  },
+});
+
 // Query to get active recurring transactions that need to be executed
 export const getActiveRecurringTransactions = query({
   args: {},
@@ -159,10 +221,38 @@ export const createRecurringTransaction = mutation({
       updatedAt: Date.now(),
     };
 
+    // Validate category exists if provided
     if (args.categoryId) {
+      const category = await ctx.db.get(args.categoryId);
+      if (!category) {
+        throw new Error("Category not found");
+      }
+      // Verify user has access to this category
+      const isOwner = category.userId === user._id;
+      const isSystemCategory = category.isSystem === true || category.userId === null;
+      if (!isOwner && !isSystemCategory) {
+        throw new Error("Category not found or unauthorized");
+      }
       transactionData.categoryId = args.categoryId;
     }
+    
+    // Validate subcategory exists if provided
     if (args.subcategoryId) {
+      const subcategory = await ctx.db.get(args.subcategoryId);
+      if (!subcategory) {
+        throw new Error("Subcategory not found");
+      }
+      // Verify subcategory belongs to a valid category
+      const parentCategory = await ctx.db.get(subcategory.categoryId);
+      if (!parentCategory) {
+        throw new Error("Subcategory's parent category not found");
+      }
+      // Verify user has access to the parent category
+      const isOwner = parentCategory.userId === user._id;
+      const isSystemCategory = parentCategory.isSystem === true || parentCategory.userId === null;
+      if (!isOwner && !isSystemCategory) {
+        throw new Error("Subcategory not found or unauthorized");
+      }
       transactionData.subcategoryId = args.subcategoryId;
     }
 
@@ -193,6 +283,8 @@ export const updateRecurringTransaction = mutation({
       v.literal("yearly")
     )),
     nextExecutionDate: v.optional(v.number()),
+    tags: v.optional(v.string()),
+    notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -225,21 +317,63 @@ export const updateRecurringTransaction = mutation({
       throw new Error("Amount must be greater than 0");
     }
 
-    // Validate next execution date if provided
-    if (args.nextExecutionDate !== undefined && args.nextExecutionDate <= Date.now()) {
-      throw new Error("Next execution date must be in the future");
+    // Validate next execution date if provided (allow current or future dates)
+    if (args.nextExecutionDate !== undefined && args.nextExecutionDate < 0) {
+      throw new Error("Invalid execution date");
     }
 
     // Update the transaction
-    const updateData: Partial<Doc<"recurringTransactions">> = {};
-    
+    const updateData: any = {
+      updatedAt: Date.now(),
+    };
+
     if (args.type !== undefined) updateData.type = args.type;
     if (args.amount !== undefined) updateData.amount = args.amount;
     if (args.description !== undefined) updateData.description = args.description;
-    if (args.categoryId !== undefined) updateData.categoryId = args.categoryId;
-    if (args.subcategoryId !== undefined) updateData.subcategoryId = args.subcategoryId;
+    
+    // Validate category exists if provided
+    if (args.categoryId !== undefined) {
+      if (args.categoryId) {
+        const category = await ctx.db.get(args.categoryId);
+        if (!category) {
+          throw new Error("Category not found");
+        }
+        // Verify user has access to this category
+        const isOwner = category.userId === user._id;
+        const isSystemCategory = category.isSystem === true || category.userId === null;
+        if (!isOwner && !isSystemCategory) {
+          throw new Error("Category not found or unauthorized");
+        }
+      }
+      updateData.categoryId = args.categoryId;
+    }
+    
+    // Validate subcategory exists if provided
+     if (args.subcategoryId !== undefined) {
+       if (args.subcategoryId) {
+         const subcategory = await ctx.db.get(args.subcategoryId);
+         if (!subcategory) {
+           throw new Error("Subcategory not found");
+         }
+         // Verify subcategory belongs to a valid category
+         const parentCategory = await ctx.db.get(subcategory.categoryId);
+         if (!parentCategory) {
+           throw new Error("Subcategory's parent category not found");
+         }
+         // Verify user has access to the parent category
+         const isOwner = parentCategory.userId === user._id;
+         const isSystemCategory = parentCategory.isSystem === true || parentCategory.userId === null;
+         if (!isOwner && !isSystemCategory) {
+           throw new Error("Subcategory not found or unauthorized");
+         }
+       }
+       updateData.subcategoryId = args.subcategoryId;
+     }
+    
     if (args.recurringFrequency !== undefined) updateData.recurringFrequency = args.recurringFrequency;
     if (args.nextExecutionDate !== undefined) updateData.nextExecutionDate = args.nextExecutionDate;
+    if (args.tags !== undefined) updateData.tags = args.tags;
+    if (args.notes !== undefined) updateData.notes = args.notes;
     
     updateData.updatedAt = Date.now();
 

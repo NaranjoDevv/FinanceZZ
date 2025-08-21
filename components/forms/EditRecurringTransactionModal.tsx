@@ -183,47 +183,61 @@ export default function EditRecurringTransactionModal({
       title="EDITAR TRANSACCIÓN RECURRENTE"
       size="lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Status Toggle */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 border-4 border-black">
+        <div className="flex items-center justify-between p-3 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="flex items-center space-x-2">
             {transaction.isActive ? (
-              <PlayIcon className="h-5 w-5 text-green-600" />
+              <PlayIcon className="h-4 w-4 text-green-600" />
             ) : (
-              <PauseIcon className="h-5 w-5 text-red-600" />
+              <PauseIcon className="h-4 w-4 text-red-600" />
             )}
-            <span className="font-black text-sm uppercase">
+            <span className="font-black text-xs uppercase tracking-wide">
               {transaction.isActive ? "ACTIVA" : "PAUSADA"}
             </span>
           </div>
           <Button
             type="button"
             onClick={handleToggleActive}
-            variant={transaction.isActive ? "destructive" : "default"}
-            className="font-black uppercase"
+            className={`brutal-button font-black uppercase text-xs px-3 py-1 ${
+              transaction.isActive 
+                ? "bg-red-200 hover:bg-red-300 text-red-800 border-red-800" 
+                : "bg-green-200 hover:bg-green-300 text-green-800 border-green-800"
+            }`}
           >
             {transaction.isActive ? "PAUSAR" : "ACTIVAR"}
           </Button>
         </div>
 
-        {/* Amount */}
-        <div className="space-y-2">
-          <BrutalInput
-            label="MONTO"
-            icon={<CurrencyDollarIcon className="h-4 w-4" />}
-            type="text"
-            value={displayValue}
-            onChange={(value) => {
-              handleChange(value);
-              updateField("amount", amountValue.toString());
-            }}
-            placeholder="0.00"
-            required
-          />
+        {/* Amount and Type Row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <BrutalInput
+              label="MONTO"
+              icon={<CurrencyDollarIcon className="h-4 w-4" />}
+              type="text"
+              value={displayValue}
+              onChange={(value) => {
+                handleChange(value);
+                updateField("amount", amountValue.toString());
+              }}
+              placeholder="0.00"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <BrutalSelect
+              label="TIPO"
+              value={formData.type}
+              onChange={(value) => updateField("type", value)}
+              placeholder="Selecciona el tipo"
+              options={TYPE_OPTIONS}
+            />
+          </div>
         </div>
 
         {/* Description */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <BrutalInput
             label="DESCRIPCIÓN"
             type="text"
@@ -234,75 +248,64 @@ export default function EditRecurringTransactionModal({
           />
         </div>
 
-        {/* Transaction Type */}
-        <div className="space-y-2">
-          <BrutalSelect
-            label="TIPO"
-            value={formData.type}
-            onChange={(value) => updateField("type", value)}
-            placeholder="Selecciona el tipo"
-            options={TYPE_OPTIONS}
-          />
-        </div>
-
-        {/* Next Execution Date */}
-        <div className="space-y-2">
-          <BrutalInput
-            label="PRÓXIMA EJECUCIÓN"
-            icon={<CalendarIcon className="h-4 w-4" />}
-            type="date"
-            value={formData.nextExecutionDate}
-            onChange={(value) => updateField("nextExecutionDate", value)}
-            required
-          />
-        </div>
-
-        {/* Frequency */}
-        <div className="space-y-2">
-          <BrutalSelect
-            label="FRECUENCIA"
-            value={formData.recurringFrequency}
-            onChange={(value) => updateField("recurringFrequency", value)}
-            placeholder="Selecciona la frecuencia"
-            options={FREQUENCY_OPTIONS}
-          />
-        </div>
-
-        {/* Category */}
-        <div className="space-y-2">
-          <BrutalSelect
-            label="CATEGORÍA"
-            value={formData.categoryId}
-            onChange={(value) => {
-              updateField("categoryId", value);
-              updateField("subcategoryId", ""); // Reset subcategory
-            }}
-            placeholder="Selecciona una categoría"
-            options={filteredCategories?.map(cat => ({
-              value: cat._id,
-              label: cat.name
-            })) || []}
-          />
-        </div>
-
-        {/* Subcategory */}
-        {formData.categoryId && subcategories && subcategories.length > 0 && (
-          <div className="space-y-2">
-            <BrutalSelect
-              label="SUBCATEGORÍA"
-              value={formData.subcategoryId}
-              onChange={(value) => updateField("subcategoryId", value)}
-              placeholder="Selecciona una subcategoría"
-              options={subcategories.map(sub => ({
-                value: sub._id,
-                label: sub.name
-              }))}
+        {/* Date and Frequency Row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <BrutalInput
+              label="PRÓXIMA EJECUCIÓN"
+              icon={<CalendarIcon className="h-4 w-4" />}
+              type="date"
+              value={formData.nextExecutionDate}
+              onChange={(value) => updateField("nextExecutionDate", value)}
+              required
             />
           </div>
-        )}
+          <div className="space-y-1">
+            <BrutalSelect
+              label="FRECUENCIA"
+              value={formData.recurringFrequency}
+              onChange={(value) => updateField("recurringFrequency", value)}
+              placeholder="Selecciona la frecuencia"
+              options={FREQUENCY_OPTIONS}
+            />
+          </div>
+        </div>
+
+        {/* Category and Subcategory Row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <BrutalSelect
+              label="CATEGORÍA"
+              value={formData.categoryId}
+              onChange={(value) => {
+                updateField("categoryId", value);
+                updateField("subcategoryId", ""); // Reset subcategory
+              }}
+              placeholder="Selecciona una categoría"
+              options={filteredCategories?.map(cat => ({
+                value: cat._id,
+                label: cat.name
+              })) || []}
+            />
+          </div>
+          {formData.categoryId && subcategories && subcategories.length > 0 && (
+            <div className="space-y-1">
+              <BrutalSelect
+                label="SUBCATEGORÍA"
+                value={formData.subcategoryId}
+                onChange={(value) => updateField("subcategoryId", value)}
+                placeholder="Selecciona una subcategoría"
+                options={subcategories.map(sub => ({
+                  value: sub._id,
+                  label: sub.name
+                }))}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Tags */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <BrutalInput
             label="ETIQUETAS"
             icon={<TagIcon className="h-4 w-4" />}
@@ -314,29 +317,28 @@ export default function EditRecurringTransactionModal({
         </div>
 
         {/* Notes */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <BrutalTextarea
             label="NOTAS"
             value={formData.notes}
             onChange={(value) => updateField("notes", value)}
-            placeholder="Notas adicionales..."
-            rows={3}
+            placeholder="Notas adicionales"
+            rows={2}
           />
         </div>
 
         {/* Action Buttons */}
-        <div className="flex space-x-4 pt-4">
+        <div className="flex justify-end space-x-3 pt-4 border-t-4 border-black mt-4">
           <Button
             type="button"
-            variant="outline"
             onClick={onClose}
-            className="flex-1 font-black uppercase"
+            className="brutal-button bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-800 font-black uppercase text-xs px-4 py-2"
           >
             CANCELAR
           </Button>
           <Button
             type="submit"
-            className="flex-1 font-black uppercase"
+            className="brutal-button bg-blue-200 hover:bg-blue-300 text-blue-800 border-blue-800 font-black uppercase text-xs px-4 py-2"
           >
             ACTUALIZAR
           </Button>
