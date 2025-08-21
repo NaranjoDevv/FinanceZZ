@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -51,7 +52,7 @@ export default function ContactsPage() {
     currentUser ? { userId: currentUser._id } : "skip"
   );
 
-  const contacts = contactsData || [];
+  const contacts = useMemo(() => contactsData || [], [contactsData]);
 
   const filteredContacts = useMemo(() => {
     let filtered = contacts;
@@ -264,9 +265,11 @@ export default function ContactsPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-black text-lg">
                         {contact.avatar ? (
-                          <img 
+                          <Image 
                             src={contact.avatar} 
                             alt={contact.name}
+                            width={48}
+                            height={48}
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (

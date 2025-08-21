@@ -5,10 +5,11 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Category, Subcategory } from "@/hooks/use-categories";
-import { CurrencyDollarIcon, XMarkIcon, PlusIcon, MinusIcon, CalendarIcon as Calendar } from "@heroicons/react/24/outline";
+import { CurrencyDollarIcon, XMarkIcon, PlusIcon, MinusIcon } from "@heroicons/react/24/outline";
 import { BrutalInput } from "@/components/ui/brutal-input";
 import { BrutalSelect } from "@/components/ui/brutal-select";
 import { BrutalTextarea } from "@/components/ui/brutal-textarea";
+import { usePriceInput } from "@/lib/price-formatter";
 
 import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
 import { toast } from "sonner";
@@ -64,6 +65,9 @@ export default function NewTransactionModal({
     notes: "",
     tags: "",
   };
+
+  // Price input handler
+  const priceInput = usePriceInput("", "COP");
 
   const {
     formData,
@@ -121,7 +125,7 @@ export default function NewTransactionModal({
     } = {
       userId: currentUser._id,
       type: data.type,
-      amount: parseFloat(data.amount),
+      amount: priceInput.rawValue,
       description: data.description,
       date: new Date(data.date).getTime()
     };
@@ -150,12 +154,14 @@ export default function NewTransactionModal({
 
   const handleClose = () => {
     resetForm();
+    priceInput.setValue(0);
     onClose();
   };
 
   useEffect(() => {
     if (!isOpen) {
       resetForm();
+      priceInput.setValue(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -239,12 +245,13 @@ export default function NewTransactionModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <BrutalInput
                     label="MONTO"
-                    type="number"
-                    step="1000"
-                    min="0"
-                    placeholder="5000"
-                    value={formData.amount}
-                    onChange={(value) => updateField("amount", value)}
+                    type="text"
+                    placeholder="$5,000"
+                    value={priceInput.displayValue}
+                    onChange={(value) => {
+                      priceInput.handleChange(value);
+                      updateField("amount", priceInput.rawValue.toString());
+                    }}
                     error={errors.amount}
                     required
                   />

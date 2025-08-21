@@ -4,27 +4,21 @@ import { useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { BrutalFormModal } from "@/components/ui/brutal-form-modal";
+import { BrutalInput } from "@/components/ui/brutal-input";
+import { BrutalSelect } from "@/components/ui/brutal-select";
+import { BrutalTextarea } from "@/components/ui/brutal-textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  PlusIcon,
-  MinusIcon,
-  CurrencyDollarIcon,
-  PencilSquareIcon,
-  CalendarDaysIcon,
-  UserIcon,
-  DocumentTextIcon,
-  XMarkIcon,
-  PhoneIcon,
-  PercentBadgeIcon
-} from "@heroicons/react/24/outline";
+  DollarSign,
+  Calendar,
+  User,
+  FileText,
+  Phone,
+  Percent,
+  CreditCard
+} from "lucide-react";
 import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
+import { usePriceInput } from "@/lib/price-formatter";
 import { toast } from "sonner";
 
 export interface NewDebtModalProps {
@@ -50,6 +44,10 @@ export default function NewDebtModal({
   const currentUser = useQuery(api.users.getCurrentUser);
   const createDebt = useMutation(api.debts.createDebt);
 
+  // Price input handlers
+  const amountInput = usePriceInput("", "COP");
+  const interestRateInput = usePriceInput("", "COP");
+
   const initialFormData: FormData = {
     type: "i_owe",
     amount: "",
@@ -64,7 +62,14 @@ export default function NewDebtModal({
   const validationRules = createValidationRules<FormData>([
     {
       field: 'amount',
-      validators: [commonValidationRules.required('Monto'), commonValidationRules.positiveAmount],
+      validators: [
+        () => {
+          if (amountInput.rawValue <= 0) {
+            return 'El monto debe ser mayor a 0';
+          }
+          return null;
+        }
+      ],
     },
     {
       field: 'description',
@@ -78,10 +83,11 @@ export default function NewDebtModal({
       field: 'interestRate',
       validators: [
         (value) => {
-          if (!value) return null;
-          const num = parseFloat(value);
-          if (isNaN(num) || num < 0 || num > 100) {
-            return "La tasa de interés debe estar entre 0 y 100";
+          if (value && interestRateInput.rawValue < 0) {
+            return 'La tasa de interés no puede ser negativa';
+          }
+          if (value && interestRateInput.rawValue > 100) {
+            return 'La tasa de interés no puede ser mayor al 100%';
           }
           return null;
         }
@@ -91,45 +97,50 @@ export default function NewDebtModal({
 
   const submitDebt = async (data: FormData) => {
     if (!currentUser) {
-      throw new Error("Usuario no encontrado");
+      toast.error("Debes estar autenticado para crear una deuda");
+      return;
     }
 
-    const debtData: {
-      userId: Id<"users">;
-      type: "owes_me" | "i_owe";
-      amount: number;
-      description: string;
-      counterpartyName: string;
-      counterpartyContact?: string;
-      dueDate?: number;
-      notes?: string;
-      interestRate?: number;
-    } = {
-      userId: currentUser._id,
-      type: data.type,
-      amount: parseFloat(data.amount),
-      description: data.description.trim(),
-      counterpartyName: data.counterpartyName.trim()
-    };
-    
-    if (data.counterpartyContact.trim()) {
-      debtData.counterpartyContact = data.counterpartyContact.trim();
+    try {
+      const createData: {
+        type: "owes_me" | "i_owe";
+        amount: number;
+        description: string;
+        counterpartyName: string;
+        userId: Id<"users">;
+        counterpartyContact?: string;
+        dueDate?: number;
+        notes?: string;
+        interestRate?: number;
+      } = {
+        type: data.type,
+        amount: amountInput.rawValue,
+        description: data.description,
+        counterpartyName: data.counterpartyName,
+        userId: currentUser._id as Id<"users">,
+      };
+
+      if (data.counterpartyContact) {
+        createData.counterpartyContact = data.counterpartyContact;
+      }
+      if (data.dueDate) {
+        createData.dueDate = new Date(data.dueDate).getTime();
+      }
+      if (data.notes) {
+        createData.notes = data.notes;
+      }
+      if (data.interestRate) {
+        createData.interestRate = interestRateInput.rawValue;
+      }
+
+      await createDebt(createData);
+
+      toast.success("Deuda creada exitosamente");
+      onClose();
+    } catch (error) {
+      console.error("Error creating debt:", error);
+      toast.error("Error al crear la deuda");
     }
-    
-    if (data.dueDate) {
-      debtData.dueDate = new Date(data.dueDate).getTime();
-    }
-    
-    if (data.notes.trim()) {
-      debtData.notes = data.notes.trim();
-    }
-    
-    if (data.interestRate) {
-      debtData.interestRate = parseFloat(data.interestRate);
-    }
-    
-    await createDebt(debtData);
-    toast.success("Deuda creada exitosamente");
   };
 
   const {
@@ -146,279 +157,155 @@ export default function NewDebtModal({
 
   const handleClose = () => {
     resetForm();
+    amountInput.setValue(0);
+    interestRateInput.setValue(0);
     onClose();
   };
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
       resetForm();
+      amountInput.setValue(0);
+      interestRateInput.setValue(0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const buttonClass = (type: "owes_me" | "i_owe") => `
-    brutal-button h-12 font-black uppercase tracking-wide transition-all duration-200
-    ${formData.type === type
-      ? type === "owes_me"
-        ? "bg-green-500 hover:bg-green-600 text-white border-green-500"
-        : "bg-red-500 hover:bg-red-600 text-white border-red-500"
-      : "border-black hover:bg-black hover:text-white"
-    }
-  `;
-
-  const inputClass = (isError: boolean) => `
-    brutal-input h-12 font-medium border-black w-full px-4 py-3
-    ${isError ? "border-red-500" : "border-black"}
-  `;
+  const debtTypeOptions = [
+    { value: "i_owe", label: "YO DEBO" },
+    { value: "owes_me", label: "ME DEBEN" }
+  ];
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="brutal-card p-0 border-4 border-black shadow-brutal max-w-6xl w-[98vw] overflow-hidden"
-        showCloseButton={false}
-      >
-        <DialogTitle className="sr-only">Nueva Deuda</DialogTitle>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key="new-debt"
-            className="relative"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b-4 border-black bg-white">
-              <div className="flex items-center gap-3">
-                <CurrencyDollarIcon className="w-6 h-6" />
-                <h2 className="text-xl font-black uppercase tracking-wider">
-                  Nueva Deuda
-                </h2>
-              </div>
-              <motion.button
-                onClick={handleClose}
-                className="brutal-button p-2 hover:bg-black hover:text-white transition-all duration-200"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <XMarkIcon className="w-4 h-4" />
-              </motion.button>
+    <BrutalFormModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      onSubmit={() => handleSubmit(submitDebt)}
+      title="NUEVA DEUDA"
+      subtitle="Registra una nueva deuda"
+      icon={<DollarSign className="w-6 h-6" />}
+      submitText="CREAR DEUDA"
+      cancelText="CANCELAR"
+      isLoading={isSubmitting}
+      variant="create"
+      size="xl"
+    >
+      {/* Formulario en estilo tabla */}
+      <div className="space-y-6">
+        {/* Información básica */}
+        <div className="brutal-card border-4 border-black bg-white">
+          <div className="bg-black text-white p-4 border-b-4 border-black">
+            <h3 className="font-black uppercase tracking-wider text-lg flex items-center gap-3">
+              <CreditCard className="w-5 h-5" />
+              INFORMACIÓN BÁSICA
+            </h3>
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BrutalSelect
+                label="TIPO DE DEUDA"
+                icon={<FileText className="w-4 h-4" />}
+                placeholder="Selecciona el tipo"
+                value={formData.type}
+                onChange={(value) => updateField("type", value)}
+                options={debtTypeOptions}
+              />
+              <BrutalInput
+                label="MONTO"
+                icon={<DollarSign className="w-4 h-4" />}
+                type="text"
+                placeholder="$0"
+                value={amountInput.displayValue}
+                onChange={(value) => {
+                  amountInput.handleChange(value);
+                  updateField("amount", amountInput.rawValue.toString());
+                }}
+                error={errors.amount}
+                required
+              />
             </div>
-
-            {/* Decorative line */}
-            <motion.div
-              className="w-full h-1 bg-black"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+            <BrutalInput
+              label="DESCRIPCIÓN"
+              icon={<FileText className="w-4 h-4" />}
+              placeholder="Describe la deuda..."
+              value={formData.description}
+              onChange={(value) => updateField("description", value)}
+              error={errors.description}
+              required
             />
+          </div>
+        </div>
 
-            {/* Content */}
-            <motion.div
-              className="p-6 bg-white"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.3 }}
-            >
-              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(submitDebt); }} className="space-y-3">
-                {/* Debt Type */}
-                <div className="space-y-2">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                    <DocumentTextIcon className="w-4 h-4" />
-                    Tipo de Deuda
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      type="button"
-                      variant={formData.type === "owes_me" ? "default" : "outline"}
-                      className={buttonClass("owes_me")}
-                      onClick={() => updateField("type", "owes_me")}
-                    >
-                      <PlusIcon className="w-4 h-4 mr-2" />
-                      Me Deben
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={formData.type === "i_owe" ? "default" : "outline"}
-                      className={buttonClass("i_owe")}
-                      onClick={() => updateField("type", "i_owe")}
-                    >
-                      <MinusIcon className="w-4 h-4 mr-2" />
-                      Debo
-                    </Button>
-                  </div>
-                </div>
+        {/* Información de la contraparte */}
+        <div className="brutal-card border-4 border-black bg-white">
+          <div className="bg-black text-white p-4 border-b-4 border-black">
+            <h3 className="font-black uppercase tracking-wider text-lg flex items-center gap-3">
+              <User className="w-5 h-5" />
+              CONTRAPARTE
+            </h3>
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BrutalInput
+                label="NOMBRE"
+                icon={<User className="w-4 h-4" />}
+                placeholder="Nombre de la persona"
+                value={formData.counterpartyName}
+                onChange={(value) => updateField("counterpartyName", value)}
+                error={errors.counterpartyName}
+                required
+              />
+              <BrutalInput
+                label="CONTACTO"
+                icon={<Phone className="w-4 h-4" />}
+                placeholder="Teléfono o email"
+                value={formData.counterpartyContact}
+                onChange={(value) => updateField("counterpartyContact", value)}
+              />
+            </div>
+          </div>
+        </div>
 
-                {/* Primera fila de campos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Amount */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <CurrencyDollarIcon className="w-4 h-4" />
-                      Monto *
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={formData.amount}
-                      onChange={(e) => updateField("amount", e.target.value)}
-                      className={inputClass(!!errors.amount)}
-                    />
-                    {errors.amount && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.amount}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <PencilSquareIcon className="w-4 h-4" />
-                      Descripción *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Descripción de la deuda"
-                      value={formData.description}
-                      onChange={(e) => updateField("description", e.target.value)}
-                      className={inputClass(!!errors.description)}
-                    />
-                    {errors.description && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Segunda fila de campos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Counterparty Name */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <UserIcon className="w-4 h-4" />
-                      Persona *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Nombre de la persona"
-                      value={formData.counterpartyName}
-                      onChange={(e) => updateField("counterpartyName", e.target.value)}
-                      className={inputClass(!!errors.counterpartyName)}
-                    />
-                    {errors.counterpartyName && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.counterpartyName}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Counterparty Contact */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <PhoneIcon className="w-4 h-4" />
-                      Contacto
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="Teléfono o email (opcional)"
-                      value={formData.counterpartyContact}
-                      onChange={(e) => updateField("counterpartyContact", e.target.value)}
-                      className={inputClass(false)}
-                    />
-                  </div>
-                </div>
-
-                {/* Tercera fila de campos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Due Date */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <CalendarDaysIcon className="w-4 h-4" />
-                      Fecha de Vencimiento
-                    </label>
-                    <Input
-                      type="date"
-                      value={formData.dueDate}
-                      onChange={(e) => updateField("dueDate", e.target.value)}
-                      className={inputClass(!!errors.dueDate)}
-                    />
-                    {errors.dueDate && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.dueDate}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Interest Rate */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                      <PercentBadgeIcon className="w-4 h-4" />
-                      Tasa de Interés (%)
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      placeholder="0.00"
-                      value={formData.interestRate}
-                      onChange={(e) => updateField("interestRate", e.target.value)}
-                      className={inputClass(!!errors.interestRate)}
-                    />
-                    {errors.interestRate && (
-                      <p className="text-red-500 text-sm font-medium">
-                        {errors.interestRate}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Notes - Campo completo */}
-                <div className="space-y-2">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                    <DocumentTextIcon className="w-4 h-4" />
-                    Notas
-                  </label>
-                  <textarea
-                    placeholder="Notas adicionales (opcional)"
-                    value={formData.notes}
-                    onChange={(e) => updateField("notes", e.target.value)}
-                    className={`${inputClass(false)} min-h-[50px] resize-none`}
-                    rows={2}
-                  />
-                </div>
-
-                {/* Action Buttons */}
-                <motion.div
-                  className="flex gap-4 pt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.3 }}
-                >
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    className="brutal-button flex-1 min-h-[48px] py-3 px-6 flex items-center justify-center"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="brutal-button brutal-button--primary flex-1 min-h-[48px] py-3 px-6 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? "Creando..." : "Crear Deuda"}
-                  </button>
-                </motion.div>
-              </form>
-            </motion.div>
-          </motion.div>
-        </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+        {/* Detalles adicionales */}
+        <div className="brutal-card border-4 border-black bg-white">
+          <div className="bg-black text-white p-4 border-b-4 border-black">
+            <h3 className="font-black uppercase tracking-wider text-lg flex items-center gap-3">
+              <Calendar className="w-5 h-5" />
+              DETALLES
+            </h3>
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BrutalInput
+                label="FECHA DE VENCIMIENTO"
+                icon={<Calendar className="w-4 h-4" />}
+                type="date"
+                value={formData.dueDate}
+                onChange={(value) => updateField("dueDate", value)}
+              />
+              <BrutalInput
+                label="TASA DE INTERÉS (%)"
+                icon={<Percent className="w-4 h-4" />}
+                type="text"
+                placeholder="0%"
+                value={interestRateInput.displayValue}
+                onChange={(value) => {
+                  interestRateInput.handleChange(value);
+                  updateField("interestRate", interestRateInput.rawValue.toString());
+                }}
+                error={errors.interestRate}
+              />
+            </div>
+            <BrutalTextarea
+              label="NOTAS ADICIONALES"
+              icon={<FileText className="w-4 h-4" />}
+              placeholder="Información adicional sobre la deuda..."
+              value={formData.notes}
+              onChange={(value) => updateField("notes", value)}
+              rows={4}
+            />
+          </div>
+        </div>
+      </div>
+    </BrutalFormModal>
   );
 }

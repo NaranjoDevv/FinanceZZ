@@ -21,6 +21,23 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+    ],
+  },
+  // Configuración para mejorar el build en Vercel
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: false,
   },
 };
 

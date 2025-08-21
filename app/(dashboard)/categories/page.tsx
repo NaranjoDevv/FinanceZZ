@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import {
   TrashIcon,
   TagIcon,
   FunnelIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { useCategories, Category } from "@/hooks/use-categories";
 import { NewCategoryModal } from "@/components/modals/NewCategoryModal";
@@ -28,6 +30,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Categories() {
+  const router = useRouter();
   const {
     categories,
     isLoading,
@@ -36,6 +39,7 @@ export default function Categories() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
   const [isNewCategoryModalOpen, setIsNewCategoryModalOpen] = useState(false);
   const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
   const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] = useState(false);
@@ -132,9 +136,19 @@ export default function Categories() {
             <PlusIcon className="w-5 h-5 mr-2" />
             Nueva Categoría
           </Button>
-          <Button className="brutal-button">
+          <Button 
+            className={`brutal-button transition-all duration-300 ${
+              showFilters 
+                ? 'bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] scale-105' 
+                : 'bg-white text-black border-black hover:bg-gray-100 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:scale-105'
+            }`}
+            onClick={() => setShowFilters(!showFilters)}
+          >
             <FunnelIcon className="w-5 h-5 mr-2" />
-            Filtros
+            FILTROS
+            <ChevronDownIcon className={`w-4 h-4 ml-2 transition-transform duration-300 ${
+              showFilters ? 'rotate-180' : 'rotate-0'
+            }`} />
           </Button>
         </div>
       </motion.div>
@@ -204,48 +218,101 @@ export default function Categories() {
       </motion.div>
 
       {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-        className="mb-8"
-      >
-        <Card className="brutal-card p-6">
-          <h3 className="text-lg font-black uppercase tracking-wide mb-4 text-black transition-colors duration-200">Filtros</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-2 block transition-colors duration-200">
-                Buscar categorías
-              </label>
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Buscar categorías..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="brutal-input w-full pl-12"
-                />
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -20 }}
+            animate={{ 
+              opacity: 1, 
+              height: "auto", 
+              y: 0,
+              transition: {
+                duration: 0.4,
+                ease: "easeInOut",
+                height: { delay: 0.1, duration: 0.3 }
+              }
+            }}
+            exit={{ 
+              opacity: 0, 
+              height: 0, 
+              y: -20,
+              transition: {
+                duration: 0.3,
+                ease: "easeInOut",
+                height: { delay: 0.1, duration: 0.2 }
+              }
+            }}
+            className="mb-8 overflow-hidden"
+          >
+            <Card className="brutal-card p-6 border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-6 h-6 bg-black flex items-center justify-center">
+                  <FunnelIcon className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-lg font-black uppercase tracking-wider text-black">
+                  FILTROS AVANZADOS
+                </h3>
+                <div className="flex-1 h-1 bg-black"></div>
               </div>
-            </div>
-            <div>
-              <label className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-2 block transition-colors duration-200">
-                Tipo
-              </label>
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="brutal-select">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="expense">Gastos</SelectItem>
-                  <SelectItem value="income">Ingresos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
+                    <MagnifyingGlassIcon className="w-4 h-4" />
+                    BUSCAR CATEGORÍAS
+                  </label>
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="BUSCAR CATEGORÍAS..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 border-4 border-black font-black text-black placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-gray-600 bg-white uppercase tracking-wide text-sm transition-all duration-200 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
+                    <TagIcon className="w-4 h-4" />
+                    TIPO DE CATEGORÍA
+                  </label>
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger className="w-full h-12 border-4 border-black font-black text-black bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-200">
+                      <SelectValue placeholder="SELECCIONAR TIPO" />
+                    </SelectTrigger>
+                    <SelectContent className="border-4 border-black">
+                      <SelectItem value="all" className="font-black uppercase">TODAS LAS CATEGORÍAS</SelectItem>
+                      <SelectItem value="expense" className="font-black uppercase text-red-600">GASTOS</SelectItem>
+                      <SelectItem value="income" className="font-black uppercase text-green-600">INGRESOS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {/* Filter Summary */}
+              <div className="mt-6 pt-4 border-t-4 border-black">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 text-sm font-black uppercase tracking-wide">
+                    <span className="text-gray-600">RESULTADOS:</span>
+                    <span className="text-black">{filteredCategories.length} CATEGORÍAS</span>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setSelectedType("all");
+                    }}
+                    className="bg-gray-100 text-black border-2 border-black font-black text-xs px-3 py-1 hover:bg-gray-200 transition-colors duration-200 uppercase tracking-wide"
+                  >
+                    LIMPIAR FILTROS
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Categories List */}
       <motion.div
@@ -294,24 +361,20 @@ export default function Categories() {
                       <h4 className="font-black text-lg">{category.name}</h4>
                       <div className="flex items-center space-x-2 mt-1">
                         <Badge
-                          className={`font-bold uppercase text-xs ${
+                          className={`font-bold uppercase text-xs border-2 ${
                             category.isExpense
-                              ? "bg-red-500 text-white"
-                              : "bg-green-500 text-white"
+                              ? "bg-black text-white border-black"
+                              : "bg-white text-black border-black"
                           }`}
                         >
-                          {category.isExpense ? "Gasto" : "Ingreso"}
+                          {category.isExpense ? "GASTO" : "INGRESO"}
                         </Badge>
                         {category.isSystem && (
-                          <Badge className="bg-gray-500 text-white font-bold uppercase text-xs">
-                            Sistema
+                          <Badge className="bg-gray-800 text-white font-bold uppercase text-xs border-2 border-black">
+                            SISTEMA
                           </Badge>
                         )}
                         <div className="flex items-center space-x-2">
-                          <div
-                            className="w-4 h-4 border-2 border-black"
-                            style={{ backgroundColor: category.color || "#6B7280" }}
-                          />
                           <span className="text-sm font-bold text-gray-600 transition-colors duration-200">
                             {category.subcategories?.length || 0} subcategorías
                           </span>
@@ -320,6 +383,15 @@ export default function Categories() {
                     </div>
                   </div>
                   <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      className="brutal-button brutal-button--small"
+                      onClick={() => router.push(`/categories/${category._id}/subcategories`)}
+                      title="Ver subcategorías"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    </Button>
                     <Button
                       className="brutal-button brutal-button--small"
                       onClick={() => handleEditCategory(category)}

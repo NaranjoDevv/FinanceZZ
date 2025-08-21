@@ -1,13 +1,9 @@
 "use client";
 
 import React from "react";
-import { ClerkProvider, useAuth } from "@clerk/nextjs";
-import { ConvexReactClient } from "convex/react";
-import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { ClerkProvider } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-
-// Inicializa el cliente Convex usando tu URL pública
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -18,23 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       routerPush={(to: string) => router.push(to)}
       routerReplace={(to: string) => router.replace(to)}
     >
-      <ConvexWithClerk>{children}</ConvexWithClerk>
+      <ConvexClientProvider>{children}</ConvexClientProvider>
     </ClerkProvider>
-  );
-}
-
-function ConvexWithClerk({ children }: { children: React.ReactNode }) {
-  const auth = useAuth();
-
-  return (
-    <ConvexProviderWithClerk
-      client={convex}
-      useAuth={() => ({
-        ...auth,
-        getToken: (opts?: { template?: string }) => auth.getToken({ template: "convex", ...opts }),
-      })}
-    >
-      {children}
-    </ConvexProviderWithClerk>
   );
 }

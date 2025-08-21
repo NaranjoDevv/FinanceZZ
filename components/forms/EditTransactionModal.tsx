@@ -25,7 +25,6 @@ import {
   TrendingUp,
   TrendingDown,
   CreditCard,
-  Banknote,
   X
 } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
@@ -254,11 +253,10 @@ export default function EditTransactionModal({
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, type: 'income' })}
-                        className={`p-3 md:p-4 border-4 border-black transition-all duration-200 flex items-center gap-3 font-black uppercase ${
-                          formData.type === 'income'
+                        className={`p-3 md:p-4 border-4 border-black transition-all duration-200 flex items-center gap-3 font-black uppercase ${formData.type === 'income'
                             ? 'bg-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
                             : 'bg-white text-black hover:bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                        }`}
+                          }`}
                       >
                         <TrendingUp className="w-5 h-5" />
                         <span>INGRESO</span>
@@ -266,11 +264,10 @@ export default function EditTransactionModal({
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, type: 'expense' })}
-                        className={`p-3 md:p-4 border-4 border-black transition-all duration-200 flex items-center gap-3 font-black uppercase ${
-                          formData.type === 'expense'
+                        className={`p-3 md:p-4 border-4 border-black transition-all duration-200 flex items-center gap-3 font-black uppercase ${formData.type === 'expense'
                             ? 'bg-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
                             : 'bg-white text-black hover:bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                        }`}
+                          }`}
                       >
                         <TrendingDown className="w-5 h-5" />
                         <span>GASTO</span>
@@ -481,7 +478,7 @@ export default function EditTransactionModal({
                 <motion.button
                   type="submit"
                   onClick={handleSubmit}
-                  className="flex-1 px-4 md:px-6 py-3 md:py-4 text-lg md:text-xl font-black text-white bg-black border-4 border-black hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 md:gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-wide"
+                  className="flex-1 px-4 md:px-6 py-3 md:py-4 text-lg md:text-xl font-black text-white bg-black border-4 border-black hover:bg-white hover:text-black disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 md:gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-wide"
                   whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
                   whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
                   disabled={isSubmitting}

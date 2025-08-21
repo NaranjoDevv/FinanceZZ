@@ -20,7 +20,9 @@ import {
   CalendarIcon,
   PencilIcon,
   TrashIcon,
-  Bars3Icon
+  Bars3Icon,
+  Squares2X2Icon,
+  ListBulletIcon
 } from "@heroicons/react/24/outline";
 import { useTransactions } from "@/hooks/use-transactions";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,6 +72,106 @@ interface Transaction {
 }
 
 const types = ["Todos", "Ingresos", "Gastos"];
+
+// Componente para transacción en vista de cuadrícula
+function GridTransaction({ transaction, hoveredTransaction, setHoveredTransaction, setSelectedTransaction, setIsEditModalOpen, setIsDeleteModalOpen, userCurrency }: {
+  transaction: Transaction;
+  hoveredTransaction: string | null;
+  setHoveredTransaction: (id: string | null) => void;
+  setSelectedTransaction: (transaction: Transaction) => void;
+  setIsEditModalOpen: (open: boolean) => void;
+  setIsDeleteModalOpen: (open: boolean) => void;
+  userCurrency: import('@/lib/currency').Currency;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className={`relative p-4 border-2 transition-all duration-200 group ${
+        hoveredTransaction === transaction._id
+          ? 'border-black bg-gray-50'
+          : 'border-gray-200 hover:border-black'
+      }`}
+      onMouseEnter={() => setHoveredTransaction(transaction._id)}
+      onMouseLeave={() => setHoveredTransaction(null)}
+    >
+      {/* Header with icon and amount */}
+      <div className="flex items-start justify-between mb-3">
+        <div className={`p-2 rounded-none flex-shrink-0 ${
+          (transaction.type === 'income' || transaction.type === 'loan_received') ? 'bg-green-500' : 'bg-red-500'
+        } text-white`}>
+          {(transaction.type === 'income' || transaction.type === 'loan_received') ? (
+            <ArrowUpIcon className="h-4 w-4" />
+          ) : (
+            <ArrowDownIcon className="h-4 w-4" />
+          )}
+        </div>
+        <div className="text-right">
+          <p className={`text-lg font-black ${
+            (transaction.type === 'income' || transaction.type === 'loan_received') ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {(transaction.type === 'income' || transaction.type === 'loan_received') ? '+' : '-'}
+            {formatCurrency(transaction.amount, userCurrency).replace(/^[^\d-+]*/, '')}
+          </p>
+        </div>
+      </div>
+
+      {/* Description */}
+      <h4 className="font-bold text-sm uppercase tracking-wide mb-2 leading-tight">
+        {transaction.description}
+      </h4>
+
+      {/* Category and Date */}
+      <div className="space-y-1 text-xs text-gray-600 mb-3">
+        <div className="flex items-center gap-1">
+          <span className="font-medium">{transaction.category?.name || 'Sin categoría'}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <CalendarIcon className="w-3 h-3" />
+          <span>{new Date(transaction.date).toLocaleDateString()}</span>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {transaction.notes && (
+        <p className="text-xs text-gray-500 mb-3 line-clamp-2">
+          {transaction.notes}
+        </p>
+      )}
+
+      {/* Action Buttons */}
+      <div className={`flex gap-1 transition-all duration-200 ${
+        hoveredTransaction === transaction._id
+          ? 'opacity-100 translate-y-0'
+          : 'opacity-0 translate-y-2 pointer-events-none'
+      }`}>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => {
+            setSelectedTransaction(transaction);
+            setIsEditModalOpen(true);
+          }}
+          className="flex-1 p-2 bg-blue-500 text-white text-xs font-bold uppercase tracking-wide border-2 border-blue-500 hover:bg-white hover:text-blue-500 transition-all duration-200"
+        >
+          <PencilIcon className="w-3 h-3 mx-auto" />
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => {
+            setSelectedTransaction(transaction);
+            setIsDeleteModalOpen(true);
+          }}
+          className="flex-1 p-2 bg-red-500 text-white text-xs font-bold uppercase tracking-wide border-2 border-red-500 hover:bg-white hover:text-red-500 transition-all duration-200"
+        >
+          <TrashIcon className="w-3 h-3 mx-auto" />
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
 
 // Componente para transacción arrastrable
 function SortableTransaction({ transaction, index, hoveredTransaction, setHoveredTransaction, setSelectedTransaction, setIsEditModalOpen, setIsDeleteModalOpen, userCurrency }: {
@@ -277,6 +379,7 @@ export default function TransactionsPage() {
   const [selectedType, setSelectedType] = useState("Todos");
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [isNewTransactionModalOpen, setIsNewTransactionModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -651,9 +754,37 @@ export default function TransactionsPage() {
       >
         <Card className="brutal-card">
           <div className="p-6 border-b-4 border-black">
-            <h2 className="text-xl font-black uppercase tracking-wide">
-              Lista de Transacciones ({filteredTransactions.length})
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-black uppercase tracking-wide">
+                Lista de Transacciones ({filteredTransactions.length})
+              </h2>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 border-2 transition-all duration-200 ${
+                    viewMode === 'list'
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-300 bg-white text-black hover:border-black'
+                  }`}
+                >
+                  <ListBulletIcon className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 border-2 transition-all duration-200 ${
+                    viewMode === 'grid'
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-300 bg-white text-black hover:border-black'
+                  }`}
+                >
+                  <Squares2X2Icon className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </div>
           <div className="p-6">
             {filteredTransactions.length === 0 ? (
@@ -670,7 +801,7 @@ export default function TransactionsPage() {
                   </p>
                 )}
               </div>
-            ) : (
+            ) : viewMode === 'list' ? (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -697,6 +828,21 @@ export default function TransactionsPage() {
                   </div>
                 </SortableContext>
               </DndContext>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredTransactions.map((transaction) => (
+                  <GridTransaction
+                    key={transaction._id}
+                    transaction={transaction}
+                    hoveredTransaction={hoveredTransaction}
+                    setHoveredTransaction={setHoveredTransaction}
+                    setSelectedTransaction={setSelectedTransaction}
+                    setIsEditModalOpen={setIsEditModalOpen}
+                    setIsDeleteModalOpen={setIsDeleteModalOpen}
+                    userCurrency={userCurrency}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </Card>

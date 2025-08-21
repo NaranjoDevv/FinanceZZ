@@ -25,24 +25,24 @@ interface BrutalFormModalProps {
 
 const variantConfig = {
   create: {
-    headerBg: "bg-green-500",
-    submitBg: "bg-green-600 hover:bg-green-700",
-    borderColor: "border-green-500"
+    headerBg: "bg-black",
+    submitBg: "bg-black hover:bg-gray-800",
+    borderColor: "border-black"
   },
   edit: {
-    headerBg: "bg-blue-500",
-    submitBg: "bg-blue-600 hover:bg-blue-700",
-    borderColor: "border-blue-500"
+    headerBg: "bg-black",
+    submitBg: "bg-black hover:bg-gray-800",
+    borderColor: "border-black"
   },
   primary: {
-    headerBg: "bg-purple-500",
-    submitBg: "bg-purple-600 hover:bg-purple-700",
-    borderColor: "border-purple-500"
+    headerBg: "bg-black",
+    submitBg: "bg-black hover:bg-gray-800",
+    borderColor: "border-black"
   },
   secondary: {
-    headerBg: "bg-gray-500",
-    submitBg: "bg-gray-600 hover:bg-gray-700",
-    borderColor: "border-gray-500"
+    headerBg: "bg-gray-800",
+    submitBg: "bg-gray-800 hover:bg-gray-700",
+    borderColor: "border-gray-800"
   }
 };
 
