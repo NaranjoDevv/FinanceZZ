@@ -10,7 +10,6 @@ import {
   XMarkIcon,
   DocumentTextIcon,
   TagIcon,
-  SwatchIcon,
 } from "@heroicons/react/24/outline";
 import { useCategories, Category } from "@/hooks/use-categories";
 import { toast } from "sonner";

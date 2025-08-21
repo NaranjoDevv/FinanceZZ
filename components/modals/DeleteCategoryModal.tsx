@@ -8,7 +8,6 @@ import { BrutalConfirmationModal } from "@/components/ui/brutal-confirmation-mod
 import {
   TagIcon,
   DocumentTextIcon,
-  SwatchIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
 } from "@heroicons/react/24/outline";

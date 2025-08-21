@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Category, Subcategory } from "@/hooks/use-categories";
-import { CurrencyDollarIcon, XMarkIcon, PlusIcon, MinusIcon, CalendarIcon as Calendar } from "@heroicons/react/24/outline";
+import { CurrencyDollarIcon, XMarkIcon, PlusIcon, MinusIcon } from "@heroicons/react/24/outline";
 import { BrutalInput } from "@/components/ui/brutal-input";
 import { BrutalSelect } from "@/components/ui/brutal-select";
 import { BrutalTextarea } from "@/components/ui/brutal-textarea";

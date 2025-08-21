@@ -25,7 +25,6 @@ import {
   TrendingUp,
   TrendingDown,
   CreditCard,
-  Banknote,
   X
 } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
