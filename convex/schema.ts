@@ -203,4 +203,34 @@ export default defineSchema({
     .index("by_due_date", ["dueDate"])
     .index("by_debt", ["relatedDebtId"])
     .index("by_contact", ["relatedContactId"]),
+
+  // Tabla de transacciones recurrentes
+  recurringTransactions: defineTable({
+    userId: v.id("users"),
+    type: v.union(
+      v.literal("income"),
+      v.literal("expense"),
+      v.literal("debt_payment"),
+      v.literal("loan_received")
+    ),
+    amount: v.number(),
+    description: v.string(),
+    categoryId: v.optional(v.id("categories")),
+    subcategoryId: v.optional(v.id("subcategories")),
+    recurringFrequency: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("yearly")
+    ),
+    isActive: v.boolean(),
+    nextExecutionDate: v.number(),
+    totalExecutions: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_active", ["userId", "isActive"])
+    .index("by_next_execution", ["nextExecutionDate"])
+    .index("by_category", ["categoryId"]),
 });

@@ -15,7 +15,8 @@ import {
   XMarkIcon,
   TagIcon,
   UserIcon,
-  BellIcon
+  BellIcon,
+  ArrowPathIcon
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -23,6 +24,7 @@ import { usePathname } from "next/navigation";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
   { name: "Transacciones", href: "/transactions", icon: CreditCardIcon },
+  { name: "Recurrentes", href: "/recurring-transactions", icon: ArrowPathIcon },
   { name: "Categorías", href: "/categories", icon: TagIcon },
   { name: "Deudas", href: "/debts", icon: UserGroupIcon },
   { name: "Contactos", href: "/contacts", icon: UserIcon },

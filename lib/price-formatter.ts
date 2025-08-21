@@ -139,21 +139,21 @@ export function usePriceInput(initialValue: string = '', currency: string = 'COP
     initialValue ? parseFormattedPrice(initialValue, currency) : 0
   );
 
-  const handleChange = (value: string) => {
+  const handleChange = React.useCallback((value: string) => {
     const formatted = formatPriceInput(value, currency);
     const raw = parseFormattedPrice(formatted, currency);
 
     setDisplayValue(formatted);
     setRawValue(raw);
-  };
+  }, [currency]);
 
-  const setValue = (value: number | string) => {
+  const setValue = React.useCallback((value: number | string) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     if (!isNaN(numValue)) {
       setDisplayValue(formatPrice(numValue, currency, false));
       setRawValue(numValue);
     }
-  };
+  }, [currency]);
 
   return {
     displayValue,

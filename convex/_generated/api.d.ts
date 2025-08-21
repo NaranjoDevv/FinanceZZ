@@ -16,6 +16,7 @@ import type {
 import type * as categories from "../categories.js";
 import type * as contacts from "../contacts.js";
 import type * as debts from "../debts.js";
+import type * as recurringTransactions from "../recurringTransactions.js";
 import type * as reminders from "../reminders.js";
 import type * as seed from "../seed.js";
 import type * as transactions from "../transactions.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   categories: typeof categories;
   contacts: typeof contacts;
   debts: typeof debts;
+  recurringTransactions: typeof recurringTransactions;
   reminders: typeof reminders;
   seed: typeof seed;
   transactions: typeof transactions;
