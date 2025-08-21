@@ -34,12 +34,7 @@ const CATEGORY_ICONS = [
   "🌟", "🔥", "💡", "🎪", "🎭", "🎲", "🎸", "🎺", "🎻", "🥁"
 ];
 
-const CATEGORY_COLORS = [
-  "#EF4444", "#F97316", "#F59E0B", "#EAB308", "#84CC16", "#22C55E",
-  "#10B981", "#14B8A6", "#06B6D4", "#0EA5E9", "#3B82F6", "#6366F1",
-  "#8B5CF6", "#A855F7", "#C026D3", "#E11D48", "#DC2626", "#7C2D12",
-  "#365314", "#064E3B", "#164E63", "#1E3A8A", "#312E81", "#581C87"
-];
+// Removed CATEGORY_COLORS for brutalist design - using only black, white, and gray
 
 export function EditCategoryModal({ isOpen, onClose, category }: EditCategoryModalProps) {
   const { updateCategory } = useCategories();
@@ -48,7 +43,7 @@ export function EditCategoryModal({ isOpen, onClose, category }: EditCategoryMod
   const [formData, setFormData] = useState<FormData>({
     name: "",
     icon: "📁",
-    color: "#6B7280",
+    color: "#000000", // Fixed to black for brutalist design
     isExpense: true,
   });
 
@@ -58,7 +53,7 @@ export function EditCategoryModal({ isOpen, onClose, category }: EditCategoryMod
       setFormData({
         name: category.name,
         icon: category.icon || "📁",
-        color: category.color || "#6B7280",
+        color: "#000000", // Always black for brutalist design
         isExpense: category.isExpense,
       });
     }
@@ -73,7 +68,7 @@ export function EditCategoryModal({ isOpen, onClose, category }: EditCategoryMod
       await updateCategory(category._id, {
         name: formData.name,
         icon: formData.icon,
-        color: formData.color,
+        color: "#000000", // Always black for brutalist design
         isExpense: formData.isExpense,
       });
       toast.success("Categoría actualizada exitosamente");
@@ -88,17 +83,11 @@ export function EditCategoryModal({ isOpen, onClose, category }: EditCategoryMod
 
   const buttonClass = (type: 'income' | 'expense') => {
     const isSelected = formData.isExpense === (type === 'expense');
-    const baseClass = "brutal-button flex-1 font-black uppercase tracking-wider transition-all duration-200";
+    const baseClass = "brutal-button flex-1 font-black uppercase tracking-wider transition-all duration-200 border-4";
 
-    if (type === 'income') {
-      return `${baseClass} ${isSelected
-        ? 'bg-green-500 text-white border-green-500'
-        : 'bg-white text-green-500 border-green-500 hover:bg-green-50'}`;
-    } else {
-      return `${baseClass} ${isSelected
-        ? 'bg-red-500 text-white border-red-500'
-        : 'bg-white text-red-500 border-red-500 hover:bg-red-50'}`;
-    }
+    return `${baseClass} ${isSelected
+      ? 'bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+      : 'bg-white text-black border-black hover:bg-gray-100'}`;
   };
 
   if (!category) return null;
@@ -122,16 +111,16 @@ export function EditCategoryModal({ isOpen, onClose, category }: EditCategoryMod
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 bg-purple-500 text-white border-b-4 border-black">
+            <div className="flex items-center justify-between p-6 bg-white text-black border-b-4 border-black">
               <div className="flex items-center gap-3">
                 <PencilIcon className="w-6 h-6" />
                 <h2 className="text-xl font-black uppercase tracking-wider">
-                  Editar Categoría
+                  EDITAR CATEGORÍA
                 </h2>
               </div>
               <motion.button
                 onClick={onClose}
-                className="brutal-button p-2 bg-white text-black hover:bg-gray-100 transition-all duration-200"
+                className="p-2 bg-white text-black border-2 border-black hover:bg-gray-100 transition-all duration-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -201,18 +190,19 @@ export function EditCategoryModal({ isOpen, onClose, category }: EditCategoryMod
                 <div className="space-y-3">
                   <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
                     <TagIcon className="w-4 h-4" />
-                    Icono
+                    ÍCONO
                   </label>
-                  <div className="grid grid-cols-10 gap-2 p-4 border-4 border-black bg-gray-50">
+                  <div className="grid grid-cols-10 gap-2 p-4 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                     {CATEGORY_ICONS.map((icon) => (
                       <motion.button
                         key={icon}
                         type="button"
                         onClick={() => setFormData({ ...formData, icon })}
-                        className={`text-2xl border transition-all duration-200 ${formData.icon === icon
-                          ? "border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                          : "border-gray-300 bg-white hover:border-gray-400"
-                          }`}
+                        className={`text-lg border-2 transition-all p-2 ${
+                          formData.icon === icon
+                            ? "border-black bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            : "border-gray-400 bg-white hover:border-black hover:bg-gray-100"
+                        }`}
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                       >
@@ -222,33 +212,9 @@ export function EditCategoryModal({ isOpen, onClose, category }: EditCategoryMod
                   </div>
                 </div>
 
-                {/* Color Selection */}
-                <div className="space-y-3">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-3">
-                    <SwatchIcon className="w-4 h-4" />
-                    Color
-                  </label>
-                  <div className="grid grid-cols-12 gap-2 p-4 border-4 border-black bg-gray-50">
-                    {CATEGORY_COLORS.map((color) => (
-                      <motion.button
-                        key={color}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, color })}
-                        className={`w-8 h-8 border-2 transition-all duration-200 ${formData.color === color
-                          ? "border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] scale-110"
-                          : "border-gray-300 hover:border-gray-400"
-                          }`}
-                        style={{ backgroundColor: color }}
-                        whileHover={{ scale: 1.2 }}
-                        whileTap={{ scale: 0.9 }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
                 {/* Action Buttons */}
                 <motion.div
-                  className="flex gap-4 pt-6 border-t-4 border-black"
+                  className="flex gap-4 pt-6 border-t-4 border-black bg-white"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.3 }}
@@ -256,17 +222,17 @@ export function EditCategoryModal({ isOpen, onClose, category }: EditCategoryMod
                   <Button
                     type="button"
                     onClick={onClose}
-                    className="brutal-button flex-1 bg-white text-black border-black hover:bg-gray-100 font-black uppercase tracking-wider"
+                    className="flex-1 px-4 py-3 text-lg font-black text-black bg-white border-4 border-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-wide"
                     disabled={isSubmitting}
                   >
-                    Cancelar
+                    CANCELAR
                   </Button>
                   <Button
                     type="submit"
-                    className="brutal-button flex-1 bg-purple-500 text-white border-purple-500 hover:bg-purple-600 font-black uppercase tracking-wider"
+                    className="flex-1 px-4 py-3 text-lg font-black text-white bg-black border-4 border-black hover:bg-white hover:text-black disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-wide"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "Actualizando..." : "Actualizar Categoría"}
+                    {isSubmitting ? "ACTUALIZANDO..." : "ACTUALIZAR CATEGORÍA"}
                   </Button>
                 </motion.div>
               </form>

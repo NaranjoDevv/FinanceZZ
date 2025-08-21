@@ -51,55 +51,39 @@ export function DeleteCategoryModal({ isOpen, onClose, category }: DeleteCategor
   };
 
   const itemDetails = (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 p-4 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+      <div className="flex items-center justify-between border-b-2 border-gray-300 pb-2">
         <div className="flex items-center gap-2">
-          <TagIcon className="w-4 h-4 text-gray-500" />
-          <span className="font-medium text-gray-600 text-sm">Nombre:</span>
+          <TagIcon className="w-5 h-5 text-black" />
+          <span className="font-black text-black text-sm uppercase tracking-wider">NOMBRE:</span>
         </div>
-        <span className="font-bold text-black text-sm">{category.name}</span>
+        <span className="font-black text-black text-lg">{category.name}</span>
       </div>
       
       {category.description && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between border-b-2 border-gray-300 pb-2">
           <div className="flex items-center gap-2">
-            <DocumentTextIcon className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-gray-600 text-sm">Descripción:</span>
+            <DocumentTextIcon className="w-5 h-5 text-black" />
+            <span className="font-black text-black text-sm uppercase tracking-wider">DESCRIPCIÓN:</span>
           </div>
-          <span className="font-bold text-black text-sm max-w-[200px] truncate">
+          <span className="font-black text-black text-sm max-w-[200px] truncate">
             {category.description}
           </span>
         </div>
       )}
       
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-b-2 border-gray-300 pb-2">
         <div className="flex items-center gap-2">
           {!category.isExpense ? (
-            <ArrowTrendingUpIcon className="w-4 h-4 text-gray-500" />
+            <ArrowTrendingUpIcon className="w-5 h-5 text-black" />
           ) : (
-            <ArrowTrendingDownIcon className="w-4 h-4 text-gray-500" />
+            <ArrowTrendingDownIcon className="w-5 h-5 text-black" />
           )}
-          <span className="font-medium text-gray-600 text-sm">Tipo:</span>
+          <span className="font-black text-black text-sm uppercase tracking-wider">TIPO:</span>
         </div>
-        <span className="font-bold text-black text-sm capitalize">
-          {!category.isExpense ? "Ingreso" : "Gasto"}
+        <span className="font-black text-black text-lg uppercase">
+          {!category.isExpense ? "INGRESO" : "GASTO"}
         </span>
-      </div>
-      
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <SwatchIcon className="w-4 h-4 text-gray-500" />
-          <span className="font-medium text-gray-600 text-sm">Color:</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-4 h-4 border-2 border-black"
-            style={{ backgroundColor: category.color || '#6B7280' }}
-          />
-          <span className="font-bold text-black text-sm">
-            {category.color || '#6B7280'}
-          </span>
-        </div>
       </div>
     </div>
   );
@@ -109,10 +93,10 @@ export function DeleteCategoryModal({ isOpen, onClose, category }: DeleteCategor
       isOpen={isOpen}
       onClose={onClose}
       onConfirm={handleDelete}
-      title="Eliminar Categoría"
-      description="¿Estás seguro de que quieres eliminar esta categoría? Esta acción no se puede deshacer."
-      confirmText="Eliminar"
-      cancelText="Cancelar"
+      title="ELIMINAR CATEGORÍA"
+      description="¿ESTÁS SEGURO DE QUE QUIERES ELIMINAR ESTA CATEGORÍA? ESTA ACCIÓN NO SE PUEDE DESHACER."
+      confirmText="ELIMINAR"
+      cancelText="CANCELAR"
       variant="danger"
       isLoading={isDeleting}
       itemDetails={itemDetails}

@@ -294,24 +294,20 @@ export default function Categories() {
                       <h4 className="font-black text-lg">{category.name}</h4>
                       <div className="flex items-center space-x-2 mt-1">
                         <Badge
-                          className={`font-bold uppercase text-xs ${
+                          className={`font-bold uppercase text-xs border-2 ${
                             category.isExpense
-                              ? "bg-red-500 text-white"
-                              : "bg-green-500 text-white"
+                              ? "bg-black text-white border-black"
+                              : "bg-white text-black border-black"
                           }`}
                         >
-                          {category.isExpense ? "Gasto" : "Ingreso"}
+                          {category.isExpense ? "GASTO" : "INGRESO"}
                         </Badge>
                         {category.isSystem && (
-                          <Badge className="bg-gray-500 text-white font-bold uppercase text-xs">
-                            Sistema
+                          <Badge className="bg-gray-800 text-white font-bold uppercase text-xs border-2 border-black">
+                            SISTEMA
                           </Badge>
                         )}
                         <div className="flex items-center space-x-2">
-                          <div
-                            className="w-4 h-4 border-2 border-black"
-                            style={{ backgroundColor: category.color || "#6B7280" }}
-                          />
                           <span className="text-sm font-bold text-gray-600 transition-colors duration-200">
                             {category.subcategories?.length || 0} subcategorías
                           </span>
