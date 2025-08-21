@@ -23,25 +23,26 @@ export function IncomeExpenseChart({
   const data = [
     {
       name: "Ingresos",
-      amount: totalIncome,
+      amount: isNaN(totalIncome) || !isFinite(totalIncome) ? 0 : totalIncome,
       fill: "#10b981"
     },
     {
       name: "Gastos",
-      amount: totalExpenses,
+      amount: isNaN(totalExpenses) || !isFinite(totalExpenses) ? 0 : totalExpenses,
       fill: "#ef4444"
     }
   ];
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string; color: string }>; label?: string }) => {
     if (active && payload && payload.length && payload[0]) {
+      const value = isNaN(payload[0].value) || !isFinite(payload[0].value) ? 0 : payload[0].value;
       return (
         <div className="brutal-card bg-white p-3 border-2 border-black shadow-brutal">
           <p className="font-black text-sm uppercase tracking-wide">
-            {label}
+            {label || 'Sin categoría'}
           </p>
           <p className="font-bold text-lg">
-            {formatCurrencyWithRounding(payload[0].value, toCurrency(currency), useRounding)}
+            {formatCurrencyWithRounding(value, toCurrency(currency), useRounding)}
           </p>
         </div>
       );

@@ -63,7 +63,7 @@ export const getCategory = query({
   },
   handler: async (ctx, args) => {
     const category = await ctx.db.get(args.id);
-    if (!category || category.userId !== args.userId) {
+    if (!category || (category.userId !== args.userId && !category.isSystem)) {
       return null;
     }
 
@@ -217,9 +217,18 @@ export const getSubcategories = query({
   },
   handler: async (ctx, args) => {
     if (args.categoryId) {
-      // Verify category ownership
+      // Verify category ownership - allow system categories
       const category = await ctx.db.get(args.categoryId);
-      if (!category || category.userId !== args.userId) {
+      
+      if (!category) {
+        throw new Error("Category not found or unauthorized");
+      }
+      
+      // Allow access if: user owns the category OR it's a system category (isSystem=true OR userId=null)
+      const isOwner = category.userId === args.userId;
+      const isSystemCategory = category.isSystem === true || category.userId === null;
+      
+      if (!isOwner && !isSystemCategory) {
         throw new Error("Category not found or unauthorized");
       }
       
@@ -265,7 +274,7 @@ export const createSubcategory = mutation({
   handler: async (ctx, args) => {
     // Verify category ownership
     const category = await ctx.db.get(args.categoryId);
-    if (!category || category.userId !== args.userId) {
+    if (!category || (category.userId !== args.userId && !category.isSystem)) {
       throw new Error("Category not found or unauthorized");
     }
 

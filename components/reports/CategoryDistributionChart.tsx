@@ -42,16 +42,20 @@ export function CategoryDistributionChart({
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; value: number; total: number } }> }) => {
     if (active && payload && payload.length && payload[0]) {
       const data = payload[0].payload;
+      const value = isNaN(data.value) || !isFinite(data.value) ? 0 : data.value;
+      const total = isNaN(data.total) || !isFinite(data.total) ? 0 : data.total;
+      const percentage = total > 0 ? ((value / total) * 100) : 0;
+      
       return (
         <div className="brutal-card bg-white p-3 border-2 border-black shadow-brutal">
           <p className="font-black text-sm uppercase tracking-wide">
-            {data.name}
+            {data.name || 'Sin nombre'}
           </p>
           <p className="font-bold text-lg">
-            {formatCurrencyWithRounding(data.value, toCurrency(currency), useRounding)}
+            {formatCurrencyWithRounding(value, toCurrency(currency), useRounding)}
           </p>
           <p className="text-xs font-medium text-gray-600">
-            {((data.value / data.total) * 100).toFixed(1)}%
+            {isNaN(percentage) || !isFinite(percentage) ? '0.0' : percentage.toFixed(1)}%
           </p>
         </div>
       );
@@ -77,9 +81,17 @@ export function CategoryDistributionChart({
     );
   };
 
-  // Add total to each data point for percentage calculation
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  const dataWithTotal = data.map(item => ({ ...item, total }));
+  // Add total to each data point for percentage calculation with NaN validation
+  const total = data.reduce((sum, item) => {
+    const value = isNaN(item.value) || !isFinite(item.value) ? 0 : item.value;
+    return sum + value;
+  }, 0);
+  
+  const dataWithTotal = data.map(item => ({
+    ...item,
+    value: isNaN(item.value) || !isFinite(item.value) ? 0 : item.value,
+    total
+  })).filter(item => item.value > 0); // Filter out zero values
 
   if (data.length === 0) {
     return (

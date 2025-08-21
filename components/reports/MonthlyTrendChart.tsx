@@ -27,22 +27,25 @@ export function MonthlyTrendChart({ data, currency }: MonthlyTrendChartProps) {
       return (
         <div className="brutal-card bg-white p-4 border-2 border-black shadow-brutal">
           <p className="font-black text-sm uppercase tracking-wide mb-2">
-            {label}
+            {label || 'Sin fecha'}
           </p>
-          {payload?.map((entry, index: number) => (
-            <div key={index} className="flex items-center gap-2 mb-1">
-              <div 
-                className="w-3 h-3 border border-black" 
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-xs font-bold uppercase tracking-wide">
-                {entry.name}:
-              </span>
-              <span className="font-bold">
-                {formatCurrencyWithRounding(entry.value, toCurrency(currency), useRounding)}
-              </span>
-            </div>
-          ))}
+          {payload?.map((entry, index: number) => {
+            const value = isNaN(entry.value) || !isFinite(entry.value) ? 0 : entry.value;
+            return (
+              <div key={index} className="flex items-center gap-2 mb-1">
+                <div 
+                  className="w-3 h-3 border border-black" 
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-xs font-bold uppercase tracking-wide">
+                  {entry.name}:
+                </span>
+                <span className="font-bold">
+                  {formatCurrencyWithRounding(value, toCurrency(currency), useRounding)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       );
     }

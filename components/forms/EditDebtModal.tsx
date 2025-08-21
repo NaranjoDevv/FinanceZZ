@@ -213,7 +213,7 @@ export default function EditDebtModal({
         interestRateInput.setValue(debt.interestRate);
       }
     }
-  }, [isOpen, debt]);
+  }, [isOpen, debt, resetForm, originalAmountInput, currentAmountInput, interestRateInput]);
 
   const debtTypeOptions = [
     { value: "i_owe", label: "YO DEBO" },
