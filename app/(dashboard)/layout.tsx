@@ -368,8 +368,8 @@ export default function DashboardLayout({
         isOpen={showSubscriptionPopup}
         onClose={() => setShowSubscriptionPopup(false)}
         limitType={currentLimitType}
-        currentUsage={billingInfo?.usage?.currentMonthTransactions}
-        limit={billingInfo?.limits?.monthlyTransactions}
+        currentUsage={billingInfo?.usage?.monthlyTransactions || 0}
+        limit={billingInfo?.limits?.monthlyTransactions || 50}
       />
     </div>
   );

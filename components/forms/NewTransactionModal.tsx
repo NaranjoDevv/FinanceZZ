@@ -12,6 +12,7 @@ import { BrutalTextarea } from "@/components/ui/brutal-textarea";
 import { usePriceInput } from "@/lib/price-formatter";
 
 import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

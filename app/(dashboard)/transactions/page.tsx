@@ -33,6 +33,8 @@ import { BalanceTooltip } from "@/components/ui/balance-tooltip";
 import NewTransactionModal from "@/components/forms/NewTransactionModal";
 import EditTransactionModal from "@/components/forms/EditTransactionModal";
 import DeleteTransactionModal from "@/components/forms/DeleteTransactionModal";
+import { useBilling } from "@/hooks/useBilling";
+import { SubscriptionPopup } from "@/components/billing/SubscriptionPopup";
 import {
   DndContext,
   closestCenter,
@@ -390,6 +392,17 @@ export default function TransactionsPage() {
   const { transactions, isLoading, error, isAuthenticated } = useTransactions();
   const user = useQuery(api.users.getCurrentUser);
   const userCurrency = toCurrency(user?.currency || 'USD');
+  
+  // Billing hook for transaction limits
+  const { 
+    checkTransactionLimit, 
+    showSubscriptionPopup, 
+    setShowSubscriptionPopup, 
+    currentLimitType, 
+    billingInfo,
+    getUsagePercentage,
+    isFree 
+  } = useBilling();
 
   // Funciones para manejar localStorage
   const saveOrderToLocalStorage = (order: string[]) => {
@@ -404,6 +417,15 @@ export default function TransactionsPage() {
       return saved ? JSON.parse(saved) : [];
     }
     return [];
+  };
+
+  // Handle new transaction with billing validation
+  const handleNewTransaction = async () => {
+    const canProceed = await checkTransactionLimit();
+    if (canProceed) {
+      setIsNewTransactionModalOpen(true);
+    }
+    // If cannot proceed, useBilling automatically shows the subscription popup
   };
 
   // Sincronizar transacciones con el estado ordenado
@@ -546,6 +568,42 @@ export default function TransactionsPage() {
         <div className="w-20 h-1 bg-black mt-4"></div>
       </motion.div>
 
+      {/* Usage Indicator for Free Users */}
+      {isFree && billingInfo && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-6"
+        >
+          <Card className="brutal-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-bold text-gray-700">Transacciones este mes</span>
+              <span className="text-sm font-bold text-gray-600">
+                {billingInfo.usage.monthlyTransactions}/{billingInfo.limits.monthlyTransactions}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  getUsagePercentage('transactions') >= 80 
+                    ? 'bg-red-500' 
+                    : getUsagePercentage('transactions') >= 60 
+                    ? 'bg-yellow-500' 
+                    : 'bg-blue-500'
+                }`}
+                style={{ width: `${Math.min(getUsagePercentage('transactions'), 100)}%` }}
+              />
+            </div>
+            {getUsagePercentage('transactions') >= 80 && (
+              <p className="text-xs text-red-600 mt-1 font-medium">
+                ¡Estás cerca del límite! Actualiza a Premium para transacciones ilimitadas.
+              </p>
+            )}
+          </Card>
+        </motion.div>
+      )}
+
       {/* Actions */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
@@ -556,7 +614,7 @@ export default function TransactionsPage() {
         <div className="flex flex-wrap gap-4">
           <Button
             className="brutal-button brutal-button--primary"
-            onClick={() => setIsNewTransactionModalOpen(true)}
+            onClick={handleNewTransaction}
           >
             <PlusIcon className="w-5 h-5 mr-2" />
             Nueva Transacción
@@ -873,6 +931,15 @@ export default function TransactionsPage() {
           transaction={selectedTransaction}
         />
       )}
+
+      {/* Subscription Popup for billing limits */}
+      <SubscriptionPopup
+        isOpen={showSubscriptionPopup}
+        onClose={() => setShowSubscriptionPopup(false)}
+        limitType={currentLimitType}
+        currentUsage={billingInfo?.usage.monthlyTransactions || 0}
+        limit={billingInfo?.limits.monthlyTransactions || 50}
+      />
     </div>
   );
 }

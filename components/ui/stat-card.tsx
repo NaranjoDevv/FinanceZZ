@@ -4,6 +4,7 @@ import { memo } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { BalanceTooltip } from "@/components/ui/balance-tooltip";
+import { Currency } from "@/lib/currency";
 
 interface StatCardProps {
   title: string;
@@ -13,7 +14,7 @@ interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   change: string;
-  userCurrency: unknown;
+  userCurrency: Currency;
   useRounding: boolean;
   index: number;
 }
