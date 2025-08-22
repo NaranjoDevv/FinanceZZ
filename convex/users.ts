@@ -61,10 +61,10 @@ export const migrateUserNumberRounding = mutation({
     
     if (!user.limits) {
       updates.limits = {
-        monthlyTransactions: 50,
-        activeDebts: 3,
+        monthlyTransactions: 10,
+        activeDebts: 1,
         recurringTransactions: 2,
-        categories: 3
+        categories: 2
       };
     }
     
@@ -86,46 +86,40 @@ export const migrateUserNumberRounding = mutation({
   },
 });
 
-// Mutation para migrar todos los usuarios (solo para admin)
-export const migrateAllUsers = mutation({
+// Mutation para migrar todos los usuarios a los nuevos límites (solo para admin)
+export const migrateUserLimitsToNew = mutation({
   args: {},
   handler: async (ctx) => {
     const users = await ctx.db.query("users").collect();
     let migratedCount = 0;
     
     for (const user of users) {
-      const updates: any = {};
-      
-      if (user.numberRounding === undefined) {
-        updates.numberRounding = false;
-      }
-      
-      if (!user.limits) {
-        updates.limits = {
-          monthlyTransactions: 50,
-          activeDebts: 3,
+      if (user.plan === "free" && user.limits) {
+        // Update to new free plan limits
+        const newLimits = {
+          monthlyTransactions: 10,
+          activeDebts: 1,
           recurringTransactions: 2,
-          categories: 3
+          categories: 2
         };
-      }
-      
-      if (!user.usage) {
-        updates.usage = {
-          monthlyTransactions: 0,
-          activeDebts: 0,
-          recurringTransactions: 0,
-          categories: 0,
-          lastResetDate: Date.now()
-        };
-      }
-      
-      if (Object.keys(updates).length > 0) {
-        await ctx.db.patch(user._id, updates);
-        migratedCount++;
+        
+        // Only update if limits are different
+        if (user.limits.monthlyTransactions !== 10 || 
+            user.limits.activeDebts !== 1 || 
+            user.limits.categories !== 2) {
+          await ctx.db.patch(user._id, {
+            limits: newLimits
+          });
+          migratedCount++;
+        }
       }
     }
     
-    return { totalUsers: users.length, migratedUsers: migratedCount };
+    return { 
+      totalUsers: users.length, 
+      migratedUsers: migratedCount,
+      message: `Migrated ${migratedCount} users to new free plan limits (10 transactions, 1 debt, 2 categories)`
+    };
   },
 });
 
@@ -223,10 +217,10 @@ export const createOrUpdateUser = mutation({
         timezone: "UTC",
         language: "es", // Idioma por defecto español
         limits: {
-          monthlyTransactions: 50,
-          activeDebts: 3,
+          monthlyTransactions: 10,
+          activeDebts: 1,
           recurringTransactions: 2,
-          categories: 3
+          categories: 2
         },
         usage: {
           monthlyTransactions: 0,

@@ -204,15 +204,21 @@ export const createBudget = mutation({
       startDate = new Date(now.getFullYear(), 0, 1).getTime();
     }
 
-    const budgetId = await ctx.db.insert("budgets", {
+    const budgetData: any = {
       userId: args.userId,
-      categoryId: args.categoryId,
       amount: args.amount,
       period: args.period,
       startDate,
       alertThreshold: args.alertThreshold || 80,
       isActive: true,
-    });
+    };
+    
+    // Only include categoryId if it's provided
+    if (args.categoryId) {
+      budgetData.categoryId = args.categoryId;
+    }
+
+    const budgetId = await ctx.db.insert("budgets", budgetData);
 
     return budgetId;
   },

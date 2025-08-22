@@ -9,6 +9,7 @@ import { BrutalSelect } from "@/components/ui/brutal-select";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { usePriceInput } from "@/lib/price-formatter";
 import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
+import { useBilling } from "@/hooks/useBilling";
 import { toast } from "sonner";
 import {
   CalendarIcon,
@@ -86,6 +87,7 @@ export default function NewRecurringTransactionModal({
   
   const createRecurringTransaction = useMutation(api.recurringTransactions.createRecurringTransaction);
   const currentUser = useQuery(api.users.getCurrentUser);
+  const { setShowSubscriptionPopup, setCurrentLimitType } = useBilling();
   
   const { formData, errors, updateField, validateForm, resetForm } = useFormHandler({
     initialData: INITIAL_FORM_DATA,
@@ -164,9 +166,17 @@ export default function NewRecurringTransactionModal({
       toast.success("Transacción recurrente creada exitosamente");
       resetForm();
       onClose();
-    } catch (error) {
+    } catch (error: Error | unknown) {
       console.error("Error creating recurring transaction:", error);
-      const errorMessage = error instanceof Error ? error.message : "Error al crear la transacción recurrente";
+      
+      // Check if it's a billing limit error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("límite de") && errorMessage.includes("recurrentes")) {
+        setCurrentLimitType("recurring_transactions");
+        setShowSubscriptionPopup(true);
+        return;
+      }
+      
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);

@@ -138,7 +138,15 @@ export function useBudgetAlerts() {
   const getAlerts = () => {
     if (!summary.budgets) return [];
     
-    const alerts = [];
+    const alerts: Array<{
+      type: "over_budget" | "near_limit";
+      severity: "high" | "medium" | "low";
+      budgetId: string;
+      categoryName: string;
+      message: string;
+      amount: number;
+      progress: number;
+    }> = [];
     
     summary.budgets.forEach((budget: any) => {
       if (budget.isOverBudget) {

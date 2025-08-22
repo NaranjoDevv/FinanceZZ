@@ -938,7 +938,7 @@ export default function TransactionsPage() {
         onClose={() => setShowSubscriptionPopup(false)}
         limitType={currentLimitType}
         currentUsage={billingInfo?.usage.monthlyTransactions || 0}
-        limit={billingInfo?.limits.monthlyTransactions || 50}
+        limit={billingInfo?.limits.monthlyTransactions || 10}
       />
     </div>
   );

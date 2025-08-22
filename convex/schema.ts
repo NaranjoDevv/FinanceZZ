@@ -16,12 +16,21 @@ export default defineSchema({
     numberRounding: v.optional(v.boolean()), // default: false - whether to round numbers (1M, 1K)
     timezone: v.string(),
     language: v.string(),
+    // Stripe integration fields
+    stripeCustomerId: v.optional(v.string()),
+    stripeSubscriptionId: v.optional(v.string()),
+    subscriptionStatus: v.optional(v.union(
+      v.literal("active"),
+      v.literal("canceled"),
+      v.literal("past_due"),
+      v.literal("unpaid")
+    )),
     // Billing limits and usage tracking
     limits: v.object({
-      monthlyTransactions: v.number(), // 50 for free, unlimited for premium
-      activeDebts: v.number(), // 3 for free, unlimited for premium
+      monthlyTransactions: v.number(), // 10 for free, unlimited for premium
+      activeDebts: v.number(), // 1 for free, unlimited for premium
       recurringTransactions: v.number(), // 2 for free, unlimited for premium
-      categories: v.number(), // 3 for free, unlimited for premium
+      categories: v.number(), // 2 for free, unlimited for premium
     }),
     usage: v.object({
       monthlyTransactions: v.number(),
@@ -32,7 +41,8 @@ export default defineSchema({
     })
   })
     .index("by_token", ["tokenIdentifier"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_stripe_customer", ["stripeCustomerId"]),
 
   // Tabla de transacciones
   transactions: defineTable({

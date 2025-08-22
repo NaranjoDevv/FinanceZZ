@@ -167,7 +167,7 @@ export const createTransaction = mutation({
 
       // Check if user has reached monthly transaction limit
       const currentTransactions = user.usage?.monthlyTransactions || 0;
-      const monthlyLimit = user.limits?.monthlyTransactions || 50;
+      const monthlyLimit = user.limits?.monthlyTransactions || 10;
       
       if (currentTransactions >= monthlyLimit) {
         throw new Error(`Has alcanzado el límite de ${monthlyLimit} transacciones mensuales. Actualiza a Premium para transacciones ilimitadas.`);

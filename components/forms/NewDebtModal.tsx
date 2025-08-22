@@ -18,6 +18,7 @@ import {
   CreditCard
 } from "lucide-react";
 import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
+import { useBilling } from "@/hooks/useBilling";
 import { usePriceInput } from "@/lib/price-formatter";
 import { toast } from "sonner";
 
@@ -43,6 +44,7 @@ export default function NewDebtModal({
 }: NewDebtModalProps) {
   const currentUser = useQuery(api.users.getCurrentUser);
   const createDebt = useMutation(api.debts.createDebt);
+  const { setShowSubscriptionPopup, setCurrentLimitType } = useBilling();
 
   // Price input handlers
   const amountInput = usePriceInput("", "COP");
@@ -137,9 +139,17 @@ export default function NewDebtModal({
 
       toast.success("Deuda creada exitosamente");
       onClose();
-    } catch (error) {
+    } catch (error: Error | unknown) {
       console.error("Error creating debt:", error);
-      const errorMessage = error instanceof Error ? error.message : "Error al crear la deuda";
+      
+      // Check if it's a billing limit error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("límite de") && errorMessage.includes("deudas")) {
+        setCurrentLimitType("debts");
+        setShowSubscriptionPopup(true);
+        return;
+      }
+      
       toast.error(errorMessage);
     }
   };

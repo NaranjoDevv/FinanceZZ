@@ -6,7 +6,14 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:headed": "playwright test --headed",
+    "test:billing": "playwright test billing-limits",
+    "test:debug-scenarios": "playwright test debug-scenarios",
+    "test:report": "playwright show-report"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.31.1",

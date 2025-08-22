@@ -18,7 +18,7 @@ interface SubscriptionPopupProps {
 const limitMessages = {
   transactions: {
     title: "Límite de Transacciones Alcanzado",
-    description: "Has alcanzado el límite de 50 transacciones por mes del plan gratuito.",
+    description: "Has alcanzado el límite de 10 transacciones por mes del plan gratuito.",
     icon: "💳"
   },
   debts: {
@@ -72,10 +72,10 @@ const premiumFeatures = [
 ];
 
 const freeFeatures = [
-  "50 transacciones por mes",
-  "3 deudas activas",
+  "10 transacciones por mes",
+  "1 deuda activa",
   "2 transacciones recurrentes",
-  "3 categorías personalizadas",
+  "2 categorías personalizadas",
   "Reporte básico de transacciones",
   "Moneda fija (COP)"
 ];

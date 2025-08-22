@@ -208,6 +208,7 @@ export function useBilling() {
     
     // Acciones
     setShowSubscriptionPopup,
+    setCurrentLimitType,
     canPerformAction,
     trackUsage,
     reduceUsage,

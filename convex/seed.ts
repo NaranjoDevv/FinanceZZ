@@ -23,10 +23,10 @@ export const createFreeUser = mutation({
       timezone: "America/Bogota",
       language: "es",
       limits: {
-        monthlyTransactions: 50,
-        activeDebts: 3,
+        monthlyTransactions: 10,
+        activeDebts: 1,
         recurringTransactions: 2,
-        categories: 3,
+        categories: 2,
       },
       usage: {
         lastResetDate: now,

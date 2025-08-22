@@ -2,6 +2,24 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 
+// Types for better type safety
+type SubscriptionStatus = "active" | "canceled" | "past_due" | "unpaid";
+
+// Constants for plan limits
+const FREE_PLAN_LIMITS = {
+  monthlyTransactions: 10,
+  activeDebts: 1,
+  recurringTransactions: 2,
+  categories: 2,
+};
+
+const PREMIUM_PLAN_LIMITS = {
+  monthlyTransactions: 999999,
+  activeDebts: 999999,
+  recurringTransactions: 999999,
+  categories: 999999,
+};
+
 // Upgrade user to premium plan
 export const upgradeToPremium = mutation({
   args: { 
@@ -19,17 +37,22 @@ export const upgradeToPremium = mutation({
     const now = Date.now();
     const oneMonth = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 
-    await ctx.db.patch(args.userId, {
+    const updateData: any = {
       plan: "premium",
       planExpiry: now + oneMonth,
       subscribedSince: user.subscribedSince || now,
-      limits: {
-        monthlyTransactions: 999999, // Unlimited
-        activeDebts: 999999, // Unlimited
-        recurringTransactions: 999999, // Unlimited
-        categories: 999999, // Unlimited
-      },
-    });
+      limits: PREMIUM_PLAN_LIMITS,
+    };
+
+    // Add Stripe information if provided
+    if (args.customerId) {
+      updateData.stripeCustomerId = args.customerId;
+    }
+    if (args.subscriptionId) {
+      updateData.stripeSubscriptionId = args.subscriptionId;
+    }
+
+    await ctx.db.patch(args.userId, updateData);
 
     return { success: true };
   },
@@ -45,17 +68,42 @@ export const downgradeToFree = mutation({
       throw new Error("User not found");
     }
 
-    await ctx.db.patch(args.userId, {
+    const updateData: any = {
       plan: "free",
-      planExpiry: undefined,
-      limits: {
-        monthlyTransactions: 50,
-        activeDebts: 3,
-        recurringTransactions: 2,
-        categories: 3,
-      },
-    });
+      limits: FREE_PLAN_LIMITS,
+    };
+    
+    // Remove planExpiry when downgrading to free
+    if (user.planExpiry !== undefined) {
+      updateData.planExpiry = undefined;
+    }
 
+    await ctx.db.patch(args.userId, updateData);
+
+    return { success: true };
+  },
+});
+
+// Reset monthly usage counters
+export const resetMonthlyUsage = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const now = Date.now();
+    
+    await ctx.db.patch(args.userId, {
+      usage: {
+        ...user.usage,
+        monthlyTransactions: 0,
+        lastResetDate: now,
+      }
+    });
+    
     return { success: true };
   },
 });
@@ -84,30 +132,15 @@ export const checkUserLimits = query({
         canPerform: true, 
         usage: user.usage,
         limits: user.limits,
-        plan: user.plan
+        plan: user.plan,
+        needsReset: false
       };
     }
 
-    // Check monthly reset for transactions
+    // Check if monthly reset is needed for transactions
     const now = Date.now();
     const oneMonth = 30 * 24 * 60 * 60 * 1000;
-    const shouldReset = now - user.usage.lastResetDate > oneMonth;
-
-    if (shouldReset) {
-      await ctx.db.patch(args.userId, {
-        usage: {
-          ...user.usage,
-          monthlyTransactions: 0,
-          lastResetDate: now,
-        }
-      });
-      
-      // Refetch updated user
-      const updatedUser = await ctx.db.get(args.userId);
-      if (!updatedUser) throw new Error("User not found after update");
-      
-      user.usage = updatedUser.usage;
-    }
+    const needsReset = now - user.usage.lastResetDate > oneMonth;
 
     let canPerform = true;
     let currentUsage = 0;
@@ -115,7 +148,7 @@ export const checkUserLimits = query({
 
     switch (args.action) {
       case "create_transaction":
-        currentUsage = user.usage.monthlyTransactions;
+        currentUsage = needsReset ? 0 : user.usage.monthlyTransactions;
         limit = user.limits.monthlyTransactions;
         canPerform = currentUsage < limit;
         break;
@@ -145,7 +178,8 @@ export const checkUserLimits = query({
       limit,
       usage: user.usage,
       limits: user.limits,
-      plan: user.plan
+      plan: user.plan,
+      needsReset
     };
   },
 });
@@ -250,5 +284,110 @@ export const getUserPlanInfo = query({
       usage: user.usage,
       limits: user.limits,
     };
+  },
+});
+
+// Update user Stripe customer ID
+export const updateStripeCustomerId = mutation({
+  args: {
+    userId: v.id("users"),
+    customerId: v.string()
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(args.userId, {
+      stripeCustomerId: args.customerId
+    });
+
+    return { success: true };
+  },
+});
+
+// Update user subscription details
+export const updateSubscription = mutation({
+  args: {
+    userId: v.id("users"),
+    subscriptionId: v.string(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("canceled"),
+      v.literal("past_due"),
+      v.literal("unpaid")
+    ),
+    currentPeriodEnd: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const updateData: any = {
+      stripeSubscriptionId: args.subscriptionId,
+      subscriptionStatus: args.status
+    };
+
+    if (args.currentPeriodEnd) {
+      updateData.planExpiry = args.currentPeriodEnd;
+    }
+
+    // Update plan based on subscription status
+    if (args.status === "active") {
+      updateData.plan = "premium";
+      updateData.limits = PREMIUM_PLAN_LIMITS;
+    } else if (args.status === "canceled" || args.status === "unpaid") {
+      updateData.plan = "free";
+      updateData.limits = FREE_PLAN_LIMITS;
+    }
+
+    await ctx.db.patch(args.userId, updateData);
+
+    return { success: true };
+  },
+});
+
+// Get user by Stripe customer ID (for webhook processing)
+export const getUserByStripeCustomerId = query({
+  args: { customerId: v.string() },
+  handler: async (ctx, args) => {
+    const users = await ctx.db
+      .query("users")
+      .withIndex("by_stripe_customer", (q) => q.eq("stripeCustomerId", args.customerId))
+      .collect();
+    
+    return users[0] || null;
+  },
+});
+
+// Cancel user subscription
+export const cancelSubscription = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const updateData: any = {
+      plan: "free",
+      subscriptionStatus: "canceled",
+      limits: FREE_PLAN_LIMITS,
+    };
+    
+    // Remove planExpiry when canceling subscription
+    if (user.planExpiry !== undefined) {
+      updateData.planExpiry = undefined;
+    }
+
+    await ctx.db.patch(args.userId, updateData);
+
+    return { success: true };
   },
 });
