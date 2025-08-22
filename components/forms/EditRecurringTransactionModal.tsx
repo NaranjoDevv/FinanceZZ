@@ -3,7 +3,6 @@
 import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { BrutalInput } from "@/components/ui/brutal-input";
 import { BrutalSelect } from "@/components/ui/brutal-select";
@@ -60,7 +59,6 @@ export default function EditRecurringTransactionModal({
   onClose,
   transaction,
 }: EditRecurringTransactionModalProps) {
-  const { user } = useUser();
   const currentUser = useQuery(api.users.getCurrentUser);
   const updateRecurringTransaction = useMutation(api.recurringTransactions.updateRecurringTransaction);
   const toggleRecurringTransaction = useMutation(api.recurringTransactions.toggleRecurringTransaction);
@@ -100,7 +98,7 @@ export default function EditRecurringTransactionModal({
       resetForm();
       setValue(transaction.amount);
     }
-  }, [isOpen, transaction._id, resetForm, setValue]);
+  }, [isOpen, transaction._id, transaction.amount, resetForm, setValue]);
 
   const filteredCategories = categories?.filter(cat => 
     formData.type === "income" ? !cat.isExpense : cat.isExpense

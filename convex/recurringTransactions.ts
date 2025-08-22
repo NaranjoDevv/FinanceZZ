@@ -184,6 +184,14 @@ export const createRecurringTransaction = mutation({
       throw new Error("User not found");
     }
 
+    // Check recurring transaction limits for free users
+    if (user.plan === "free") {
+      const currentRecurringTransactions = user.usage?.recurringTransactions || 0;
+      if (currentRecurringTransactions >= 2) {
+        throw new Error("Has alcanzado el límite de 2 transacciones recurrentes. Actualiza a un plan premium para crear más.");
+      }
+    }
+
     // Validate amount
     if (args.amount <= 0) {
       throw new Error("Amount must be greater than 0");
@@ -257,6 +265,17 @@ export const createRecurringTransaction = mutation({
     }
 
     const recurringTransactionId = await ctx.db.insert("recurringTransactions", transactionData);
+
+    // Increment recurring transaction count for free users
+    if (user.plan === "free" && user.usage) {
+      const currentRecurringTransactions = user.usage.recurringTransactions || 0;
+      await ctx.db.patch(user._id, {
+        usage: {
+          ...user.usage,
+          recurringTransactions: currentRecurringTransactions + 1,
+        },
+      });
+    }
 
     return recurringTransactionId;
   },
@@ -456,6 +475,19 @@ export const deleteRecurringTransaction = mutation({
     }
 
     await ctx.db.delete(args.id);
+    
+    // Decrement recurring transaction count for free users
+    if (user.plan === "free" && user.usage) {
+      const currentRecurringTransactions = user.usage.recurringTransactions || 0;
+      if (currentRecurringTransactions > 0) {
+        await ctx.db.patch(user._id, {
+          usage: {
+            ...user.usage,
+            recurringTransactions: currentRecurringTransactions - 1,
+          },
+        });
+      }
+    }
     
     return args.id;
   },

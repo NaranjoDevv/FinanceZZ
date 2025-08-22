@@ -130,6 +130,50 @@ export const createTransaction = mutation({
     tags: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Get user information to check billing limits
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check transaction limits for free users
+    if (user.plan === "free") {
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const userLastReset = user.usage?.lastResetDate ? new Date(user.usage.lastResetDate) : new Date(0);
+      const lastResetMonth = userLastReset.getMonth();
+      const lastResetYear = userLastReset.getFullYear();
+
+      // Reset monthly usage if it's a new month
+      if (currentMonth !== lastResetMonth || currentYear !== lastResetYear) {
+        if (user.usage) {
+          await ctx.db.patch(args.userId, {
+            usage: {
+              ...user.usage,
+              monthlyTransactions: 0,
+              lastResetDate: Date.now(),
+            },
+          });
+        }
+        // Update user object for current check
+        if (user.usage) {
+          user.usage = {
+            ...user.usage,
+            monthlyTransactions: 0,
+            lastResetDate: Date.now(),
+          };
+        }
+      }
+
+      // Check if user has reached monthly transaction limit
+      const currentTransactions = user.usage?.monthlyTransactions || 0;
+      const monthlyLimit = user.limits?.monthlyTransactions || 50;
+      
+      if (currentTransactions >= monthlyLimit) {
+        throw new Error(`Has alcanzado el límite de ${monthlyLimit} transacciones mensuales. Actualiza a Premium para transacciones ilimitadas.`);
+      }
+    }
+
     // Validate amount is positive
     if (args.amount <= 0) {
       throw new Error("Amount must be positive");
@@ -180,6 +224,17 @@ export const createTransaction = mutation({
     if (args.tags) transactionData.tags = args.tags;
 
     const transactionId = await ctx.db.insert("transactions", transactionData);
+
+    // Increment transaction count for free users
+    if (user.plan === "free" && user.usage) {
+      const currentTransactions = user.usage.monthlyTransactions || 0;
+      await ctx.db.patch(args.userId, {
+        usage: {
+          ...user.usage,
+          monthlyTransactions: currentTransactions + 1,
+        },
+      });
+    }
 
     return transactionId;
   },
@@ -269,7 +324,27 @@ export const deleteTransaction = mutation({
       throw new Error("Unauthorized");
     }
 
+    // Get user information to update usage count
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
     await ctx.db.delete(args.id);
+
+    // Decrement transaction count for free users
+    if (user.plan === "free" && user.usage) {
+      const currentTransactions = user.usage.monthlyTransactions || 0;
+      if (currentTransactions > 0) {
+        await ctx.db.patch(args.userId, {
+          usage: {
+            ...user.usage,
+            monthlyTransactions: currentTransactions - 1,
+          },
+        });
+      }
+    }
+
     return args.id;
   },
 });

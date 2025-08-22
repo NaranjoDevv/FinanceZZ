@@ -52,9 +52,13 @@ export default function ContactsPage() {
     currentUser ? { userId: currentUser._id } : "skip"
   );
 
+  // Verificar si el usuario es gratuito
+  const isFreeUser = currentUser?.plan === "free";
+
   const contacts = useMemo(() => contactsData || [], [contactsData]);
 
   const filteredContacts = useMemo(() => {
+    if (!contacts) return [];
     let filtered = contacts;
 
     if (searchTerm) {
@@ -82,6 +86,85 @@ export default function ContactsPage() {
 
     return filtered;
   }, [contacts, searchTerm, filterType]);
+
+  // Si es usuario gratuito, mostrar mensaje de funcionalidad premium
+  if (isFreeUser) {
+    return (
+      <div className="min-h-screen bg-yellow-50 p-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-black text-yellow-400 rounded-lg">
+                <UserGroupIcon className="h-8 w-8" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-black text-black">
+                  CONTACTOS
+                </h1>
+                <p className="text-lg text-gray-600 font-bold">
+                  Gestiona tu red de contactos
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Premium Feature Message */}
+          <Card className="p-12 border-4 border-black bg-gradient-to-br from-yellow-100 to-orange-100 text-center">
+            <div className="max-w-2xl mx-auto">
+              <div className="p-4 bg-black text-yellow-400 rounded-lg inline-block mb-6">
+                <UserGroupIcon className="h-16 w-16" />
+              </div>
+              
+              <h2 className="text-3xl font-black text-black mb-4">
+                🔒 FUNCIONALIDAD PREMIUM
+              </h2>
+              
+              <p className="text-xl text-gray-700 font-bold mb-6 leading-relaxed">
+                El módulo de <span className="text-black font-black">CONTACTOS</span> está disponible 
+                exclusivamente para usuarios con plan premium.
+              </p>
+              
+              <div className="bg-white border-4 border-black p-6 rounded-lg mb-8">
+                <h3 className="text-xl font-black text-black mb-4">
+                  ✨ CON EL PLAN PREMIUM PODRÁS:
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="font-bold text-gray-700">Gestionar contactos ilimitados</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="font-bold text-gray-700">Vincular contactos con deudas</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="font-bold text-gray-700">Información detallada de contactos</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="font-bold text-gray-700">Recordatorios personalizados</span>
+                  </div>
+                </div>
+              </div>
+              
+              <Button
+                className="bg-black text-yellow-400 border-4 border-black font-black hover:bg-yellow-400 hover:text-black transition-colors text-lg px-8 py-4"
+                onClick={() => window.open('/upgrade', '_blank')}
+              >
+                🚀 ACTUALIZAR A PREMIUM
+              </Button>
+              
+              <p className="text-sm text-gray-600 font-bold mt-4">
+                Desbloquea todas las funcionalidades y potencia tu gestión financiera
+              </p>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("es-ES", {

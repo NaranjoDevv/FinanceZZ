@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useCategories, Category, Subcategory } from "@/hooks/use-categories";
+import { useCategories } from "@/hooks/use-categories";
 import { SubcategoryList } from "@/components/subcategories/SubcategoryList";
 import { ArrowLeftIcon, TagIcon } from "@heroicons/react/24/outline";
 import { Id } from "@/convex/_generated/dataModel";

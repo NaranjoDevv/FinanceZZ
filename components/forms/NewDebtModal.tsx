@@ -139,7 +139,8 @@ export default function NewDebtModal({
       onClose();
     } catch (error) {
       console.error("Error creating debt:", error);
-      toast.error("Error al crear la deuda");
+      const errorMessage = error instanceof Error ? error.message : "Error al crear la deuda";
+      toast.error(errorMessage);
     }
   };
 

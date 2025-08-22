@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
 import { BrutalInput } from "@/components/ui/brutal-input";
 import { BrutalSelect } from "@/components/ui/brutal-select";
 import { BaseModal } from "@/components/ui/BaseModal";
@@ -167,7 +166,8 @@ export default function NewRecurringTransactionModal({
       onClose();
     } catch (error) {
       console.error("Error creating recurring transaction:", error);
-      toast.error("Error al crear la transacción recurrente");
+      const errorMessage = error instanceof Error ? error.message : "Error al crear la transacción recurrente";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

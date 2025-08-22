@@ -2,12 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Id } from "@/convex/_generated/dataModel";
 import { RecurringTransaction } from "@/hooks/useRecurringTransactions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -28,33 +26,23 @@ import {
   Squares2X2Icon,
   ListBulletIcon,
 } from "@heroicons/react/24/outline";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import NewRecurringTransactionModal from "@/components/forms/NewRecurringTransactionModal";
 import EditRecurringTransactionModal from "@/components/forms/EditRecurringTransactionModal";
 import DeleteRecurringTransactionModal from "@/components/forms/DeleteRecurringTransactionModal";
-import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/currency";
 
 
 
-const FREQUENCY_LABELS = {
-  daily: "Diario",
-  weekly: "Semanal",
-  monthly: "Mensual",
-  yearly: "Anual",
-};
-
-const TYPE_LABELS = {
-  income: "Ingreso",
-  expense: "Gasto",
-};
-
 export default function RecurringTransactionsPage() {
-  const recurringTransactions = useQuery(api.recurringTransactions.getRecurringTransactions) || [];
-  const isLoading = recurringTransactions === undefined;
-
+  const recurringTransactionsQuery = useQuery(api.recurringTransactions.getRecurringTransactions);
+  const isLoading = recurringTransactionsQuery === undefined;
+  
+  const recurringTransactions = useMemo(() => {
+    return recurringTransactionsQuery || [];
+  }, [recurringTransactionsQuery]);
 
   // Modal states
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -72,6 +60,7 @@ export default function RecurringTransactionsPage() {
 
   // Memoized filtered transactions
   const filteredTransactions = useMemo(() => {
+    if (!recurringTransactions) return [];
     return recurringTransactions.filter((transaction) => {
       const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "all" ||
@@ -86,6 +75,8 @@ export default function RecurringTransactionsPage() {
 
   // Memoized statistics
   const stats = useMemo(() => {
+    if (!recurringTransactions) return { total: 0, active: 0, paused: 0, monthlyImpact: 0 };
+    
     const activeTransactions = recurringTransactions.filter(t => t.isActive);
     const pausedTransactions = recurringTransactions.filter(t => !t.isActive);
     
@@ -104,14 +95,17 @@ export default function RecurringTransactionsPage() {
         case "yearly":
           monthlyAmount = transaction.amount / 12;
           break;
+        default:
+          monthlyAmount = 0;
       }
-      return total + (transaction.type === "expense" ? -monthlyAmount : monthlyAmount);
+      return total + monthlyAmount;
     }, 0);
 
     return {
+      total: recurringTransactions.length,
       active: activeTransactions.length,
       paused: pausedTransactions.length,
-      monthlyImpact,
+      monthlyImpact
     };
   }, [recurringTransactions]);
 
@@ -124,8 +118,6 @@ export default function RecurringTransactionsPage() {
     setSelectedTransaction(transaction);
     setIsDeleteModalOpen(true);
   };
-
-
 
   if (isLoading) {
     return (

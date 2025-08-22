@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useBilling } from "@/hooks/useBilling";
+import { SubscriptionPopup } from "@/components/billing/SubscriptionPopup";
 
 import {
   HomeIcon,
@@ -41,6 +46,33 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const currentUser = useQuery(api.users.getCurrentUser);
+  const { 
+    billingInfo, 
+    isFree, 
+    isPremium, 
+    showSubscriptionPopup, 
+    setShowSubscriptionPopup, 
+    currentLimitType 
+  } = useBilling();
+  
+  // Mostrar popup de suscripción al cargar el dashboard para usuarios gratuitos
+  useEffect(() => {
+    if (pathname === '/dashboard' && isFree && billingInfo) {
+      const timer = setTimeout(() => {
+        setShowSubscriptionPopup(true);
+      }, 2000); // Mostrar después de 2 segundos
+      
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, isFree, billingInfo, setShowSubscriptionPopup]);
+  
+  // Mostrar toda la navegación pero marcar elementos premium para usuarios gratuitos
+  const navigationWithStatus = navigation.map(item => ({
+    ...item,
+    isPremium: currentUser?.plan === "free" && item.href === "/contacts",
+    isDisabled: currentUser?.plan === "free" && item.href === "/contacts"
+  }));
 
   const sidebarVariants = {
     open: {
@@ -94,23 +126,38 @@ export default function DashboardLayout({
           {/* Navigation */}
           <nav className="flex-1 p-6">
             <ul className="space-y-2">
-              {navigation.map((item) => {
+              {navigationWithStatus.map((item) => {
                 const IconComponent = item.icon;
                 // Check if current path matches the item href or if it's a subcategory of categories
                 const isActive = pathname === item.href || 
                   (item.href === '/categories' && pathname.startsWith('/categories/'));
 
+                const handleClick = (e: React.MouseEvent) => {
+                  if (item.isDisabled) {
+                    e.preventDefault();
+                    setShowSubscriptionPopup(true);
+                  }
+                };
+
                 return (
                   <li key={item.name}>
                     <Link
-                      href={item.href}
-                      className={`flex items-center px-4 py-3 text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${isActive
+                      href={item.isDisabled ? "#" : item.href}
+                      onClick={handleClick}
+                      className={`flex items-center px-4 py-3 text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${item.isDisabled
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
+                        : isActive
                         ? "bg-yellow-400 text-black shadow-brutal"
                         : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
                         }`}
                     >
-                      <IconComponent className="w-5 h-5 mr-3" />
+                      <IconComponent className={`w-5 h-5 mr-3 ${item.isDisabled ? "text-gray-400" : ""}`} />
                       <span className="truncate">{item.name}</span>
+                      {item.isPremium && (
+                        <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded font-black">
+                          PRO
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
@@ -133,6 +180,18 @@ export default function DashboardLayout({
                   <p className="text-sm font-bold uppercase tracking-wide truncate text-black">
                     Mi Cuenta
                   </p>
+                  {billingInfo && (
+                    <Badge 
+                      variant={isPremium ? "default" : "secondary"}
+                      className={`text-xs font-bold uppercase mt-1 ${
+                        isPremium 
+                          ? "bg-yellow-400 text-yellow-900 border-yellow-600" 
+                          : "bg-gray-200 text-gray-700 border-gray-400"
+                      }`}
+                    >
+                      {isPremium ? "Premium" : "Gratuito"}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -172,24 +231,40 @@ export default function DashboardLayout({
           {/* Navigation */}
           <nav className="flex-1 p-4 sm:p-6">
             <ul className="space-y-1 sm:space-y-2">
-              {navigation.map((item) => {
+              {navigationWithStatus.map((item) => {
                 const IconComponent = item.icon;
                 // Check if current path matches the item href or if it's a subcategory of categories
                 const isActive = pathname === item.href || 
                   (item.href === '/categories' && pathname.startsWith('/categories/'));
 
+                const handleClick = (e: React.MouseEvent) => {
+                  if (item.isDisabled) {
+                    e.preventDefault();
+                    setShowSubscriptionPopup(true);
+                  } else {
+                    setSidebarOpen(false);
+                  }
+                };
+
                 return (
                   <li key={item.name}>
                     <Link
-                      href={item.href}
-                      className={`flex items-center px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${isActive
+                      href={item.isDisabled ? "#" : item.href}
+                      className={`flex items-center px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${item.isDisabled
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
+                        : isActive
                         ? "bg-yellow-400 text-black shadow-brutal"
                         : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
                         }`}
-                      onClick={() => setSidebarOpen(false)}
+                      onClick={handleClick}
                     >
-                      <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
+                      <IconComponent className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 ${item.isDisabled ? "text-gray-400" : ""}`} />
                       <span className="truncate">{item.name}</span>
+                      {item.isPremium && (
+                        <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded font-black">
+                          PRO
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
@@ -212,6 +287,18 @@ export default function DashboardLayout({
                   <p className="text-xs sm:text-sm font-bold uppercase tracking-wide truncate text-black">
                     Mi Cuenta
                   </p>
+                  {billingInfo && (
+                    <Badge 
+                      variant={isPremium ? "default" : "secondary"}
+                      className={`text-xs font-bold uppercase mt-1 ${
+                        isPremium 
+                          ? "bg-yellow-400 text-yellow-900 border-yellow-600" 
+                          : "bg-gray-200 text-gray-700 border-gray-400"
+                      }`}
+                    >
+                      {isPremium ? "Premium" : "Gratuito"}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -275,6 +362,15 @@ export default function DashboardLayout({
           </motion.div>
         </main>
       </div>
+      
+      {/* Subscription Popup */}
+      <SubscriptionPopup
+        isOpen={showSubscriptionPopup}
+        onClose={() => setShowSubscriptionPopup(false)}
+        limitType={currentLimitType}
+        currentUsage={billingInfo?.usage?.currentMonthTransactions}
+        limit={billingInfo?.limits?.monthlyTransactions}
+      />
     </div>
   );
 }

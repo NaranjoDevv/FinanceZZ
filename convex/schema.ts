@@ -8,13 +8,28 @@ export default defineSchema({
     email: v.string(),
     name: v.string(),
     imageUrl: v.optional(v.string()),
-    plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+    plan: v.union(v.literal("free"), v.literal("premium")),
+    planExpiry: v.optional(v.number()),
     subscribedSince: v.optional(v.number()),
     onboardingCompleted: v.boolean(),
-    currency: v.string(), // default: 'USD'
+    currency: v.string(), // default: 'COP' for free users, customizable for premium
     numberRounding: v.optional(v.boolean()), // default: false - whether to round numbers (1M, 1K)
     timezone: v.string(),
     language: v.string(),
+    // Billing limits and usage tracking
+    limits: v.object({
+      monthlyTransactions: v.number(), // 50 for free, unlimited for premium
+      activeDebts: v.number(), // 3 for free, unlimited for premium
+      recurringTransactions: v.number(), // 2 for free, unlimited for premium
+      categories: v.number(), // 3 for free, unlimited for premium
+    }),
+    usage: v.object({
+      monthlyTransactions: v.number(),
+      activeDebts: v.number(),
+      recurringTransactions: v.number(),
+      categories: v.number(),
+      lastResetDate: v.number(), // timestamp for monthly reset
+    })
   })
     .index("by_token", ["tokenIdentifier"])
     .index("by_email", ["email"]),
