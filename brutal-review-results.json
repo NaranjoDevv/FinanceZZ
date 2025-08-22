@@ -1,0 +1,55 @@
+{
+  "screenshots": [
+    {
+      "name": "initial-load",
+      "description": "Initial application load",
+      "filename": "brutal-review-initial-load-2025-08-22T19-00-07-288Z.png",
+      "filepath": "C:\\Users\\123456\\Desktop\\financee\\brutal-screenshots\\brutal-review-initial-load-2025-08-22T19-00-07-288Z.png"
+    },
+    {
+      "name": "viewport-desktop",
+      "description": "Desktop viewport test",
+      "filename": "brutal-review-viewport-desktop-2025-08-22T19-00-09-233Z.png",
+      "filepath": "C:\\Users\\123456\\Desktop\\financee\\brutal-screenshots\\brutal-review-viewport-desktop-2025-08-22T19-00-09-233Z.png"
+    },
+    {
+      "name": "viewport-tablet",
+      "description": "Tablet viewport test",
+      "filename": "brutal-review-viewport-tablet-2025-08-22T19-00-10-685Z.png",
+      "filepath": "C:\\Users\\123456\\Desktop\\financee\\brutal-screenshots\\brutal-review-viewport-tablet-2025-08-22T19-00-10-685Z.png"
+    },
+    {
+      "name": "viewport-mobile",
+      "description": "Mobile viewport test",
+      "filename": "brutal-review-viewport-mobile-2025-08-22T19-00-11-991Z.png",
+      "filepath": "C:\\Users\\123456\\Desktop\\financee\\brutal-screenshots\\brutal-review-viewport-mobile-2025-08-22T19-00-11-991Z.png"
+    },
+    {
+      "name": "keyboard-focus",
+      "description": "Keyboard focus state testing",
+      "filename": "brutal-review-keyboard-focus-2025-08-22T19-00-12-970Z.png",
+      "filepath": "C:\\Users\\123456\\Desktop\\financee\\brutal-screenshots\\brutal-review-keyboard-focus-2025-08-22T19-00-12-970Z.png"
+    }
+  ],
+  "findings": {
+    "blockers": [],
+    "highPriority": [],
+    "mediumPriority": [],
+    "nitpicks": []
+  },
+  "performanceMetrics": {
+    "Timestamp": 3117.228259,
+    "Documents": 3,
+    "Frames": 1,
+    "JSEventListeners": 794,
+    "Nodes": 412,
+    "LayoutCount": 439,
+    "RecalcStyleCount": 615,
+    "LayoutDuration": 0.665894,
+    "RecalcStyleDuration": 0.188536,
+    "ScriptDuration": 0.174677,
+    "TaskDuration": 1.528917,
+    "JSHeapUsedSize": 11735984,
+    "JSHeapTotalSize": 20447232
+  }
+}

@@ -87,30 +87,31 @@ export function SubscriptionPopup({ isOpen, onClose, limitType, currentUsage, li
   const handleUpgrade = async () => {
     setIsLoading(true);
     try {
-      // TODO: Implement real Stripe integration
-      // For now, show a more realistic mock flow
       console.log("Iniciando proceso de pago para plan Premium...");
       
-      // Simulate API call to create checkout session
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'premium' })
+      });
       
-      // In a real implementation, this would redirect to Stripe Checkout:
-      // const response = await fetch('/api/create-checkout-session', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ plan: 'premium' })
-      // });
-      // const { url } = await response.json();
-      // window.location.href = url;
+      if (!response.ok) {
+        throw new Error('Error creating checkout session');
+      }
       
-      alert("Redirección a Stripe Checkout (simulada). En producción esto abriría la pasarela de pago real.");
+      const { url } = await response.json();
+      
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
     } catch (error) {
       console.error("Error creando sesión de pago:", error);
       alert("Error al procesar el pago. Intenta nuevamente.");
-    } finally {
       setIsLoading(false);
-      onClose();
     }
+    // Don't set loading to false here as we're redirecting
   };
 
   return (
