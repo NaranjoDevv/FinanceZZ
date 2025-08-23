@@ -120,7 +120,7 @@ export default function Categories() {
     isLoading,
     isAuthenticated,
   } = useCategories();
-  const { billingInfo, isFree, getUsagePercentage } = useBilling();
+  const { billingInfo, isFree, getUsagePercentage, canPerformAction } = useBilling();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
@@ -183,6 +183,15 @@ export default function Categories() {
 
     setSelectedCategory(category);
     setIsDeleteCategoryModalOpen(true);
+  };
+
+  // Handle new category with limit check
+  const handleNewCategory = async () => {
+    const canProceed = await canPerformAction("categories");
+    if (canProceed) {
+      setIsNewCategoryModalOpen(true);
+    }
+    // If can't proceed, canPerformAction already shows the subscription popup
   };
 
   const totalCategories = categories.length;
@@ -255,7 +264,7 @@ export default function Categories() {
         <div className="flex flex-wrap gap-4">
           <Button
             className="brutal-button brutal-button--primary"
-            onClick={() => setIsNewCategoryModalOpen(true)}
+            onClick={handleNewCategory}
           >
             <PlusIcon className="w-5 h-5 mr-2" />
             Nueva Categoría

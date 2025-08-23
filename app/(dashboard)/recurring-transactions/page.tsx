@@ -40,7 +40,7 @@ import { formatCurrency } from "@/lib/currency";
 export default function RecurringTransactionsPage() {
   const recurringTransactionsQuery = useQuery(api.recurringTransactions.getRecurringTransactions);
   const isLoading = recurringTransactionsQuery === undefined;
-  const { billingInfo, isFree, getUsagePercentage } = useBilling();
+  const { billingInfo, isFree, getUsagePercentage, canPerformAction } = useBilling();
   
   const recurringTransactions = useMemo(() => {
     return recurringTransactionsQuery || [];
@@ -119,6 +119,15 @@ export default function RecurringTransactionsPage() {
   const handleDeleteTransaction = (transaction: RecurringTransaction) => {
     setSelectedTransaction(transaction);
     setIsDeleteModalOpen(true);
+  };
+
+  // Handle new recurring transaction with limit check
+  const handleNewRecurringTransaction = async () => {
+    const canProceed = await canPerformAction("recurring_transactions");
+    if (canProceed) {
+      setIsNewModalOpen(true);
+    }
+    // If can't proceed, canPerformAction already shows the subscription popup
   };
 
   if (isLoading) {
@@ -207,7 +216,7 @@ export default function RecurringTransactionsPage() {
         <div className="flex flex-wrap gap-3">
           <Button
             className="brutal-button brutal-button--primary"
-            onClick={() => setIsNewModalOpen(true)}
+            onClick={handleNewRecurringTransaction}
           >
             <PlusIcon className="w-5 h-5 mr-2" />
             Nueva Recurrente

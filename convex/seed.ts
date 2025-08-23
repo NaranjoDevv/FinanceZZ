@@ -329,23 +329,23 @@ export const clearSeedData = mutation({
     }
 
     // Eliminar transacciones del usuario
-    const transactions = await ctx.db
+    const existingTransactions = await ctx.db
       .query("transactions")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
     
-    for (const transaction of transactions) {
+    for (const transaction of existingTransactions) {
       await ctx.db.delete(transaction._id);
     }
 
     // Eliminar categorías del usuario (solo las no-sistema)
-    const categories = await ctx.db
+    const existingCategories = await ctx.db
       .query("categories")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
     
     const deletedCategories = [];
-    for (const category of categories) {
+    for (const category of existingCategories) {
       if (!category.isSystem) { // Solo eliminar categorías no-sistema
         await ctx.db.delete(category._id);
         deletedCategories.push(category._id);
@@ -371,7 +371,7 @@ export const clearSeedData = mutation({
       message: shouldResetCounters ? 
         "Datos de ejemplo eliminados y contadores reseteados exitosamente" :
         "Datos de ejemplo eliminados exitosamente",
-      deletedTransactions: transactions.length,
+      deletedTransactions: existingTransactions.length,
       deletedCategories: deletedCategories.length,
       resetCounters: shouldResetCounters,
       newUsage: shouldResetCounters ? {
@@ -654,6 +654,421 @@ export const getUserLimitsAndUsage = mutation({
         debts: user.plan === "premium" || !user.usage || !user.limits ? 0 : (user.usage.activeDebts / user.limits.activeDebts) * 100,
         recurringTransactions: user.plan === "premium" || !user.usage || !user.limits ? 0 : (user.usage.recurringTransactions / user.limits.recurringTransactions) * 100,
         categories: user.plan === "premium" || !user.usage || !user.limits ? 0 : (user.usage.categories / user.limits.categories) * 100,
+      }
+    };
+  }
+});
+
+// Función para crear datos de ejemplo con un porcentaje específico de uso
+export const seedDataWithPercentage = mutation({
+  args: {
+    userId: v.id("users"),
+    percentage: v.number() // 20, 50, 80, 100
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    if (user.plan === "premium") {
+      throw new Error("Los controles de porcentaje son solo para usuarios del plan gratuito");
+    }
+
+    // Validar porcentaje
+    if (args.percentage < 0 || args.percentage > 100) {
+      throw new Error("El porcentaje debe estar entre 0 y 100");
+    }
+
+    // Limpiar datos existentes primero - crear una nueva función auxiliar
+    // Eliminar transacciones del usuario
+    const transactions = await ctx.db
+      .query("transactions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    
+    for (const transaction of transactions) {
+      await ctx.db.delete(transaction._id);
+    }
+
+    // Eliminar categorías del usuario (solo las no-sistema)
+    const categories = await ctx.db
+      .query("categories")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    
+    const deletedCategories = [];
+    for (const category of categories) {
+      if (!category.isSystem) { // Solo eliminar categorías no-sistema
+        await ctx.db.delete(category._id);
+        deletedCategories.push(category._id);
+      }
+    }
+
+    // Resetear contadores de uso
+    const resetUsage = {
+      lastResetDate: Date.now(),
+      monthlyTransactions: 0,
+      categories: Math.max(0, (user.usage?.categories || 0) - deletedCategories.length),
+      activeDebts: 0,
+      recurringTransactions: 0
+    };
+    
+    await ctx.db.patch(args.userId, { usage: resetUsage });
+
+    const limits = user.limits!;
+    
+    // Calcular cuántos elementos crear según el porcentaje
+    const targetTransactions = Math.floor((limits.monthlyTransactions * args.percentage) / 100);
+    const targetCategories = Math.floor((limits.categories * args.percentage) / 100);
+    const targetRecurringTransactions = Math.floor((limits.recurringTransactions * args.percentage) / 100);
+    const targetDebts = Math.floor((limits.activeDebts * args.percentage) / 100);
+
+    // Crear categorías base (siempre crear al menos 1 para income)
+    const incomeCategory = await ctx.db.insert("categories", {
+      userId: args.userId,
+      name: "Trabajo",
+      icon: "💼",
+      color: "#10B981",
+      isExpense: false,
+      isSystem: false,
+      order: 1
+    });
+
+    let categoriesCreated = 1;
+
+    // Crear categorías adicionales según el porcentaje
+    if (targetCategories > 1) {
+      const additionalCategories = [
+        { name: "Alimentación", icon: "🍽️", color: "#F59E0B", isExpense: true },
+        { name: "Vivienda", icon: "🏠", color: "#EF4444", isExpense: true },
+        { name: "Transporte", icon: "🚗", color: "#8B5CF6", isExpense: true },
+        { name: "Entretenimiento", icon: "🎮", color: "#06B6D4", isExpense: true }
+      ];
+
+      const categoriesToCreate = Math.min(targetCategories - 1, additionalCategories.length);
+      
+      for (let i = 0; i < categoriesToCreate; i++) {
+        await ctx.db.insert("categories", {
+          userId: args.userId,
+          ...additionalCategories[i],
+          isSystem: false,
+          order: i + 2
+        });
+        categoriesCreated++;
+      }
+    }
+
+    // Crear transacciones según el porcentaje
+    const transactionTemplates = [
+      { type: "income" as const, amount: 3500000, description: "Salario mensual", categoryId: incomeCategory },
+      { type: "expense" as const, amount: 1200000, description: "Pago de renta" },
+      { type: "expense" as const, amount: 385500, description: "Supermercado semanal" },
+      { type: "expense" as const, amount: 145000, description: "Gasolina" },
+      { type: "income" as const, amount: 500000, description: "Proyecto freelance", categoryId: incomeCategory },
+      { type: "expense" as const, amount: 75000, description: "Cena en restaurante" },
+      { type: "expense" as const, amount: 120000, description: "Servicios públicos" },
+      { type: "expense" as const, amount: 45000, description: "Transporte público" },
+      { type: "expense" as const, amount: 80000, description: "Compras varias" },
+      { type: "income" as const, amount: 200000, description: "Venta online", categoryId: incomeCategory }
+    ];
+
+    const categoriesForTransactions = await ctx.db
+      .query("categories")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    
+    const expenseCategories = categoriesForTransactions.filter(c => c.isExpense);
+
+    let transactionsCreated = 0;
+    for (let i = 0; i < targetTransactions && i < transactionTemplates.length; i++) {
+      const template = transactionTemplates[i];
+      
+      await ctx.db.insert("transactions", {
+        userId: args.userId,
+        type: template.type,
+        amount: template.amount,
+        description: template.description,
+        date: Date.now() - (86400000 * (i + 1)), // Días anteriores
+        categoryId: template.categoryId || (template.type === "expense" && expenseCategories[0] ? expenseCategories[0]._id : incomeCategory),
+        isRecurring: false,
+        notes: `Transacción de ejemplo ${i + 1}`
+      });
+      transactionsCreated++;
+    }
+
+    // Crear transacciones recurrentes según el porcentaje
+    let recurringCreated = 0;
+    if (targetRecurringTransactions > 0) {
+      const recurringTemplates = [
+        { type: "income" as const, amount: 3500000, description: "Salario mensual recurrente", frequency: "monthly" },
+        { type: "expense" as const, amount: 1200000, description: "Renta mensual", frequency: "monthly" }
+      ];
+
+      for (let i = 0; i < targetRecurringTransactions && i < recurringTemplates.length; i++) {
+        const template = recurringTemplates[i];
+        
+        await ctx.db.insert("recurringTransactions", {
+          userId: args.userId,
+          type: template.type,
+          amount: template.amount,
+          description: template.description,
+          categoryId: template.type === "income" ? incomeCategory : (expenseCategories[0]?._id || incomeCategory),
+          recurringFrequency: template.frequency as "weekly" | "monthly",
+          nextExecutionDate: Date.now() + (template.frequency === "weekly" ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          totalExecutions: 0,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          notes: `Transacción recurrente de ejemplo ${i + 1}`
+        });
+        recurringCreated++;
+      }
+    }
+
+    // Crear deudas según el porcentaje
+    let debtsCreated = 0;
+    if (targetDebts > 0) {
+      await ctx.db.insert("debts", {
+        userId: args.userId,
+        counterpartyName: "Juan Pérez",
+        originalAmount: 500000,
+        currentAmount: 500000,
+        description: "Préstamo personal",
+        startDate: Date.now(),
+        dueDate: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 días
+        type: "i_owe" as const,
+        status: "open" as const,
+        notes: "Deuda de ejemplo"
+      });
+      debtsCreated = 1;
+    }
+
+    // Actualizar contadores de uso
+    const updatedUsage = {
+      lastResetDate: Date.now(),
+      monthlyTransactions: transactionsCreated,
+      categories: categoriesCreated,
+      recurringTransactions: recurringCreated,
+      activeDebts: debtsCreated
+    };
+
+    await ctx.db.patch(args.userId, { usage: updatedUsage });
+
+    return {
+      message: `Datos creados exitosamente al ${args.percentage}% de uso`,
+      percentage: args.percentage,
+      limits: limits,
+      created: {
+        transactions: transactionsCreated,
+        categories: categoriesCreated,
+        recurringTransactions: recurringCreated,
+        debts: debtsCreated
+      },
+      usage: updatedUsage,
+      percentageResults: {
+        transactions: `${transactionsCreated}/${limits.monthlyTransactions} (${Math.round((transactionsCreated / limits.monthlyTransactions) * 100)}%)`,
+        categories: `${categoriesCreated}/${limits.categories} (${Math.round((categoriesCreated / limits.categories) * 100)}%)`,
+        recurringTransactions: `${recurringCreated}/${limits.recurringTransactions} (${Math.round((recurringCreated / limits.recurringTransactions) * 100)}%)`,
+        debts: `${debtsCreated}/${limits.activeDebts} (${Math.round((debtsCreated / limits.activeDebts) * 100)}%)`
+      }
+    };
+  }
+});
+
+// Función para llenar completamente hasta el límite (útil para probar restricciones)
+export const fillToLimit = mutation({
+  args: {
+    userId: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    if (user.plan === "premium") {
+      throw new Error("Los controles de límite son solo para usuarios del plan gratuito");
+    }
+
+    // Implementar la misma lógica que seedDataWithPercentage pero al 100%
+    const limits = user.limits!;
+    const percentage = 100;
+    
+    // Calcular cuántos elementos crear según el porcentaje
+    const targetTransactions = Math.floor((limits.monthlyTransactions * percentage) / 100);
+    const targetCategories = Math.floor((limits.categories * percentage) / 100);
+    const targetRecurringTransactions = Math.floor((limits.recurringTransactions * percentage) / 100);
+    const targetDebts = Math.floor((limits.activeDebts * percentage) / 100);
+
+    // Limpiar datos existentes primero
+    const transactions = await ctx.db
+      .query("transactions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    
+    for (const transaction of transactions) {
+      await ctx.db.delete(transaction._id);
+    }
+
+    const categoriesInFillLimit = await ctx.db
+      .query("categories")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    
+    const deletedCategories = [];
+    for (const category of categoriesInFillLimit) {
+      if (!category.isSystem) {
+        await ctx.db.delete(category._id);
+        deletedCategories.push(category._id);
+      }
+    }
+
+    // Crear los mismos datos que seedDataWithPercentage al 100%
+    const incomeCategory = await ctx.db.insert("categories", {
+      userId: args.userId,
+      name: "Trabajo",
+      icon: "💼",
+      color: "#10B981",
+      isExpense: false,
+      isSystem: false,
+      order: 1
+    });
+
+    let categoriesCreated = 1;
+
+    if (targetCategories > 1) {
+      const additionalCategories = [
+        { name: "Alimentación", icon: "🍽️", color: "#F59E0B", isExpense: true },
+        { name: "Vivienda", icon: "🏠", color: "#EF4444", isExpense: true },
+        { name: "Transporte", icon: "🚗", color: "#8B5CF6", isExpense: true },
+        { name: "Entretenimiento", icon: "🎮", color: "#06B6D4", isExpense: true }
+      ];
+
+      const categoriesToCreate = Math.min(targetCategories - 1, additionalCategories.length);
+      
+      for (let i = 0; i < categoriesToCreate; i++) {
+        await ctx.db.insert("categories", {
+          userId: args.userId,
+          ...additionalCategories[i],
+          isSystem: false,
+          order: i + 2
+        });
+        categoriesCreated++;
+      }
+    }
+
+    // Crear transacciones hasta el límite
+    const transactionTemplates = [
+      { type: "income" as const, amount: 3500000, description: "Salario mensual", categoryId: incomeCategory },
+      { type: "expense" as const, amount: 1200000, description: "Pago de renta" },
+      { type: "expense" as const, amount: 385500, description: "Supermercado semanal" },
+      { type: "expense" as const, amount: 145000, description: "Gasolina" },
+      { type: "income" as const, amount: 500000, description: "Proyecto freelance", categoryId: incomeCategory },
+      { type: "expense" as const, amount: 75000, description: "Cena en restaurante" },
+      { type: "expense" as const, amount: 120000, description: "Servicios públicos" },
+      { type: "expense" as const, amount: 45000, description: "Transporte público" },
+      { type: "expense" as const, amount: 80000, description: "Compras varias" },
+      { type: "income" as const, amount: 200000, description: "Venta online", categoryId: incomeCategory }
+    ];
+
+    const expenseCategories = await ctx.db
+      .query("categories")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("isExpense"), true))
+      .collect();
+
+    let transactionsCreated = 0;
+    for (let i = 0; i < targetTransactions && i < transactionTemplates.length; i++) {
+      const template = transactionTemplates[i];
+      
+      await ctx.db.insert("transactions", {
+        userId: args.userId,
+        type: template.type,
+        amount: template.amount,
+        description: template.description,
+        date: Date.now() - (86400000 * (i + 1)),
+        categoryId: template.categoryId || (template.type === "expense" && expenseCategories[0] ? expenseCategories[0]._id : incomeCategory),
+        isRecurring: false,
+        notes: `Transacción de ejemplo ${i + 1}`
+      });
+      transactionsCreated++;
+    }
+
+    // Crear transacciones recurrentes hasta el límite
+    let recurringCreated = 0;
+    if (targetRecurringTransactions > 0) {
+      const recurringTemplates = [
+        { type: "income" as const, amount: 3500000, description: "Salario mensual recurrente", frequency: "monthly" },
+        { type: "expense" as const, amount: 1200000, description: "Renta mensual", frequency: "monthly" }
+      ];
+
+      for (let i = 0; i < targetRecurringTransactions && i < recurringTemplates.length; i++) {
+        const template = recurringTemplates[i];
+        
+        await ctx.db.insert("recurringTransactions", {
+          userId: args.userId,
+          type: template.type,
+          amount: template.amount,
+          description: template.description,
+          categoryId: template.type === "income" ? incomeCategory : (expenseCategories[0]?._id || incomeCategory),
+          recurringFrequency: template.frequency as "weekly" | "monthly",
+          nextExecutionDate: Date.now() + (template.frequency === "weekly" ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          totalExecutions: 0,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          notes: `Transacción recurrente de ejemplo ${i + 1}`
+        });
+        recurringCreated++;
+      }
+    }
+
+    // Crear deudas hasta el límite
+    let debtsCreated = 0;
+    if (targetDebts > 0) {
+      await ctx.db.insert("debts", {
+        userId: args.userId,
+        counterpartyName: "Juan Pérez",
+        originalAmount: 500000,
+        currentAmount: 500000,
+        description: "Préstamo personal",
+        startDate: Date.now(),
+        dueDate: Date.now() + (30 * 24 * 60 * 60 * 1000),
+        type: "i_owe" as const,
+        status: "open" as const,
+        notes: "Deuda de ejemplo"
+      });
+      debtsCreated = 1;
+    }
+
+    // Actualizar contadores de uso
+    const updatedUsage = {
+      lastResetDate: Date.now(),
+      monthlyTransactions: transactionsCreated,
+      categories: categoriesCreated,
+      recurringTransactions: recurringCreated,
+      activeDebts: debtsCreated
+    };
+
+    await ctx.db.patch(args.userId, { usage: updatedUsage });
+
+    return {
+      message: `Datos creados exitosamente al 100% de uso - cuenta llena hasta los límites`,
+      percentage: 100,
+      limits: limits,
+      created: {
+        transactions: transactionsCreated,
+        categories: categoriesCreated,
+        recurringTransactions: recurringCreated,
+        debts: debtsCreated
+      },
+      usage: updatedUsage,
+      percentageResults: {
+        transactions: `${transactionsCreated}/${limits.monthlyTransactions} (${Math.round((transactionsCreated / limits.monthlyTransactions) * 100)}%)`,
+        categories: `${categoriesCreated}/${limits.categories} (${Math.round((categoriesCreated / limits.categories) * 100)}%)`,
+        recurringTransactions: `${recurringCreated}/${limits.recurringTransactions} (${Math.round((recurringCreated / limits.recurringTransactions) * 100)}%)`,
+        debts: `${debtsCreated}/${limits.activeDebts} (${Math.round((debtsCreated / limits.activeDebts) * 100)}%)`
       }
     };
   }

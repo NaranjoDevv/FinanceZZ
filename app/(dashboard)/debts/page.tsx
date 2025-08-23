@@ -143,7 +143,7 @@ export default function DebtsPage() {
   const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
 
   const { debts, stats, isLoading } = useDebts();
-  const { billingInfo, isFree, getUsagePercentage } = useBilling();
+  const { billingInfo, isFree, getUsagePercentage, canPerformAction } = useBilling();
   const user = useQuery(api.users.getCurrentUser);
 
   const userCurrency = toCurrency(user?.currency || 'USD');
@@ -214,6 +214,15 @@ export default function DebtsPage() {
   const handleDeleteDebt = (debt: Debt) => {
     setSelectedDebt(debt);
     setIsDeleteDebtModalOpen(true);
+  };
+
+  // Handle new debt with limit check
+  const handleNewDebt = async () => {
+    const canProceed = await canPerformAction("debts");
+    if (canProceed) {
+      setIsNewDebtModalOpen(true);
+    }
+    // If can't proceed, canPerformAction already shows the subscription popup
   };
 
   return (
@@ -364,7 +373,7 @@ export default function DebtsPage() {
         <div className="flex flex-wrap gap-4 mb-6">
           <Button
             className="brutal-button brutal-button--primary"
-            onClick={() => setIsNewDebtModalOpen(true)}
+            onClick={handleNewDebt}
           >
             <PlusIcon className="w-5 h-5 mr-2" />
             Nueva Deuda
