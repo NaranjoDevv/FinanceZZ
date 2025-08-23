@@ -8,7 +8,9 @@ export default defineSchema({
     email: v.string(),
     name: v.string(),
     imageUrl: v.optional(v.string()),
-    plan: v.union(v.literal("free"), v.literal("premium")),
+    plan: v.union(v.literal("free"), v.literal("premium"), v.literal("admin")),
+    role: v.optional(v.union(v.literal("user"), v.literal("admin"), v.literal("super_admin"))), // Admin role system
+    adminPermissions: v.optional(v.array(v.string())), // Array of permission strings
     planExpiry: v.optional(v.number()),
     subscribedSince: v.optional(v.number()),
     onboardingCompleted: v.boolean(),
@@ -38,11 +40,17 @@ export default defineSchema({
       recurringTransactions: v.number(),
       categories: v.number(),
       lastResetDate: v.number(), // timestamp for monthly reset
-    })
+    }),
+    // Admin metadata
+    createdAt: v.optional(v.number()),
+    lastLoginAt: v.optional(v.number()),
+    isActive: v.optional(v.boolean()), // For admin control
   })
     .index("by_token", ["tokenIdentifier"])
     .index("by_email", ["email"])
-    .index("by_stripe_customer", ["stripeCustomerId"]),
+    .index("by_stripe_customer", ["stripeCustomerId"])
+    .index("by_role", ["role"])
+    .index("by_plan", ["plan"]),
 
   // Tabla de transacciones
   transactions: defineTable({
@@ -260,4 +268,146 @@ export default defineSchema({
     .index("by_user_active", ["userId", "isActive"])
     .index("by_next_execution", ["nextExecutionDate"])
     .index("by_category", ["categoryId"]),
+
+  // ===== ADMIN TABLES =====
+  
+  // Tabla de planes de suscripción (administrable por admin)
+  subscriptionPlans: defineTable({
+    name: v.string(), // "Free", "Premium", "Enterprise", etc.
+    displayName: v.string(), // "Plan Gratuito", "Plan Premium", etc.
+    description: v.string(),
+    priceMonthly: v.number(), // Price in cents (0 for free)
+    priceYearly: v.optional(v.number()), // Optional yearly price
+    currency: v.string(), // "USD", "COP", etc.
+    stripeProductId: v.optional(v.string()),
+    stripePriceId: v.optional(v.string()),
+    isActive: v.boolean(),
+    limits: v.object({
+      monthlyTransactions: v.number(),
+      activeDebts: v.number(),
+      recurringTransactions: v.number(),
+      categories: v.number(),
+      // Future features
+      budgets: v.optional(v.number()),
+      goals: v.optional(v.number()),
+      contacts: v.optional(v.number()),
+      reports: v.optional(v.number()),
+    }),
+    features: v.array(v.string()), // Array of feature flags
+    order: v.number(), // Display order
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.id("users"), // Admin who created it
+  })
+    .index("by_active", ["isActive"])
+    .index("by_order", ["order"])
+    .index("by_creator", ["createdBy"]),
+
+  // Tabla de monedas disponibles (administrable por admin)
+  currencies: defineTable({
+    code: v.string(), // "USD", "COP", "EUR", etc.
+    name: v.string(), // "US Dollar", "Colombian Peso", etc.
+    symbol: v.string(), // "$", "$", "€", etc.
+    position: v.union(v.literal("before"), v.literal("after")), // Symbol position
+    decimals: v.number(), // Number of decimal places
+    isActive: v.boolean(),
+    isDefault: v.boolean(), // Only one can be default
+    exchangeRate: v.optional(v.number()), // Exchange rate to USD for conversion
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.id("users"), // Admin who created it
+  })
+    .index("by_code", ["code"])
+    .index("by_active", ["isActive"])
+    .index("by_default", ["isDefault"])
+    .index("by_creator", ["createdBy"]),
+
+  // Tabla de permisos del sistema
+  permissions: defineTable({
+    name: v.string(), // "manage_users", "edit_plans", "view_analytics", etc.
+    displayName: v.string(), // "Gestionar Usuarios", "Editar Planes", etc.
+    description: v.string(),
+    category: v.string(), // "users", "billing", "content", "system", etc.
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_name", ["name"])
+    .index("by_category", ["category"])
+    .index("by_active", ["isActive"]),
+
+  // Tabla de roles y sus permisos
+  roles: defineTable({
+    name: v.string(), // "admin", "super_admin", "moderator", etc.
+    displayName: v.string(), // "Administrador", "Super Administrador", etc.
+    description: v.string(),
+    permissions: v.array(v.string()), // Array of permission names
+    isActive: v.boolean(),
+    isSystemRole: v.boolean(), // Cannot be deleted
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.optional(v.id("users")), // Admin who created it
+  })
+    .index("by_name", ["name"])
+    .index("by_active", ["isActive"])
+    .index("by_system", ["isSystemRole"]),
+
+  // Tabla de asignación de permisos a usuarios específicos
+  userPermissions: defineTable({
+    userId: v.id("users"),
+    permission: v.string(), // Permission name
+    grantedBy: v.id("users"), // Admin who granted the permission
+    grantedAt: v.number(),
+    expiresAt: v.optional(v.number()), // Optional expiration
+    isActive: v.boolean(),
+    notes: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_permission", ["permission"])
+    .index("by_user_permission", ["userId", "permission"])
+    .index("by_granted_by", ["grantedBy"])
+    .index("by_active", ["isActive"]),
+
+  // Tabla de logs de auditoría para acciones administrativas
+  adminAuditLogs: defineTable({
+    adminUserId: v.id("users"), // Admin who performed the action
+    action: v.string(), // "create_user", "update_plan", "delete_currency", etc.
+    targetType: v.string(), // "user", "plan", "currency", "permission", etc.
+    targetId: v.optional(v.string()), // ID of the affected entity
+    details: v.string(), // JSON string with action details
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    timestamp: v.number(),
+    severity: v.union(
+      v.literal("info"),
+      v.literal("warning"),
+      v.literal("error"),
+      v.literal("critical")
+    ),
+  })
+    .index("by_admin", ["adminUserId"])
+    .index("by_action", ["action"])
+    .index("by_target", ["targetType", "targetId"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_severity", ["severity"]),
+
+  // Tabla de configuración del sistema (administrable por super admin)
+  systemSettings: defineTable({
+    key: v.string(), // "app_name", "maintenance_mode", "default_currency", etc.
+    value: v.string(), // JSON string for complex values
+    type: v.union(
+      v.literal("string"),
+      v.literal("number"),
+      v.literal("boolean"),
+      v.literal("json")
+    ),
+    description: v.string(),
+    category: v.string(), // "general", "billing", "features", etc.
+    isPublic: v.boolean(), // Whether non-admin users can read this setting
+    updatedAt: v.number(),
+    updatedBy: v.id("users"), // Admin who last updated it
+  })
+    .index("by_key", ["key"])
+    .index("by_category", ["category"])
+    .index("by_public", ["isPublic"]),
 });

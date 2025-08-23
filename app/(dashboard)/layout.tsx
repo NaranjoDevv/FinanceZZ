@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useBilling } from "@/hooks/useBilling";
+import { useAdmin } from "@/hooks/useAdmin";
 import { SubscriptionPopup } from "@/components/billing/SubscriptionPopup";
 
 import {
@@ -21,7 +22,8 @@ import {
   TagIcon,
   UserIcon,
   BellIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  ShieldCheckIcon
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,7 +38,7 @@ const navigation = [
   { name: "Recordatorios", href: "/reminders", icon: BellIcon },
   { name: "Reportes", href: "/reports", icon: ChartBarIcon },
   { name: "Datos Ejemplo", href: "/seed", icon: CogIcon },
-  { name: "Configuración", href: "/settings", icon: CogIcon },
+  { name: "Admin", href: "/admin", icon: ShieldCheckIcon, adminOnly: true },
 ];
 
 export default function DashboardLayout({
@@ -47,6 +49,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const currentUser = useQuery(api.users.getCurrentUser);
+  const { isAdmin } = useAdmin();
   const { 
     billingInfo, 
     isFree, 
@@ -68,11 +71,14 @@ export default function DashboardLayout({
   }, [pathname, isFree, billingInfo, setShowSubscriptionPopup]);
   
   // Mostrar toda la navegación pero marcar elementos premium para usuarios gratuitos
-  const navigationWithStatus = navigation.map(item => ({
-    ...item,
-    isPremium: currentUser?.plan === "free" && item.href === "/contacts",
-    isDisabled: currentUser?.plan === "free" && item.href === "/contacts"
-  }));
+  const navigationWithStatus = navigation
+    .filter(item => !item.adminOnly || isAdmin) // Only show admin items to admin users
+    .map(item => ({
+      ...item,
+      isPremium: currentUser?.plan === "free" && item.href === "/contacts",
+      isDisabled: currentUser?.plan === "free" && item.href === "/contacts",
+      isAdmin: item.adminOnly || false,
+    }));
 
   const sidebarVariants = {
     open: {
@@ -156,6 +162,11 @@ export default function DashboardLayout({
                       {item.isPremium && (
                         <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded font-black">
                           PRO
+                        </span>
+                      )}
+                      {item.isAdmin && (
+                        <span className="ml-auto text-xs bg-red-500 text-white px-2 py-1 rounded font-black">
+                          ADMIN
                         </span>
                       )}
                     </Link>
