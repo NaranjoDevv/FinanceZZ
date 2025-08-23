@@ -30,6 +30,7 @@ import {
   ListBulletIcon
 } from "@heroicons/react/24/outline";
 import { useDebts } from "@/hooks/use-debts";
+import { useBilling } from "@/hooks/useBilling";
 import NewDebtModal from "@/components/forms/NewDebtModal";
 import EditDebtModal from "@/components/forms/EditDebtModal";
 import DeleteDebtModal from "@/components/forms/DeleteDebtModal";
@@ -142,6 +143,7 @@ export default function DebtsPage() {
   const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
 
   const { debts, stats, isLoading } = useDebts();
+  const { billingInfo, isFree, getUsagePercentage } = useBilling();
   const user = useQuery(api.users.getCurrentUser);
 
   const userCurrency = toCurrency(user?.currency || 'USD');
@@ -231,6 +233,44 @@ export default function DebtsPage() {
         </p>
         <div className="w-20 h-1 bg-black mt-4"></div>
       </motion.div>
+
+      {/* Usage Indicator for Free Users */}
+      {isFree && billingInfo && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-6"
+        >
+          <Card className="brutal-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-bold text-gray-700">Deudas activas</span>
+              <span className="text-sm font-bold text-gray-600">
+                {billingInfo.usage.activeDebts}/{billingInfo.limits.activeDebts}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  getUsagePercentage('debts') >= 80 
+                    ? 'bg-red-500' 
+                    : getUsagePercentage('debts') >= 60 
+                    ? 'bg-yellow-500' 
+                    : 'bg-blue-500'
+                }`}
+                style={{
+                  width: `${Math.min(getUsagePercentage('debts'), 100)}%`,
+                }}
+              />
+            </div>
+            {getUsagePercentage('debts') >= 80 && (
+              <p className="text-xs text-red-600 font-bold mt-2">
+                ⚠  Te estás acercando al límite
+              </p>
+            )}
+          </Card>
+        </motion.div>
+      )}
 
       {/* Stats Cards */}
       {stats && (

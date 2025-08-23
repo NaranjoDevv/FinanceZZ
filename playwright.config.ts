@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
+// @ts-ignore - Playwright config types are too strict with exactOptionalPropertyTypes
 export default defineConfig({
   testDir: './tests',
   /* Run tests in files in parallel */

@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useDebts } from "@/hooks/use-debts";
+import { useBilling } from "@/hooks/useBilling";
 import { formatCurrency, formatCurrencyWithRounding, toCurrency } from "@/lib/currency";
 import { useCurrentUser } from "@/contexts/UserContext";
 import { StatCard } from "@/components/ui/stat-card";
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const { stats: transactionStats, transactions, isLoading: transactionsLoading } = useTransactions({ limit: 5 });
   const { stats: debtStats, isLoading: debtsLoading } = useDebts();
   const { currentUser, isLoading: userLoading } = useCurrentUser();
+  const { billingInfo, isFree, getUsagePercentage } = useBilling();
   
   const userCurrency = useMemo(() => toCurrency(currentUser?.currency || 'USD'), [currentUser?.currency]);
   const isDataLoading = transactionsLoading || debtsLoading || userLoading;
@@ -202,6 +204,157 @@ export default function DashboardPage() {
           </Button>
         </div>
       </motion.div>
+
+      {/* Plan Usage Overview for Free Users */}
+      {isFree && billingInfo && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mb-8"
+        >
+          <Card className="brutal-card p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-black uppercase tracking-wide text-black">
+                🔍 PLAN GRATUITO - RESUMEN DE USO
+              </h2>
+              <div className="px-3 py-1 bg-gray-200 border-2 border-black font-black text-xs uppercase">
+                FREE
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Transactions */}
+              <div className="p-4 border-2 border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-700">Transacciones</span>
+                  <span className="text-xs font-bold text-gray-600">
+                    {billingInfo.usage.monthlyTransactions}/{billingInfo.limits.monthlyTransactions}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-2 mb-2">
+                  <div 
+                    className={`h-2 transition-all duration-300 ${
+                      getUsagePercentage('transactions') >= 80 
+                        ? 'bg-red-500' 
+                        : getUsagePercentage('transactions') >= 60 
+                        ? 'bg-yellow-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(getUsagePercentage('transactions'), 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600">
+                  {billingInfo.limits.monthlyTransactions - billingInfo.usage.monthlyTransactions} restantes
+                </p>
+              </div>
+
+              {/* Debts */}
+              <div className="p-4 border-2 border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-700">Deudas activas</span>
+                  <span className="text-xs font-bold text-gray-600">
+                    {billingInfo.usage.activeDebts}/{billingInfo.limits.activeDebts}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-2 mb-2">
+                  <div 
+                    className={`h-2 transition-all duration-300 ${
+                      getUsagePercentage('debts') >= 80 
+                        ? 'bg-red-500' 
+                        : getUsagePercentage('debts') >= 60 
+                        ? 'bg-yellow-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(getUsagePercentage('debts'), 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600">
+                  {billingInfo.limits.activeDebts - billingInfo.usage.activeDebts} restantes
+                </p>
+              </div>
+
+              {/* Recurring Transactions */}
+              <div className="p-4 border-2 border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-700">Recurrentes</span>
+                  <span className="text-xs font-bold text-gray-600">
+                    {billingInfo.usage.recurringTransactions}/{billingInfo.limits.recurringTransactions}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-2 mb-2">
+                  <div 
+                    className={`h-2 transition-all duration-300 ${
+                      getUsagePercentage('recurring_transactions') >= 80 
+                        ? 'bg-red-500' 
+                        : getUsagePercentage('recurring_transactions') >= 60 
+                        ? 'bg-yellow-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(getUsagePercentage('recurring_transactions'), 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600">
+                  {billingInfo.limits.recurringTransactions - billingInfo.usage.recurringTransactions} restantes
+                </p>
+              </div>
+
+              {/* Categories */}
+              <div className="p-4 border-2 border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-700">Categorías</span>
+                  <span className="text-xs font-bold text-gray-600">
+                    {billingInfo.usage.categories}/{billingInfo.limits.categories}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-2 mb-2">
+                  <div 
+                    className={`h-2 transition-all duration-300 ${
+                      getUsagePercentage('categories') >= 80 
+                        ? 'bg-red-500' 
+                        : getUsagePercentage('categories') >= 60 
+                        ? 'bg-yellow-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(getUsagePercentage('categories'), 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600">
+                  {billingInfo.limits.categories - billingInfo.usage.categories} restantes
+                </p>
+              </div>
+            </div>
+
+            {/* Warning for high usage */}
+            {(
+              getUsagePercentage('transactions') >= 80 ||
+              getUsagePercentage('debts') >= 80 ||
+              getUsagePercentage('recurring_transactions') >= 80 ||
+              getUsagePercentage('categories') >= 80
+            ) && (
+              <div className="mt-4 p-3 bg-red-50 border-2 border-red-500 flex items-center gap-3">
+                <span className="text-red-600 text-lg">⚠️</span>
+                <div>
+                  <p className="text-sm font-bold text-red-700">
+                    Te estás acercando a los límites del plan gratuito
+                  </p>
+                  <p className="text-xs text-red-600">
+                    Considera actualizar a Premium para límites ilimitados
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+        </motion.div>
+      )}
 
       {/* Stats Grid */}
       <motion.div

@@ -1,5 +1,16 @@
 import { Page } from '@playwright/test';
 
+// Utility function to safely extract error messages
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return String(error);
+}
+
 // Random data generators
 export class TestDataGenerator {
   private static descriptions = [
@@ -115,7 +126,7 @@ export class PageHelpers {
       
       console.log('✅ User logged in successfully');
     } catch (error) {
-      console.error('Login error:', error instanceof Error ? error.message : String(error));
+      console.error('Login error:', getErrorMessage(error));
       await this.takeScreenshot(page, 'login-failed');
       throw error;
     }
@@ -148,7 +159,7 @@ export class PageHelpers {
           break;
         }
       } catch (e) {
-        console.log(`Selector ${selector} not found:`, e instanceof Error ? e.message : String(e));
+        console.log(`Selector ${selector} not found:`, getErrorMessage(e));
       }
     }
     
@@ -188,7 +199,7 @@ export class PageHelpers {
           break;
         }
       } catch (e) {
-        console.log(`Description selector ${selector} failed:`, e instanceof Error ? e.message : String(e));
+        console.log(`Description selector ${selector} failed:`, getErrorMessage(e));
       }
     }
     
@@ -215,7 +226,7 @@ export class PageHelpers {
           break;
         }
       } catch (e) {
-        console.log(`Amount selector ${selector} failed:`, e instanceof Error ? e.message : String(e));
+        console.log(`Amount selector ${selector} failed:`, getErrorMessage(e));
       }
     }
     
@@ -240,7 +251,7 @@ export class PageHelpers {
             break;
           }
         } catch (e) {
-          console.log(`Type selector ${selector} failed:`, e instanceof Error ? e.message : String(e));
+          console.log(`Type selector ${selector} failed:`, getErrorMessage(e));
         }
       }
     }
@@ -269,7 +280,7 @@ export class PageHelpers {
           return true;
         }
       } catch (e) {
-        console.log(`Submit selector ${selector} failed:`, e instanceof Error ? e.message : String(e));
+        console.log(`Submit selector ${selector} failed:`, getErrorMessage(e));
       }
     }
     

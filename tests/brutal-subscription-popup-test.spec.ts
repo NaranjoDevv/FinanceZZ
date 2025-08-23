@@ -63,24 +63,27 @@ test.describe('SUBSCRIPTION POPUP RESPONSIVENESS ANNIHILATION', () => {
       console.log('🎯 TRANSACTION CREATION BUTTONS FOUND:', createButtons.length);
       
       // Try to click first create button
-      await createButtons[0].click();
-      await page.waitForTimeout(2000);
-      
-      await page.screenshot({ 
-        path: 'tests/screenshots/brutal-popup-transaction-creation-attempt.png',
-        fullPage: true
-      });
-      
-      // Look for subscription popup
-      const subscriptionPopup = await page.locator('[data-testid*="subscription"], [data-testid*="popup"], [data-testid*="upgrade"], text=PREMIUM, text=ACTUALIZAR PLAN').first();
-      
-      if (await subscriptionPopup.isVisible()) {
-        console.log('🔥 SUBSCRIPTION POPUP DETECTED - BEGINNING RESPONSIVE ANNIHILATION');
+      const firstButton = createButtons[0];
+      if (firstButton) {
+        await firstButton.click();
+        await page.waitForTimeout(2000);
         
-        // Test popup on multiple viewports
-        await this.testPopupResponsiveness(page);
-      } else {
-        console.log('⚠️ NO SUBSCRIPTION POPUP FOUND - INVESTIGATING LIMIT ENFORCEMENT');
+        await page.screenshot({ 
+          path: 'tests/screenshots/brutal-popup-transaction-creation-attempt.png',
+          fullPage: true
+        });
+        
+        // Look for subscription popup
+        const subscriptionPopup = await page.locator('[data-testid*="subscription"], [data-testid*="popup"], [data-testid*="upgrade"], text=PREMIUM, text=ACTUALIZAR PLAN').first();
+        
+        if (await subscriptionPopup.isVisible()) {
+          console.log('🔥 SUBSCRIPTION POPUP DETECTED - BEGINNING RESPONSIVE ANNIHILATION');
+          
+          // Test popup on multiple viewports
+          await testPopupResponsiveness(page);
+        } else {
+          console.log('⚠️ NO SUBSCRIPTION POPUP FOUND - INVESTIGATING LIMIT ENFORCEMENT');
+        }
       }
     }
   });

@@ -73,7 +73,7 @@ test.describe('COMPLETE SUBSCRIPTION POPUP FLOW - RUTHLESS TESTING', () => {
             await page.waitForTimeout(5000);
             
             // Check if login succeeded
-            const isAuthenticated = await this.checkAuthenticationState(page);
+            const isAuthenticated = await checkAuthenticationState(page);
             if (isAuthenticated) {
               console.log('✅ AUTHENTICATION SUCCESSFUL!');
               break;
@@ -84,7 +84,7 @@ test.describe('COMPLETE SUBSCRIPTION POPUP FLOW - RUTHLESS TESTING', () => {
     }
     
     // Check final authentication state
-    const finalAuthState = await this.checkAuthenticationState(page);
+    const finalAuthState = await checkAuthenticationState(page);
     
     await page.screenshot({ 
       path: 'tests/screenshots/brutal-flow-04-final-state.png',
@@ -93,7 +93,7 @@ test.describe('COMPLETE SUBSCRIPTION POPUP FLOW - RUTHLESS TESTING', () => {
     
     if (finalAuthState) {
       console.log('🚀 PROCEEDING TO SUBSCRIPTION POPUP TESTING');
-      await this.testSubscriptionPopupFlow(page);
+      await testSubscriptionPopupFlow(page);
     } else {
       console.log('❌ AUTHENTICATION FAILED - UNABLE TO TEST SUBSCRIPTION POPUP');
     }
@@ -163,7 +163,7 @@ test.describe('COMPLETE SUBSCRIPTION POPUP FLOW - RUTHLESS TESTING', () => {
           });
           
           // Test popup responsiveness
-          await this.testPopupResponsiveness(page, i);
+          await testPopupResponsiveness(page, i);
           break;
         }
         
@@ -171,7 +171,7 @@ test.describe('COMPLETE SUBSCRIPTION POPUP FLOW - RUTHLESS TESTING', () => {
         const transactionModal = page.locator('[role="dialog"], .modal');
         if (await transactionModal.isVisible()) {
           // Fill in transaction details quickly
-          await this.fillTransactionForm(page, i);
+          await fillTransactionForm(page, i);
         }
         
         await page.waitForTimeout(1000);

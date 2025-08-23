@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { TestDataGenerator, PageHelpers } from './utils/test-helpers';
+import { TestDataGenerator, PageHelpers, getErrorMessage } from './utils/test-helpers';
 
 // Helper function for debugging form fields
 async function debugFormFields(page: Page) {
@@ -14,6 +14,8 @@ async function debugFormFields(page: Page) {
   
   for (let i = 0; i < formInputs.length; i++) {
     const field = formInputs[i];
+    if (!field) continue;
+    
     const tagName = await field.evaluate(el => el.tagName);
     const type = await field.getAttribute('type');
     const placeholder = await field.getAttribute('placeholder');
@@ -39,7 +41,7 @@ async function debugFormFields(page: Page) {
     await PageHelpers.takeScreenshot(page, 'debug-form-filled');
     
   } catch (error) {
-    console.error('❌ Error filling form fields:', error.message);
+    console.error('❌ Error filling form fields:', getErrorMessage(error));
     await PageHelpers.takeScreenshot(page, 'debug-form-fill-error');
   }
 }
@@ -71,6 +73,8 @@ test.describe('Debug and Error Scenarios', () => {
       
       for (let i = 0; i < inputs.length; i++) {
         const input = inputs[i];
+        if (!input) continue;
+        
         const type = await input.getAttribute('type');
         const placeholder = await input.getAttribute('placeholder');
         const name = await input.getAttribute('name');
@@ -85,6 +89,8 @@ test.describe('Debug and Error Scenarios', () => {
       
       for (let i = 0; i < Math.min(buttons.length, 10); i++) {
         const button = buttons[i];
+        if (!button) continue;
+        
         const text = await button.textContent();
         const isVisible = await button.isVisible();
         
@@ -99,7 +105,7 @@ test.describe('Debug and Error Scenarios', () => {
         await PageHelpers.takeScreenshot(page, 'debug-login-03-success');
         console.log('✅ Login successful');
       } catch (error) {
-        console.error('❌ Login failed:', error.message);
+        console.error('❌ Login failed:', getErrorMessage(error));
         await PageHelpers.takeScreenshot(page, 'debug-login-03-failed');
       }
     });
@@ -148,6 +154,8 @@ test.describe('Debug and Error Scenarios', () => {
       
       for (let i = 0; i < allButtons.length; i++) {
         const button = allButtons[i];
+        if (!button) continue;
+        
         const text = await button.textContent();
         const isVisible = await button.isVisible();
         const className = await button.getAttribute('class');
@@ -180,7 +188,7 @@ test.describe('Debug and Error Scenarios', () => {
             break;
           }
         } catch (error) {
-          console.log(`❌ Selector "${selector}" failed: ${error.message}`);
+          console.log(`❌ Selector "${selector}" failed: ${getErrorMessage(error)}`);
         }
       }
       
@@ -212,7 +220,7 @@ test.describe('Debug and Error Scenarios', () => {
             break;
           }
         } catch (error) {
-          console.log(`Modal selector "${selector}" failed: ${error.message}`);
+          console.log(`Modal selector "${selector}" failed: ${getErrorMessage(error)}`);
         }
       }
       
@@ -247,7 +255,7 @@ test.describe('Debug and Error Scenarios', () => {
           await PageHelpers.waitForPageLoad(page);
           success = true;
         } catch (error) {
-          console.error(`Error loading ${pagePath}:`, error.message);
+          console.error(`Error loading ${pagePath}:`, getErrorMessage(error));
         }
         
         const loadTime = Date.now() - startTime;

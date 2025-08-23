@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { TestDataGenerator } from './utils/test-helpers';
 
 // Helper method to test transaction limits (when authenticated)
-async function testTransactionLimits(page) {
+async function testTransactionLimits(page: Page) {
   console.log('🧪 Testing transaction limits...');
   
   // Look for new transaction button
@@ -184,7 +184,9 @@ test.describe('Complete Billing Limits Test with Authentication', () => {
       
       // Log current page content
       const pageContent = await page.locator('body').textContent();
-      console.log('Page content preview:', pageContent.substring(0, 200) + '...');
+      if (pageContent) {
+        console.log('Page content preview:', pageContent.substring(0, 200) + '...');
+      }
       
       // Check for any authentication links or buttons
       const allLinks = await page.locator('a').allTextContents();
@@ -316,7 +318,17 @@ test.describe('Complete Billing Limits Test with Authentication', () => {
   test('Should generate comprehensive test report', async ({ page }) => {
     console.log('📊 Generating comprehensive test report...');
     
-    const report = {
+    const report: {
+      timestamp: string;
+      randomDataSamples: {
+        transactions: Array<{description: string; amount: number; type: string}>;
+        debts: Array<{counterpartyName: string; amount: number; type: string}>;
+        categories: Array<any>;
+      };
+      authenticationAnalysis: any;
+      billingLimitsStatus: string;
+      recommendations: Array<string>;
+    } = {
       timestamp: new Date().toISOString(),
       randomDataSamples: {
         transactions: [],

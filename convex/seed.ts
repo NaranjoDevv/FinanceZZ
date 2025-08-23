@@ -110,12 +110,30 @@ export const createPremiumUser = mutation({
   }
 });
 
-// Función para crear datos de ejemplo
+// Función para crear datos de ejemplo que cuentan hacia los límites
 export const seedData = mutation({
   args: {
     userId: v.id("users")
   },
   handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    // Verificar si el usuario ya tiene datos de seed para evitar duplicados
+    const existingTransactions = await ctx.db
+      .query("transactions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    
+    if (existingTransactions.length > 0) {
+      return {
+        message: "El usuario ya tiene transacciones existentes. Usa clearSeedData primero.",
+        existingCount: existingTransactions.length
+      };
+    }
+
     // Crear categorías de ejemplo
     const incomeCategory = await ctx.db.insert("categories", {
       userId: args.userId,
@@ -157,24 +175,34 @@ export const seedData = mutation({
       order: 4
     });
 
-    // Crear transacciones de ejemplo
+    // Incrementar el contador de categorías (4 categorías creadas)
+    if (user.usage) {
+      const updatedUsage = {
+        ...user.usage,
+        categories: (user.usage.categories || 0) + 4
+      };
+      await ctx.db.patch(args.userId, { usage: updatedUsage });
+    }
+
+    // Crear más transacciones para probar límites rápidamente
+    // Para usuarios gratuitos (límite: 10), crear 8 transacciones para dejar solo 2 disponibles
     const transactions = [
       {
         userId: args.userId,
         type: "income" as const,
-        amount: 3500,
+        amount: 3500000, // $3,500,000 COP
         description: "Salario mensual",
-        date: Date.now() - 86400000 * 5, // 5 días atrás
+        date: Date.now() - 86400000 * 10, // 10 días atrás
         categoryId: incomeCategory,
         isRecurring: false,
-        notes: "Salario del mes de enero"
+        notes: "Salario del mes actual"
       },
       {
         userId: args.userId,
         type: "expense" as const,
-        amount: 1200,
+        amount: 1200000, // $1,200,000 COP
         description: "Pago de renta",
-        date: Date.now() - 86400000 * 4, // 4 días atrás
+        date: Date.now() - 86400000 * 9, // 9 días atrás
         categoryId: housingCategory,
         isRecurring: false,
         notes: "Renta del apartamento"
@@ -182,19 +210,19 @@ export const seedData = mutation({
       {
         userId: args.userId,
         type: "expense" as const,
-        amount: 85.50,
-        description: "Supermercado",
-        date: Date.now() - 86400000 * 3, // 3 días atrás
+        amount: 385500, // $385,500 COP
+        description: "Supermercado semanal",
+        date: Date.now() - 86400000 * 8, // 8 días atrás
         categoryId: foodCategory,
         isRecurring: false,
-        notes: "Compras semanales"
+        notes: "Compras semanales completas"
       },
       {
         userId: args.userId,
         type: "expense" as const,
-        amount: 45,
+        amount: 145000, // $145,000 COP
         description: "Gasolina",
-        date: Date.now() - 86400000 * 2, // 2 días atrás
+        date: Date.now() - 86400000 * 7, // 7 días atrás
         categoryId: transportCategory,
         isRecurring: false,
         notes: "Tanque lleno"
@@ -202,9 +230,9 @@ export const seedData = mutation({
       {
         userId: args.userId,
         type: "income" as const,
-        amount: 500,
+        amount: 500000, // $500,000 COP
         description: "Proyecto freelance",
-        date: Date.now() - 86400000 * 1, // 1 día atrás
+        date: Date.now() - 86400000 * 6, // 6 días atrás
         categoryId: incomeCategory,
         isRecurring: false,
         notes: "Desarrollo de sitio web"
@@ -212,41 +240,94 @@ export const seedData = mutation({
       {
         userId: args.userId,
         type: "expense" as const,
-        amount: 25,
-        description: "Café y desayuno",
-        date: Date.now(), // Hoy
+        amount: 75000, // $75,000 COP
+        description: "Cena en restaurante",
+        date: Date.now() - 86400000 * 5, // 5 días atrás
         categoryId: foodCategory,
         isRecurring: false,
-        notes: "Desayuno en cafetería"
+        notes: "Cena de aniversario"
+      },
+      {
+        userId: args.userId,
+        type: "expense" as const,
+        amount: 120000, // $120,000 COP
+        description: "Servicios públicos",
+        date: Date.now() - 86400000 * 4, // 4 días atrás
+        categoryId: housingCategory,
+        isRecurring: false,
+        notes: "Electricidad y agua"
+      },
+      {
+        userId: args.userId,
+        type: "expense" as const,
+        amount: 45000, // $45,000 COP
+        description: "Transporte público",
+        date: Date.now() - 86400000 * 3, // 3 días atrás
+        categoryId: transportCategory,
+        isRecurring: false,
+        notes: "Tarjeta de transporte semanal"
       }
     ];
 
-    // Insertar todas las transacciones
+    // Para usuarios premium, crear todas las transacciones
+    // Para usuarios gratuitos, crear solo las que están dentro del límite
+    const maxTransactions = user.plan === "free" ? 8 : transactions.length;
+    const transactionsToCreate = transactions.slice(0, maxTransactions);
+
+    // Insertar transacciones
     const insertedTransactions = [];
-    for (const transaction of transactions) {
+    for (const transaction of transactionsToCreate) {
       const id = await ctx.db.insert("transactions", transaction);
       insertedTransactions.push(id);
     }
 
+    // Incrementar el contador de transacciones mensuales
+    if (user.usage) {
+      const updatedUsage = {
+        ...user.usage,
+        monthlyTransactions: (user.usage.monthlyTransactions || 0) + insertedTransactions.length
+      };
+      await ctx.db.patch(args.userId, { usage: updatedUsage });
+    }
+
+    const currentUsage = {
+      monthlyTransactions: (user.usage?.monthlyTransactions || 0) + insertedTransactions.length,
+      categories: (user.usage?.categories || 0) + 4,
+      activeDebts: user.usage?.activeDebts || 0,
+      recurringTransactions: user.usage?.recurringTransactions || 0
+    };
+
     return {
-      message: "Datos de ejemplo creados exitosamente",
+      message: `Datos de ejemplo creados exitosamente para usuario ${user.plan}`,
+      plan: user.plan,
       categories: {
         income: incomeCategory,
         food: foodCategory,
         housing: housingCategory,
         transport: transportCategory
       },
-      transactions: insertedTransactions
+      transactions: insertedTransactions,
+      currentUsage,
+      limits: user.limits,
+      remainingTransactions: user.plan === "free" ? Math.max(0, (user.limits?.monthlyTransactions || 10) - currentUsage.monthlyTransactions) : "unlimited",
+      warningMessage: user.plan === "free" && currentUsage.monthlyTransactions >= 8 ? 
+        `⚠️ ATENCIÓN: Has usado ${currentUsage.monthlyTransactions} de ${user.limits?.monthlyTransactions || 10} transacciones. Solo quedan ${Math.max(0, (user.limits?.monthlyTransactions || 10) - currentUsage.monthlyTransactions)} disponibles.` : null
     };
   }
 });
 
-// Función para limpiar datos de ejemplo
+// Función para limpiar datos de ejemplo y resetear contadores
 export const clearSeedData = mutation({
   args: {
-    userId: v.id("users")
+    userId: v.id("users"),
+    resetCounters: v.optional(v.boolean()) // Default: true
   },
   handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("Usuario no encontrado");
+    }
+
     // Eliminar transacciones del usuario
     const transactions = await ctx.db
       .query("transactions")
@@ -257,20 +338,48 @@ export const clearSeedData = mutation({
       await ctx.db.delete(transaction._id);
     }
 
-    // Eliminar categorías del usuario
+    // Eliminar categorías del usuario (solo las no-sistema)
     const categories = await ctx.db
       .query("categories")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
     
+    const deletedCategories = [];
     for (const category of categories) {
-      await ctx.db.delete(category._id);
+      if (!category.isSystem) { // Solo eliminar categorías no-sistema
+        await ctx.db.delete(category._id);
+        deletedCategories.push(category._id);
+      }
+    }
+
+    // Resetear contadores de uso si se solicita (default: true)
+    const shouldResetCounters = args.resetCounters !== false;
+    if (shouldResetCounters && user.usage) {
+      const resetUsage = {
+        ...user.usage,
+        monthlyTransactions: 0,
+        categories: Math.max(0, (user.usage.categories || 0) - deletedCategories.length),
+        activeDebts: 0, // Solo resetear si no hay deudas activas
+        recurringTransactions: 0, // Solo resetear si no hay transacciones recurrentes
+        lastResetDate: Date.now()
+      };
+      
+      await ctx.db.patch(args.userId, { usage: resetUsage });
     }
 
     return {
-      message: "Datos de ejemplo eliminados exitosamente",
+      message: shouldResetCounters ? 
+        "Datos de ejemplo eliminados y contadores reseteados exitosamente" :
+        "Datos de ejemplo eliminados exitosamente",
       deletedTransactions: transactions.length,
-      deletedCategories: categories.length
+      deletedCategories: deletedCategories.length,
+      resetCounters: shouldResetCounters,
+      newUsage: shouldResetCounters ? {
+        monthlyTransactions: 0,
+        categories: Math.max(0, (user.usage?.categories || 0) - deletedCategories.length),
+        activeDebts: user.usage?.activeDebts || 0,
+        recurringTransactions: user.usage?.recurringTransactions || 0
+      } : user.usage
     };
   }
 });
@@ -464,7 +573,69 @@ export const decrementUsage = mutation({
   }
 });
 
-// Función para obtener el estado actual de límites y uso del usuario
+// Función para crear un usuario de prueba con límites casi alcanzados
+export const createTestUserNearLimits = mutation({
+  args: {
+    tokenIdentifier: v.string(),
+    email: v.string(),
+    name: v.string(),
+    imageUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    
+    // Crear usuario gratuito con contadores ya altos
+    const userData = {
+      tokenIdentifier: args.tokenIdentifier,
+      email: args.email,
+      name: args.name,
+      plan: "free" as const,
+      onboardingCompleted: false,
+      currency: "COP",
+      numberRounding: false,
+      timezone: "America/Bogota",
+      language: "es",
+      limits: {
+        monthlyTransactions: 10,
+        activeDebts: 1,
+        recurringTransactions: 2,
+        categories: 2,
+      },
+      usage: {
+        lastResetDate: now,
+        monthlyTransactions: 9, // 9 de 10 - solo 1 restante
+        activeDebts: 0, // 0 de 1 - 1 restante
+        recurringTransactions: 1, // 1 de 2 - 1 restante
+        categories: 1, // 1 de 2 - 1 restante
+      },
+    };
+
+    if (args.imageUrl) {
+      (userData as any).imageUrl = args.imageUrl;
+    }
+
+    const userId = await ctx.db.insert("users", userData);
+
+    return {
+      userId,
+      message: "Usuario de prueba creado exitosamente - cerca de los límites",
+      limits: userData.limits,
+      usage: userData.usage,
+      remainingCapacity: {
+        transactions: "1 restante (próxima transacción alcanzará el límite)",
+        debts: "1 restante",
+        recurringTransactions: "1 restante",
+        categories: "1 restante"
+      },
+      testingTips: {
+        transactions: "Crea 1 transacción más para alcanzar el límite",
+        debts: "Crea 1 deuda para alcanzar el límite",
+        recurringTransactions: "Crea 1 transacción recurrente más para alcanzar el límite",
+        categories: "Crea 1 categoría más para alcanzar el límite"
+      }
+    };
+  }
+});
 export const getUserLimitsAndUsage = mutation({
   args: {
     userId: v.id("users")

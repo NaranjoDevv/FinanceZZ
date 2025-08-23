@@ -25,6 +25,7 @@ import {
   ListBulletIcon
 } from "@heroicons/react/24/outline";
 import { useCategories, Category } from "@/hooks/use-categories";
+import { useBilling } from "@/hooks/useBilling";
 import { NewCategoryModal } from "@/components/modals/NewCategoryModal";
 import { EditCategoryModal } from "@/components/modals/EditCategoryModal";
 import { DeleteCategoryModal } from "@/components/modals/DeleteCategoryModal";
@@ -119,6 +120,7 @@ export default function Categories() {
     isLoading,
     isAuthenticated,
   } = useCategories();
+  const { billingInfo, isFree, getUsagePercentage } = useBilling();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
@@ -204,6 +206,44 @@ export default function Categories() {
         </p>
         <div className="w-20 h-1 bg-black mt-4"></div>
       </motion.div>
+
+      {/* Usage Indicator for Free Users */}
+      {isFree && billingInfo && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-6"
+        >
+          <Card className="brutal-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-bold text-gray-700">Categorías personalizadas</span>
+              <span className="text-sm font-bold text-gray-600">
+                {billingInfo.usage.categories}/{billingInfo.limits.categories}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  getUsagePercentage('categories') >= 80 
+                    ? 'bg-red-500' 
+                    : getUsagePercentage('categories') >= 60 
+                    ? 'bg-yellow-500' 
+                    : 'bg-blue-500'
+                }`}
+                style={{
+                  width: `${Math.min(getUsagePercentage('categories'), 100)}%`,
+                }}
+              />
+            </div>
+            {getUsagePercentage('categories') >= 80 && (
+              <p className="text-xs text-red-600 font-bold mt-2">
+                ⚠  Te estás acercando al límite
+              </p>
+            )}
+          </Card>
+        </motion.div>
+      )}
 
       {/* Actions */}
       <motion.div

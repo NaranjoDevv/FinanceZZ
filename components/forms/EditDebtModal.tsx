@@ -74,24 +74,28 @@ export default function EditDebtModal({
     return new Date(dueDate).toISOString().split('T')[0]!;
   };
 
-  const initialFormData: FormData = {
+  // Create initial form data dynamically based on debt prop
+  const getInitialFormData = (): FormData => ({
     type: debt?.type || "i_owe",
-    originalAmount: "",
-    currentAmount: "",
+    originalAmount: debt?.originalAmount?.toString() || "",
+    currentAmount: debt?.currentAmount?.toString() || "",
     description: debt?.description || "",
     counterpartyName: debt?.counterpartyName || "",
     counterpartyContact: debt?.counterpartyContact || "",
     dueDate: formatDueDate(debt?.dueDate),
     notes: debt?.notes || "",
-    interestRate: "",
+    interestRate: debt?.interestRate?.toString() || "",
     status: debt?.status || "open"
-  };
+  });
 
   const validationRules = useMemo(() => createValidationRules<FormData>([
     {
       field: 'originalAmount',
       validators: [
         (value) => {
+          if (!value || value.trim() === "") {
+            return 'El monto original es requerido';
+          }
           const numValue = parseFormattedPrice(value, "COP");
           if (numValue <= 0) {
             return 'El monto original debe ser mayor a 0';
@@ -104,13 +108,19 @@ export default function EditDebtModal({
       field: 'currentAmount',
       validators: [
         (value, formData) => {
+          if (!value || value.trim() === "") {
+            return 'El monto actual es requerido';
+          }
           const currentValue = parseFormattedPrice(value, "COP");
-          const originalValue = parseFormattedPrice(formData?.originalAmount || "0", "COP");
           if (currentValue < 0) {
             return 'El monto actual no puede ser negativo';
           }
-          if (currentValue > originalValue) {
-            return 'El monto actual no puede ser mayor al original';
+          // Only validate against original amount if it exists
+          if (formData?.originalAmount) {
+            const originalValue = parseFormattedPrice(formData.originalAmount, "COP");
+            if (currentValue > originalValue) {
+              return 'El monto actual no puede ser mayor al original';
+            }
           }
           return null;
         }
@@ -128,7 +138,7 @@ export default function EditDebtModal({
       field: 'interestRate',
       validators: [
         (value) => {
-          if (value) {
+          if (value && value.trim()) {
             const numValue = parseFormattedPrice(value, "COP");
             if (numValue < 0) {
               return 'La tasa de interés no puede ser negativa';
@@ -169,15 +179,27 @@ export default function EditDebtModal({
         type: data.type,
         originalAmount: originalAmountInput.rawValue,
         currentAmount: currentAmountInput.rawValue,
-        description: data.description,
-        counterpartyName: data.counterpartyName,
+        description: data.description.trim(),
+        counterpartyName: data.counterpartyName.trim(),
         status: data.status,
       };
 
-      if (data.counterpartyContact) updateData.counterpartyContact = data.counterpartyContact;
-      if (data.dueDate) updateData.dueDate = new Date(data.dueDate).getTime();
-      if (data.notes) updateData.notes = data.notes;
-      if (data.interestRate) updateData.interestRate = interestRateInput.rawValue;
+      // Add optional fields only if they have values
+      if (data.counterpartyContact?.trim()) {
+        updateData.counterpartyContact = data.counterpartyContact.trim();
+      }
+      
+      if (data.dueDate) {
+        updateData.dueDate = new Date(data.dueDate).getTime();
+      }
+      
+      if (data.notes?.trim()) {
+        updateData.notes = data.notes.trim();
+      }
+      
+      if (interestRateInput.rawValue > 0) {
+        updateData.interestRate = interestRateInput.rawValue;
+      }
 
       await updateDebt(updateData);
 
@@ -185,7 +207,8 @@ export default function EditDebtModal({
       onClose();
     } catch (error) {
       console.error("Error updating debt:", error);
-      toast.error("Error al actualizar la deuda");
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      toast.error(`Error al actualizar la deuda: ${errorMessage}`);
     }
   };
 
@@ -197,11 +220,12 @@ export default function EditDebtModal({
     handleSubmit,
     resetForm,
   } = useFormHandler({
-    initialData: initialFormData,
+    initialData: getInitialFormData(),
     validationRules,
   });
 
   const handleClose = () => {
+    // Reset form to empty state
     resetForm();
     originalAmountInput.setValue(0);
     currentAmountInput.setValue(0);
@@ -212,14 +236,26 @@ export default function EditDebtModal({
   useEffect(() => {
     if (isOpen && debt) {
       // Reset form with debt data
+      const initialData = getInitialFormData();
       resetForm();
-      originalAmountInput.setValue(debt.originalAmount);
-      currentAmountInput.setValue(debt.currentAmount);
-      if (debt.interestRate) {
-        interestRateInput.setValue(debt.interestRate);
-      }
+      
+      // Update each field with debt data
+      Object.entries(initialData).forEach(([key, value]) => {
+        updateField(key as keyof FormData, value);
+      });
+      
+      // Set price input values
+      originalAmountInput.setValue(debt.originalAmount || 0);
+      currentAmountInput.setValue(debt.currentAmount || 0);
+      interestRateInput.setValue(debt.interestRate || 0);
+    } else if (!isOpen) {
+      // Reset everything when modal closes
+      resetForm();
+      originalAmountInput.setValue(0);
+      currentAmountInput.setValue(0);
+      interestRateInput.setValue(0);
     }
-  }, [isOpen, debt, resetForm, originalAmountInput, currentAmountInput, interestRateInput]);
+  }, [isOpen, debt]);
 
   const debtTypeOptions = [
     { value: "i_owe", label: "YO DEBO" },
@@ -306,7 +342,7 @@ export default function EditDebtModal({
                 value={originalAmountInput.displayValue}
                 onChange={(value) => {
                   originalAmountInput.handleChange(value);
-                  updateField("originalAmount", originalAmountInput.rawValue.toString());
+                  updateField("originalAmount", value);
                 }}
                 error={errors.originalAmount}
                 required
@@ -319,7 +355,7 @@ export default function EditDebtModal({
                 value={currentAmountInput.displayValue}
                 onChange={(value) => {
                   currentAmountInput.handleChange(value);
-                  updateField("currentAmount", currentAmountInput.rawValue.toString());
+                  updateField("currentAmount", value);
                 }}
                 error={errors.currentAmount}
                 required
@@ -383,7 +419,7 @@ export default function EditDebtModal({
                 value={interestRateInput.displayValue}
                 onChange={(value) => {
                   interestRateInput.handleChange(value);
-                  updateField("interestRate", interestRateInput.rawValue.toString());
+                  updateField("interestRate", value);
                 }}
                 error={errors.interestRate}
               />

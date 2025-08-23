@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TestDataGenerator } from './utils/test-helpers';
+import { TestDataGenerator, getErrorMessage } from './utils/test-helpers';
 
 test.describe('Billing Limits Testing', () => {
   
@@ -270,7 +270,7 @@ test.describe('Billing Limits Testing', () => {
         console.log('⚠️ New transaction button not found');
       }
     } catch (error) {
-      console.log(`❌ Error during form filling:`, error.message);
+      console.log(`❌ Error during form filling:`, getErrorMessage(error));
     }
   });
 
@@ -363,7 +363,7 @@ test.describe('Billing Limits Testing', () => {
         }
         
       } catch (error) {
-        console.log(`❌ Error on attempt ${i}:`, error.message);
+        console.log(`❌ Error on attempt ${i}:`, getErrorMessage(error));
       }
       
       // Small delay between attempts

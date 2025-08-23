@@ -28,6 +28,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useBilling } from "@/hooks/useBilling";
 import NewRecurringTransactionModal from "@/components/forms/NewRecurringTransactionModal";
 import EditRecurringTransactionModal from "@/components/forms/EditRecurringTransactionModal";
 import DeleteRecurringTransactionModal from "@/components/forms/DeleteRecurringTransactionModal";
@@ -39,6 +40,7 @@ import { formatCurrency } from "@/lib/currency";
 export default function RecurringTransactionsPage() {
   const recurringTransactionsQuery = useQuery(api.recurringTransactions.getRecurringTransactions);
   const isLoading = recurringTransactionsQuery === undefined;
+  const { billingInfo, isFree, getUsagePercentage } = useBilling();
   
   const recurringTransactions = useMemo(() => {
     return recurringTransactionsQuery || [];
@@ -153,6 +155,47 @@ export default function RecurringTransactionsPage() {
         </p>
         <div className="w-20 h-1 bg-black mt-4"></div>
       </motion.div>
+
+      {/* Usage Indicator for Free Users */}
+      {isFree && billingInfo && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-6"
+        >
+          <Card className="brutal-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-bold text-gray-700">Transacciones recurrentes</span>
+              <span className="text-sm font-bold text-gray-600">
+                {billingInfo.usage.recurringTransactions}/{billingInfo.limits.recurringTransactions}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  getUsagePercentage('recurring_transactions') >= 80 
+                    ? 'bg-red-500' 
+                    : getUsagePercentage('recurring_transactions') >= 60 
+                    ? 'bg-yellow-500' 
+                    : 'bg-blue-500'
+                }`}
+                style={{
+                  width: `${Math.min(getUsagePercentage('recurring_transactions'), 100)}%`,
+                }}
+              />
+            </div>
+            {getUsagePercentage('recurring_transactions') >= 80 && (
+              <p className="text-xs text-red-600 font-bold mt-2">
+                {getUsagePercentage('recurring_transactions') >= 100 
+                  ? "🚫 Has alcanzado el límite máximo" 
+                  : "⚠  Te estás acercando al límite"
+                }
+              </p>
+            )}
+          </Card>
+        </motion.div>
+      )}
 
       {/* Actions */}
       <motion.div

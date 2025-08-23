@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { TestDataGenerator, PageHelpers } from './utils/test-helpers';
+import { TestDataGenerator, PageHelpers, getErrorMessage } from './utils/test-helpers';
 
 test.describe('Billing Limits Tests', () => {
   let page: Page;
@@ -145,7 +145,7 @@ test.describe('Billing Limits Tests', () => {
             break;
           }
         } catch (e) {
-          console.log(`Debt button selector ${selector} failed:`, e.message);
+          console.log(`Debt button selector ${selector} failed:`, getErrorMessage(e));
         }
       }
       
@@ -179,7 +179,7 @@ test.describe('Billing Limits Tests', () => {
             break;
           }
         } catch (e) {
-          console.log(`Name selector ${selector} failed:`, e.message);
+          console.log(`Name selector ${selector} failed:`, getErrorMessage(e));
         }
       }
       
@@ -289,7 +289,7 @@ test.describe('Billing Limits Tests', () => {
             break;
           }
         } catch (e) {
-          console.log(`Page ${categoryPage} not accessible:`, e.message);
+          console.log(`Page ${categoryPage} not accessible:`, getErrorMessage(e));
         }
       }
       
@@ -373,7 +373,7 @@ test.describe('Billing Limits Tests', () => {
         await PageHelpers.takeScreenshot(page, 'network-error-state');
         
       } catch (error) {
-        console.log('✅ Network error handled gracefully:', error.message);
+        console.log('✅ Network error handled gracefully:', getErrorMessage(error));
       } finally {
         // Restore network
         await page.context().setOffline(false);
@@ -421,7 +421,7 @@ test.describe('Billing Limits Tests', () => {
         await PageHelpers.takeScreenshot(page, 'form-validation-errors');
         
       } catch (error) {
-        console.log('✅ Form validation prevented empty submission:', error.message);
+        console.log('✅ Form validation prevented empty submission:', getErrorMessage(error));
       }
       
       await PageHelpers.closeModal(page);
@@ -450,7 +450,7 @@ test.describe('Billing Limits Tests', () => {
           await page.waitForTimeout(500);
           
         } catch (error) {
-          console.log(`Rapid submission ${i} failed:`, error.message);
+          console.log(`Rapid submission ${i} failed:`, getErrorMessage(error));
           await PageHelpers.takeScreenshot(page, `rapid-submission-${i}-error`);
         }
       }
