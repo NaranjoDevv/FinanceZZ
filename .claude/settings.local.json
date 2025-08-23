@@ -7,12 +7,15 @@
       "Bash(npx create-next-app:*)",
       "Bash(npm run dev:*)",
       "Bash(mkdir:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Read(/C:\\c\\Users\\123456\\Desktop/**)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": [],
     "additionalDirectories": [
-      "C:\\mnt\\c\\Users\\123456\\Desktop"
+      "C:\\mnt\\c\\Users\\123456\\Desktop",
+      "C:\\c\\Users\\123456\\Desktop"
     ]
   }
 }

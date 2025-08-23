@@ -24,7 +24,7 @@ export class TestDataGenerator {
   ];
 
   static randomDescription(): string {
-    return this.descriptions[Math.floor(Math.random() * this.descriptions.length)];
+    return this.descriptions[Math.floor(Math.random() * this.descriptions.length)] || 'Default description';
   }
 
   static randomAmount(): number {
@@ -33,11 +33,11 @@ export class TestDataGenerator {
   }
 
   static randomCategory(): string {
-    return this.categories[Math.floor(Math.random() * this.categories.length)];
+    return this.categories[Math.floor(Math.random() * this.categories.length)] || 'Default category';
   }
 
   static randomCounterpartyName(): string {
-    return this.counterpartyNames[Math.floor(Math.random() * this.counterpartyNames.length)];
+    return this.counterpartyNames[Math.floor(Math.random() * this.counterpartyNames.length)] || 'Default name';
   }
 
   static randomDate(): Date {
@@ -115,7 +115,7 @@ export class PageHelpers {
       
       console.log('✅ User logged in successfully');
     } catch (error) {
-      console.error('Login error:', error.message);
+      console.error('Login error:', error instanceof Error ? error.message : String(error));
       await this.takeScreenshot(page, 'login-failed');
       throw error;
     }
@@ -148,7 +148,7 @@ export class PageHelpers {
           break;
         }
       } catch (e) {
-        console.log(`Selector ${selector} not found:`, e.message);
+        console.log(`Selector ${selector} not found:`, e instanceof Error ? e.message : String(e));
       }
     }
     
@@ -188,7 +188,7 @@ export class PageHelpers {
           break;
         }
       } catch (e) {
-        console.log(`Description selector ${selector} failed:`, e.message);
+        console.log(`Description selector ${selector} failed:`, e instanceof Error ? e.message : String(e));
       }
     }
     
@@ -215,7 +215,7 @@ export class PageHelpers {
           break;
         }
       } catch (e) {
-        console.log(`Amount selector ${selector} failed:`, e.message);
+        console.log(`Amount selector ${selector} failed:`, e instanceof Error ? e.message : String(e));
       }
     }
     
@@ -240,7 +240,7 @@ export class PageHelpers {
             break;
           }
         } catch (e) {
-          console.log(`Type selector ${selector} failed:`, e.message);
+          console.log(`Type selector ${selector} failed:`, e instanceof Error ? e.message : String(e));
         }
       }
     }
@@ -269,7 +269,7 @@ export class PageHelpers {
           return true;
         }
       } catch (e) {
-        console.log(`Submit selector ${selector} failed:`, e.message);
+        console.log(`Submit selector ${selector} failed:`, e instanceof Error ? e.message : String(e));
       }
     }
     
