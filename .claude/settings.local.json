@@ -9,7 +9,8 @@
       "Bash(mkdir:*)",
       "Bash(node:*)",
       "Read(/C:\\c\\Users\\123456\\Desktop/**)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": [],

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -19,7 +19,7 @@ import {
   Edit
 } from "lucide-react";
 import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
-import { usePriceInput } from "@/lib/price-formatter";
+import { usePriceInput, parseFormattedPrice } from "@/lib/price-formatter";
 import { toast } from "sonner";
 
 interface Debt {
@@ -87,12 +87,13 @@ export default function EditDebtModal({
     status: debt?.status || "open"
   };
 
-  const validationRules = createValidationRules<FormData>([
+  const validationRules = useMemo(() => createValidationRules<FormData>([
     {
       field: 'originalAmount',
       validators: [
-        () => {
-          if (originalAmountInput.rawValue <= 0) {
+        (value) => {
+          const numValue = parseFormattedPrice(value, "COP");
+          if (numValue <= 0) {
             return 'El monto original debe ser mayor a 0';
           }
           return null;
@@ -102,11 +103,13 @@ export default function EditDebtModal({
     {
       field: 'currentAmount',
       validators: [
-        () => {
-          if (currentAmountInput.rawValue < 0) {
+        (value, formData) => {
+          const currentValue = parseFormattedPrice(value, "COP");
+          const originalValue = parseFormattedPrice(formData?.originalAmount || "0", "COP");
+          if (currentValue < 0) {
             return 'El monto actual no puede ser negativo';
           }
-          if (currentAmountInput.rawValue > originalAmountInput.rawValue) {
+          if (currentValue > originalValue) {
             return 'El monto actual no puede ser mayor al original';
           }
           return null;
@@ -125,17 +128,20 @@ export default function EditDebtModal({
       field: 'interestRate',
       validators: [
         (value) => {
-          if (value && interestRateInput.rawValue < 0) {
-            return 'La tasa de interés no puede ser negativa';
-          }
-          if (value && interestRateInput.rawValue > 100) {
-            return 'La tasa de interés no puede ser mayor al 100%';
+          if (value) {
+            const numValue = parseFormattedPrice(value, "COP");
+            if (numValue < 0) {
+              return 'La tasa de interés no puede ser negativa';
+            }
+            if (numValue > 100) {
+              return 'La tasa de interés no puede ser mayor al 100%';
+            }
           }
           return null;
         }
       ],
     },
-  ]);
+  ]), []);
 
   const submitDebt = async (data: FormData) => {
     if (!currentUser || !debt) {

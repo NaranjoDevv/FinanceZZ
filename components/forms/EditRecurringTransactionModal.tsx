@@ -282,7 +282,6 @@ export default function EditRecurringTransactionModal({
                     value={displayValue}
                     onChange={(value) => {
                       handleChange(value);
-                      updateField("amount", amountValue.toString());
                     }}
                     required
                   />

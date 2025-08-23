@@ -138,17 +138,17 @@ export default function DeleteRecurringTransactionModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl max-h-[95vh] sm:max-h-[85vh] overflow-y-auto sm:overflow-visible"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
           >
-            <Card className="brutal-card">
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 sm:p-6 border-b-4 border-black bg-white">
+            <Card className="brutal-card overflow-hidden">
+              {/* Header - Fixed */}
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b-4 border-black bg-red-600 text-white">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 sm:p-3 bg-red-600 text-white border-4 border-black">
+                  <div className="p-2 sm:p-3 bg-white text-red-600 border-4 border-black">
                     <TrashIcon className="h-6 w-6 sm:h-8 sm:w-8" />
                   </div>
                   <div>
-                    <h2 className="text-2xl sm:text-3xl font-black text-red-600 uppercase tracking-wide">
+                    <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-wide">
                       ELIMINAR TRANSACCIÓN RECURRENTE
                     </h2>
                   </div>
@@ -157,14 +157,21 @@ export default function DeleteRecurringTransactionModal({
                   onClick={handleClose}
                   variant="outline"
                   size="sm"
-                  className="border-2 border-black font-bold hover:bg-black hover:text-white transition-colors"
+                  className="bg-white border-4 border-black font-black text-red-600 hover:bg-gray-100 transition-colors"
                 >
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
 
-              {/* Content */}
-              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              {/* Content - Scrollable */}
+              <div 
+                className="max-h-[calc(90vh-180px)] "
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#9CA3AF #F3F4F6'
+                }}
+              >
+                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                 {/* Warning Header */}
                 <div className="flex items-center gap-3 p-4 border-4 border-red-600 bg-white shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]">
                   <ExclamationTriangleIcon className="h-8 w-8 text-red-600 flex-shrink-0" />
@@ -267,16 +274,15 @@ export default function DeleteRecurringTransactionModal({
                 </div>
 
                 {/* Confirmation Message */}
-                <div className="p-4 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="p-4 border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ">
                   <p className="text-center font-black text-black text-lg uppercase">
                     ¿Estás seguro de que deseas eliminar 
                     <span className="text-red-600">&quot;{transaction.description}&quot;</span>?
                   </p>
                 </div>
-
+                </div>
               </div>
-
-              {/* Footer */}
+              {/* Footer - Fixed */}
               <div className="flex gap-4 p-4 sm:p-6 border-t-4 border-black bg-white">
                 <Button
                   onClick={handleClose}

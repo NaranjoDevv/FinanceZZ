@@ -21,6 +21,8 @@ import {
   TagIcon,
   FunnelIcon,
   ChevronDownIcon,
+  Squares2X2Icon,
+  ListBulletIcon
 } from "@heroicons/react/24/outline";
 import { useCategories, Category } from "@/hooks/use-categories";
 import { NewCategoryModal } from "@/components/modals/NewCategoryModal";
@@ -28,6 +30,87 @@ import { EditCategoryModal } from "@/components/modals/EditCategoryModal";
 import { DeleteCategoryModal } from "@/components/modals/DeleteCategoryModal";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Componente para categoría en vista de cuadrícula
+function GridCategory({ category, handleEditCategory, handleDeleteCategory, router }: {
+  category: Category;
+  handleEditCategory: (category: Category) => void;
+  handleDeleteCategory: (category: Category) => void;
+  router: any;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="relative p-4 border-2 border-gray-200 hover:border-black transition-all duration-200 group"
+    >
+      {/* Header with icon and type */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="text-3xl">{category.icon || "📁"}</div>
+        <div className="flex items-center space-x-1">
+          <Badge
+            className={`font-bold uppercase text-xs border-2 ${
+              category.isExpense
+                ? "bg-red-500 text-white border-red-500"
+                : "bg-green-500 text-white border-green-500"
+            }`}
+          >
+            {category.isExpense ? "GASTO" : "INGRESO"}
+          </Badge>
+          {category.isSystem && (
+            <Badge className="bg-gray-800 text-white font-bold uppercase text-xs border-2 border-black">
+              SYS
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Name */}
+      <h4 className="font-bold text-sm uppercase tracking-wide mb-2 leading-tight">
+        {category.name}
+      </h4>
+
+      {/* Subcategories count */}
+      <div className="text-xs text-gray-600 mb-3">
+        <span className="font-medium">{category.subcategories?.length || 0} subcategorías</span>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => router.push(`/categories/${category._id}/subcategories`)}
+          className="flex-1 p-2 bg-purple-500 text-white text-xs font-bold uppercase tracking-wide border-2 border-purple-500 hover:bg-white hover:text-purple-500 transition-all duration-200"
+          title="Ver subcategorías"
+        >
+          <svg className="h-3 w-3 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => handleEditCategory(category)}
+          className="flex-1 p-2 bg-blue-500 text-white text-xs font-bold uppercase tracking-wide border-2 border-blue-500 hover:bg-white hover:text-blue-500 transition-all duration-200"
+        >
+          <PencilIcon className="w-3 h-3 mx-auto" />
+        </motion.button>
+        {!category.isSystem && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleDeleteCategory(category)}
+            className="flex-1 p-2 bg-red-500 text-white text-xs font-bold uppercase tracking-wide border-2 border-red-500 hover:bg-white hover:text-red-500 transition-all duration-200"
+          >
+            <TrashIcon className="w-3 h-3 mx-auto" />
+          </motion.button>
+        )}
+      </div>
+    </motion.div>
+  );
+}
 
 export default function Categories() {
   const router = useRouter();
@@ -40,6 +123,7 @@ export default function Categories() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [isNewCategoryModalOpen, setIsNewCategoryModalOpen] = useState(false);
   const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
   const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] = useState(false);
@@ -137,18 +221,11 @@ export default function Categories() {
             Nueva Categoría
           </Button>
           <Button 
-            className={`brutal-button transition-all duration-300 ${
-              showFilters 
-                ? 'bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] scale-105' 
-                : 'bg-white text-black border-black hover:bg-gray-100 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:scale-105'
-            }`}
+            className={`brutal-button ${showFilters ? 'bg-black text-white' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
           >
             <FunnelIcon className="w-5 h-5 mr-2" />
-            FILTROS
-            <ChevronDownIcon className={`w-4 h-4 ml-2 transition-transform duration-300 ${
-              showFilters ? 'rotate-180' : 'rotate-0'
-            }`} />
+            Filtros
           </Button>
         </div>
       </motion.div>
@@ -158,60 +235,60 @@ export default function Categories() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.0 }}
           >
-            <Card className="brutal-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-500 text-white rounded-none">
-                  <TagIcon className="h-6 w-6" />
+            <Card className="brutal-card p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-blue-500 text-white rounded-none">
+                  <TagIcon className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Categorías Totales
               </h3>
-              <p className="text-2xl font-black text-blue-600 transition-colors duration-200">{totalCategories}</p>
+              <p className="text-sm sm:text-2xl font-black text-blue-600 transition-colors duration-200">{totalCategories}</p>
             </Card>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.0 }}
           >
-            <Card className="brutal-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-red-500 text-white rounded-none">
-                  <TagIcon className="h-6 w-6" />
+            <Card className="brutal-card p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-red-500 text-white rounded-none">
+                  <TagIcon className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Categorías Gastos
               </h3>
-              <p className="text-2xl font-black text-red-600 transition-colors duration-200">{totalExpenseCategories}</p>
+              <p className="text-sm sm:text-2xl font-black text-red-600 transition-colors duration-200">{totalExpenseCategories}</p>
             </Card>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.0 }}
           >
-            <Card className="brutal-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-500 text-white rounded-none">
-                  <TagIcon className="h-6 w-6" />
+            <Card className="brutal-card p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-green-500 text-white rounded-none">
+                  <TagIcon className="h-4 w-4 sm:h-6 sm:w-6" />
                 </div>
               </div>
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-gray-600 mb-1 transition-colors duration-200">
                 Categorías Ingresos
               </h3>
-              <p className="text-2xl font-black text-green-600 transition-colors duration-200">{totalIncomeCategories}</p>
+              <p className="text-sm sm:text-2xl font-black text-green-600 transition-colors duration-200">{totalIncomeCategories}</p>
             </Card>
           </motion.div>
         </div>
@@ -221,92 +298,44 @@ export default function Categories() {
       <AnimatePresence>
         {showFilters && (
           <motion.div
-            initial={{ opacity: 0, height: 0, y: -20 }}
-            animate={{ 
-              opacity: 1, 
-              height: "auto", 
-              y: 0,
-              transition: {
-                duration: 0.4,
-                ease: "easeInOut",
-                height: { delay: 0.1, duration: 0.3 }
-              }
-            }}
-            exit={{ 
-              opacity: 0, 
-              height: 0, 
-              y: -20,
-              transition: {
-                duration: 0.3,
-                ease: "easeInOut",
-                height: { delay: 0.1, duration: 0.2 }
-              }
-            }}
-            className="mb-8 overflow-hidden"
-          >
-            <Card className="brutal-card p-6 border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-6 h-6 bg-black flex items-center justify-center">
-                  <FunnelIcon className="w-4 h-4 text-white" />
-                </div>
-                <h3 className="text-lg font-black uppercase tracking-wider text-black">
-                  FILTROS AVANZADOS
-                </h3>
-                <div className="flex-1 h-1 bg-black"></div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                    <MagnifyingGlassIcon className="w-4 h-4" />
-                    BUSCAR CATEGORÍAS
-                  </label>
-                  <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
+             initial={{ opacity: 0, y: -20, height: 0 }}
+             animate={{ opacity: 1, y: 0, height: "auto" }}
+             exit={{ opacity: 0, y: -20, height: 0 }}
+             transition={{ 
+               duration: 0.4,
+               ease: "easeInOut",
+               height: { delay: 0.1, duration: 0.3 }
+             }}
+             className="mb-6 sm:mb-8"
+           >
+            <Card className="brutal-card p-6">
+              <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                  {/* Search */}
+                  <div className="relative flex-1 max-w-md">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="BUSCAR CATEGORÍAS..."
+                      placeholder="Buscar categorías..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 border-4 border-black font-black text-black placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-gray-600 bg-white uppercase tracking-wide text-sm transition-all duration-200 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                      className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 border-2 border-black font-medium focus:outline-none focus:ring-0 focus:border-gray-600 text-sm sm:text-base"
                     />
                   </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <label className="text-sm font-black uppercase tracking-wider text-black flex items-center gap-2">
-                    <TagIcon className="w-4 h-4" />
-                    TIPO DE CATEGORÍA
-                  </label>
-                  <Select value={selectedType} onValueChange={setSelectedType}>
-                    <SelectTrigger className="w-full h-12 border-4 border-black font-black text-black bg-white hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-200">
-                      <SelectValue placeholder="SELECCIONAR TIPO" />
-                    </SelectTrigger>
-                    <SelectContent className="border-4 border-black">
-                      <SelectItem value="all" className="font-black uppercase">TODAS LAS CATEGORÍAS</SelectItem>
-                      <SelectItem value="expense" className="font-black uppercase text-red-600">GASTOS</SelectItem>
-                      <SelectItem value="income" className="font-black uppercase text-green-600">INGRESOS</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              {/* Filter Summary */}
-              <div className="mt-6 pt-4 border-t-4 border-black">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 text-sm font-black uppercase tracking-wide">
-                    <span className="text-gray-600">RESULTADOS:</span>
-                    <span className="text-black">{filteredCategories.length} CATEGORÍAS</span>
+
+                  {/* Type Filter */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 w-full sm:w-auto">
+                    <Select value={selectedType} onValueChange={setSelectedType}>
+                      <SelectTrigger className="w-full sm:w-48 h-10 sm:h-12 text-sm sm:text-base">
+                        <SelectValue placeholder="Tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas las categorías</SelectItem>
+                        <SelectItem value="expense">Gastos</SelectItem>
+                        <SelectItem value="income">Ingresos</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setSearchTerm("");
-                      setSelectedType("all");
-                    }}
-                    className="bg-gray-100 text-black border-2 border-black font-black text-xs px-3 py-1 hover:bg-gray-200 transition-colors duration-200 uppercase tracking-wide"
-                  >
-                    LIMPIAR FILTROS
-                  </Button>
                 </div>
               </div>
             </Card>
@@ -320,98 +349,142 @@ export default function Categories() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.8 }}
       >
-      <Card className="brutal-card p-6">
-        <h3 className="text-lg font-black uppercase tracking-wide mb-6 text-black transition-colors duration-200">
-          Categorías ({filteredCategories.length})
-        </h3>
-        {filteredCategories.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="text-6xl mb-4">📁</div>
-            <h3 className="text-lg font-black uppercase tracking-wide mb-2">No hay categorías</h3>
-            <p className="text-gray-600 font-medium mb-4">
-              {searchTerm || selectedType !== "all"
-                ? "No se encontraron categorías con los filtros aplicados"
-                : "Comienza creando tu primera categoría"}
-            </p>
-            {!searchTerm && selectedType === "all" && (
-              <Button 
-                className="brutal-button brutal-button--primary"
-                onClick={() => setIsNewCategoryModalOpen(true)}
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Crear Primera Categoría
-              </Button>
-            )}
+        <Card className="brutal-card">
+          <div className="p-6 border-b-4 border-black">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-black uppercase tracking-wide">
+                Lista de Categorías ({filteredCategories.length})
+              </h2>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 border-2 transition-all duration-200 ${
+                    viewMode === 'list'
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-300 bg-white text-black hover:border-black'
+                  }`}
+                >
+                  <ListBulletIcon className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 border-2 transition-all duration-200 ${
+                    viewMode === 'grid'
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-300 bg-white text-black hover:border-black'
+                  }`}
+                >
+                  <Squares2X2Icon className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredCategories.map((category, index) => (
-              <motion.div
-                key={category._id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="group brutal-card p-4 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                whileHover={{ scale: 1.02 }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-3xl">{category.icon || "📁"}</div>
-                    <div>
-                      <h4 className="font-black text-lg">{category.name}</h4>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Badge
-                          className={`font-bold uppercase text-xs border-2 ${
-                            category.isExpense
-                              ? "bg-black text-white border-black"
-                              : "bg-white text-black border-black"
-                          }`}
-                        >
-                          {category.isExpense ? "GASTO" : "INGRESO"}
-                        </Badge>
-                        {category.isSystem && (
-                          <Badge className="bg-gray-800 text-white font-bold uppercase text-xs border-2 border-black">
-                            SISTEMA
-                          </Badge>
-                        )}
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-bold text-gray-600 transition-colors duration-200">
-                            {category.subcategories?.length || 0} subcategorías
-                          </span>
+          <div className="p-6">
+            {filteredCategories.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 font-medium text-lg mb-2">
+                  {categories.length === 0
+                    ? "No tienes categorías aún"
+                    : "No se encontraron categorías con los filtros aplicados"
+                  }
+                </p>
+                {categories.length === 0 && (
+                  <p className="text-gray-400 text-sm">
+                    Crea tu primera categoría para organizar tus transacciones
+                  </p>
+                )}
+              </div>
+            ) : viewMode === 'list' ? (
+              <div className="space-y-4">
+                {filteredCategories.map((category, index) => (
+                  <motion.div
+                    key={category._id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.0 }}
+                    className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border-2 border-gray-200 hover:border-black transition-all duration-200 group"
+                  >
+                    <div className="flex items-start space-x-3 flex-1">
+                      <div className="text-3xl flex-shrink-0">{category.icon || "📁"}</div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-sm md:text-base uppercase tracking-wide truncate leading-tight">
+                          {category.name}
+                        </h4>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-xs md:text-sm text-gray-600 mt-0.5">
+                          <div className="flex items-center space-x-2">
+                            <Badge
+                              className={`font-bold uppercase text-xs border-2 ${
+                                category.isExpense
+                                  ? "bg-red-500 text-white border-red-500"
+                                  : "bg-green-500 text-white border-green-500"
+                              }`}
+                            >
+                              {category.isExpense ? "GASTO" : "INGRESO"}
+                            </Badge>
+                            {category.isSystem && (
+                              <Badge className="bg-gray-800 text-white font-bold uppercase text-xs border-2 border-black">
+                                SISTEMA
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-xs md:text-sm">{category.subcategories?.length || 0} subcategorías</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      className="brutal-button brutal-button--small"
-                      onClick={() => router.push(`/categories/${category._id}/subcategories`)}
-                      title="Ver subcategorías"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                    </Button>
-                    <Button
-                      className="brutal-button brutal-button--small"
-                      onClick={() => handleEditCategory(category)}
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </Button>
-                    {!category.isSystem && (
-                      <Button
-                        className="brutal-button brutal-button--small brutal-button--danger"
-                        onClick={() => handleDeleteCategory(category)}
+                    <div className="flex gap-1 md:gap-2 transition-all duration-200 opacity-0 group-hover:opacity-100 mt-2 sm:mt-0">
+                      <motion.button
+                        onClick={() => router.push(`/categories/${category._id}/subcategories`)}
+                        className="brutal-button p-1.5 md:p-2 bg-purple-500 text-white hover:bg-purple-600 transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        title="Ver subcategorías"
                       >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+                        <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      </motion.button>
+                      <motion.button
+                        onClick={() => handleEditCategory(category)}
+                        className="brutal-button p-1.5 md:p-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        title="Editar categoría"
+                      >
+                        <PencilIcon className="w-3 h-3 md:w-4 md:h-4" />
+                      </motion.button>
+                      {!category.isSystem && (
+                        <motion.button
+                          onClick={() => handleDeleteCategory(category)}
+                          className="brutal-button p-1.5 md:p-2 bg-red-500 text-white hover:bg-red-600 transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          title="Eliminar categoría"
+                        >
+                          <TrashIcon className="w-3 h-3 md:w-4 md:h-4" />
+                        </motion.button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredCategories.map((category) => (
+                  <GridCategory
+                    key={category._id}
+                    category={category}
+                    handleEditCategory={handleEditCategory}
+                    handleDeleteCategory={handleDeleteCategory}
+                    router={router}
+                  />
+                ))}
+              </div>
+            )}
+        </div>
       </Card>
       </motion.div>
 
