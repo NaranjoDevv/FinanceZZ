@@ -101,6 +101,34 @@ export const logAdminAction = async (
 
 // ===== ADMIN USER MANAGEMENT =====
 
+// Safe admin check that doesn't throw errors for non-admin users
+export const checkAdminStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { isAdmin: false, user: null };
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!user) {
+      return { isAdmin: false, user: null };
+    }
+
+    const isAdmin = await isUserAdmin(ctx, user._id);
+    return { 
+      isAdmin, 
+      user: isAdmin ? user : null,
+      role: user.role,
+      plan: user.plan
+    };
+  },
+});
+
 // Get current user with admin check
 export const getCurrentAdminUser = query({
   args: {},
@@ -383,6 +411,223 @@ export const createSubscriptionPlan = mutation({
   },
 });
 
+// Update subscription plan
+export const updateSubscriptionPlan = mutation({
+  args: {
+    planId: v.id("subscriptionPlans"),
+    name: v.optional(v.string()),
+    displayName: v.optional(v.string()),
+    description: v.optional(v.string()),
+    priceMonthly: v.optional(v.number()),
+    priceYearly: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    limits: v.optional(v.object({
+      monthlyTransactions: v.number(),
+      activeDebts: v.number(),
+      recurringTransactions: v.number(),
+      categories: v.number(),
+    })),
+    features: v.optional(v.array(v.string())),
+    order: v.optional(v.number()),
+    isActive: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const adminUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!adminUser || !await isUserAdmin(ctx, adminUser._id)) {
+      throw new Error("Access denied: Admin privileges required");
+    }
+
+    if (!await userHasPermission(ctx, adminUser._id, ADMIN_PERMISSIONS.MANAGE_PLANS)) {
+      throw new Error("Access denied: Insufficient permissions");
+    }
+
+    const existingPlan = await ctx.db.get(args.planId);
+    if (!existingPlan) {
+      throw new Error("Subscription plan not found");
+    }
+
+    // Prepare update data, removing planId and undefined values
+    const { planId, ...updateData } = args;
+    const cleanUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, value]) => value !== undefined)
+    );
+
+    await ctx.db.patch(args.planId, {
+      ...cleanUpdateData,
+      updatedAt: Date.now(),
+    });
+
+    // Log the action
+    await logAdminAction(
+      ctx,
+      adminUser._id,
+      "update_subscription_plan",
+      "plan",
+      args.planId,
+      { ...cleanUpdateData, oldData: existingPlan },
+      "info"
+    );
+
+    return {
+      success: true,
+      message: "Subscription plan updated successfully",
+    };
+  },
+});
+
+// Delete subscription plan
+export const deleteSubscriptionPlan = mutation({
+  args: {
+    planId: v.id("subscriptionPlans"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const adminUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!adminUser || !await isUserAdmin(ctx, adminUser._id)) {
+      throw new Error("Access denied: Admin privileges required");
+    }
+
+    if (!await userHasPermission(ctx, adminUser._id, ADMIN_PERMISSIONS.DELETE_PLANS)) {
+      throw new Error("Access denied: Insufficient permissions");
+    }
+
+    const existingPlan = await ctx.db.get(args.planId);
+    if (!existingPlan) {
+      throw new Error("Subscription plan not found");
+    }
+
+    // Check if there are users with this plan (only for standard plan names)
+    if (existingPlan.name === "free" || existingPlan.name === "premium" || existingPlan.name === "admin") {
+      const usersWithPlan = await ctx.db
+        .query("users")
+        .withIndex("by_plan", (q) => q.eq("plan", existingPlan.name as "free" | "premium" | "admin"))
+        .collect();
+
+      if (usersWithPlan.length > 0) {
+        throw new Error(`Cannot delete plan: ${usersWithPlan.length} users are currently using this plan`);
+      }
+    }
+
+    await ctx.db.delete(args.planId);
+
+    // Log the action
+    await logAdminAction(
+      ctx,
+      adminUser._id,
+      "delete_subscription_plan",
+      "plan",
+      args.planId,
+      existingPlan,
+      "warning"
+    );
+
+    return {
+      success: true,
+      message: "Subscription plan deleted successfully",
+    };
+  },
+});
+
+// Toggle subscription plan status (activate/deactivate)
+export const toggleSubscriptionPlanStatus = mutation({
+  args: {
+    planId: v.id("subscriptionPlans"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const adminUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!adminUser || !await isUserAdmin(ctx, adminUser._id)) {
+      throw new Error("Access denied: Admin privileges required");
+    }
+
+    if (!await userHasPermission(ctx, adminUser._id, ADMIN_PERMISSIONS.MANAGE_PLANS)) {
+      throw new Error("Access denied: Insufficient permissions");
+    }
+
+    const existingPlan = await ctx.db.get(args.planId);
+    if (!existingPlan) {
+      throw new Error("Subscription plan not found");
+    }
+
+    const newStatus = !existingPlan.isActive;
+    
+    await ctx.db.patch(args.planId, {
+      isActive: newStatus,
+      updatedAt: Date.now(),
+    });
+
+    // Log the action
+    await logAdminAction(
+      ctx,
+      adminUser._id,
+      newStatus ? "activate_subscription_plan" : "deactivate_subscription_plan",
+      "plan",
+      args.planId,
+      { newStatus, oldStatus: existingPlan.isActive },
+      "info"
+    );
+
+    return {
+      success: true,
+      message: `Subscription plan ${newStatus ? 'activated' : 'deactivated'} successfully`,
+      newStatus,
+    };
+  },
+});
+
+// Get subscription plan by ID
+export const getSubscriptionPlan = query({
+  args: {
+    planId: v.id("subscriptionPlans"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const adminUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!adminUser || !await isUserAdmin(ctx, adminUser._id)) {
+      throw new Error("Access denied: Admin privileges required");
+    }
+
+    if (!await userHasPermission(ctx, adminUser._id, ADMIN_PERMISSIONS.VIEW_PLANS)) {
+      throw new Error("Access denied: Insufficient permissions");
+    }
+
+    return await ctx.db.get(args.planId);
+  },
+});
+
 // ===== CURRENCY MANAGEMENT =====
 
 // Get all currencies
@@ -530,9 +775,9 @@ export const assignPermissionToUser = mutation({
       permission: args.permission,
       grantedBy: adminUser._id,
       grantedAt: Date.now(),
-      expiresAt: args.expiresAt,
       isActive: true,
-      notes: args.notes,
+      ...(args.expiresAt && { expiresAt: args.expiresAt }),
+      ...(args.notes && { notes: args.notes }),
     });
 
     // Log the action
@@ -550,6 +795,75 @@ export const assignPermissionToUser = mutation({
       permissionId,
       success: true,
       message: "Permission assigned successfully",
+    };
+  },
+});
+
+// Bootstrap first super admin (for development/setup) - SIMPLIFIED VERSION
+export const bootstrapFirstSuperAdmin = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get current user
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    // Promote current user to super admin (bypass existing admin check for bootstrap)
+    await ctx.db.patch(currentUser._id, {
+      role: "super_admin",
+      plan: "admin",
+      adminPermissions: Object.values(ADMIN_PERMISSIONS),
+    });
+
+    return {
+      success: true,
+      message: "You have been promoted to super admin",
+      userId: currentUser._id,
+    };
+  },
+});
+
+// Make current user admin (for development/setup)
+export const makeCurrentUserAdmin = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get current user
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    // Promote current user to super admin
+    await ctx.db.patch(currentUser._id, {
+      role: "super_admin",
+      plan: "admin",
+      adminPermissions: Object.values(ADMIN_PERMISSIONS),
+    });
+
+    return {
+      success: true,
+      message: "You have been promoted to super admin",
+      userId: currentUser._id,
+      user: currentUser,
     };
   },
 });
@@ -675,6 +989,69 @@ export const initializeAdminSystem = mutation({
       success: true,
       message: "Admin system initialized successfully",
       superAdminId: user._id,
+    };
+  },
+});
+
+// ===== SYSTEM STATISTICS =====
+export const getSystemStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check if user is admin
+    const isAdmin = await isUserAdmin(ctx, user._id);
+    if (!isAdmin) {
+      throw new Error("Access denied: Admin privileges required");
+    }
+
+    // Get all users count
+    const allUsers = await ctx.db.query("users").collect();
+    const totalUsers = allUsers.length;
+    
+    // Get premium users count
+    const premiumUsers = allUsers.filter(u => u.plan === "premium").length;
+    
+    // Get active users (users who have logged in within last 30 days)
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    const activeUsers = allUsers.filter(u => u.lastLoginAt && u.lastLoginAt > thirtyDaysAgo).length;
+    
+    // Get all subscription plans count
+    const allPlans = await ctx.db.query("subscriptionPlans").collect();
+    const activePlans = allPlans.filter(p => p.isActive).length;
+    
+    // Get all currencies count
+    const allCurrencies = await ctx.db.query("currencies").collect();
+    const availableCurrencies = allCurrencies.filter(c => c.isActive).length;
+    
+    // Get all transactions count
+    const allTransactions = await ctx.db.query("transactions").collect();
+    const totalTransactions = allTransactions.length;
+    
+    // Calculate system uptime (mock data for now)
+    const systemUptime = 99.98;
+    
+    return {
+      totalUsers,
+      premiumUsers,
+      activeUsers,
+      activePlans,
+      availableCurrencies,
+      totalTransactions,
+      systemUptime,
+      lastUpdated: Date.now(),
     };
   },
 });

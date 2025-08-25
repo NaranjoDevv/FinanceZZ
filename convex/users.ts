@@ -34,6 +34,69 @@ export const getCurrentUser = query({
   },
 });
 
+// Crear usuario automáticamente si no existe
+export const createUserIfNotExists = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    console.log("🔍 createUserIfNotExists called for:", identity.email);
+
+    // Check if user already exists
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (existingUser) {
+      console.log("✅ User already exists:", existingUser._id);
+      return { created: false, user: existingUser };
+    }
+
+    console.log("➕ Creating new user for:", identity.email);
+
+    // Create new user
+    const userInsertData: any = {
+      tokenIdentifier: identity.tokenIdentifier,
+      email: identity.email || "",
+      name: identity.name || identity.email?.split("@")[0] || "Usuario",
+      plan: "free",
+      onboardingCompleted: false,
+      currency: "COP",
+      timezone: "America/Bogota",
+      language: "es",
+      limits: {
+        monthlyTransactions: 10,
+        activeDebts: 1,
+        recurringTransactions: 2,
+        categories: 2,
+      },
+      usage: {
+        monthlyTransactions: 0,
+        activeDebts: 0,
+        recurringTransactions: 0,
+        categories: 0,
+        lastResetDate: Date.now(),
+      },
+      numberRounding: false,
+    };
+
+    if (identity.pictureUrl) {
+      userInsertData.imageUrl = identity.pictureUrl;
+    }
+
+    const userId = await ctx.db.insert("users", userInsertData);
+
+    const newUser = await ctx.db.get(userId);
+    console.log("✅ User created successfully:", userId);
+
+    return { created: true, user: newUser };
+  },
+});
+
 // Mutation para migrar usuarios existentes que no tengan numberRounding
 export const migrateUserNumberRounding = mutation({
   args: {},
@@ -182,31 +245,7 @@ export const createOrUpdateUser = mutation({
       return existingUser._id;
     } else {
       // Crear nuevo usuario
-      const userData: {
-        tokenIdentifier: string;
-        email: string;
-        name: string;
-        plan: "free" | "premium";
-        onboardingCompleted: boolean;
-        currency: string;
-        numberRounding: boolean;
-        timezone: string;
-        language: string;
-        limits: {
-          monthlyTransactions: number;
-          activeDebts: number;
-          recurringTransactions: number;
-          categories: number;
-        };
-        usage: {
-          monthlyTransactions: number;
-          activeDebts: number;
-          recurringTransactions: number;
-          categories: number;
-          lastResetDate: number;
-        };
-        imageUrl?: string;
-      } = {
+      const userData: any = {
         tokenIdentifier: args.tokenIdentifier,
         email: args.email,
         name: args.name,

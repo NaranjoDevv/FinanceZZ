@@ -186,7 +186,7 @@ export default function NewDebtModal({
       amountInput.setValue("");
       interestRateInput.setValue("");
     }
-  }, [isOpen]); // Only depend on isOpen to prevent infinite re-renders
+  }, [isOpen, amountInput, interestRateInput, resetForm]); // Only depend on isOpen to prevent infinite re-renders
 
   const debtTypeOptions = [
     { value: "i_owe", label: "YO DEBO" },

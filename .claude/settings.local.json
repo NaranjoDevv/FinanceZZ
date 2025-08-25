@@ -10,7 +10,10 @@
       "Bash(node:*)",
       "Read(/C:\\c\\Users\\123456\\Desktop/**)",
       "Bash(npm run lint)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx convex dev:*)",
+      "Bash(npx convex env:*)"
     ],
     "deny": [],
     "ask": [],

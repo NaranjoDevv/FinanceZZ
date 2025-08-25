@@ -26,7 +26,7 @@ interface Filter {
   defaultValue?: string;
 }
 
-interface DataListingProps<T = any> {
+interface DataListingProps<T = Record<string, unknown>> {
   data: T[];
   title: string;
   searchPlaceholder?: string;
@@ -47,7 +47,7 @@ interface DataListingProps<T = any> {
   minGridColumns?: number;
 }
 
-export default function DataListing<T = any>({
+export default function DataListing<T = Record<string, unknown>>({
   data,
   title,
   searchPlaceholder = "Buscar...",
@@ -105,7 +105,7 @@ export default function DataListing<T = any>({
     if (searchTerm && enableSearch) {
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = searchKeys.some(key => {
-        const value = getNestedValue(item, key);
+        const value = getNestedValue(item as Record<string, unknown>, key);
         return value?.toString().toLowerCase().includes(searchLower);
       });
       if (!matchesSearch) return false;
@@ -116,7 +116,7 @@ export default function DataListing<T = any>({
       for (const filter of filters) {
         const filterValue = filterValues[filter.key];
         if (filterValue && filterValue !== "all") {
-          const itemValue = getNestedValue(item, filter.key);
+          const itemValue = getNestedValue(item as Record<string, unknown>, filter.key);
           if (itemValue !== filterValue) return false;
         }
       }
@@ -125,8 +125,12 @@ export default function DataListing<T = any>({
     return true;
   });
 
-  const getNestedValue = (obj: any, path: string) => {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+  const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+    return path.split('.').reduce((current: unknown, key: string) => {
+      return current && typeof current === 'object' && current !== null 
+        ? (current as Record<string, unknown>)[key] 
+        : undefined;
+    }, obj);
   };
 
   const handleFilterChange = (filterKey: string, value: string) => {

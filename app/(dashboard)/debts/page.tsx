@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -64,7 +63,7 @@ function GridDebt({ debt, getStatusText, getStatusColor, getDebtTypeText, getDeb
   formatDate: (timestamp: number) => string;
   handleEditDebt: (debt: Debt) => void;
   handleDeleteDebt: (debt: Debt) => void;
-  userCurrency: any;
+  userCurrency: import('@/lib/currency').Currency;
 }) {
   return (
     <motion.div
@@ -522,7 +521,7 @@ export default function DebtsPage() {
               </div>
             ) : viewMode === 'list' ? (
               <div className="space-y-4">
-                {filteredDebts.map((debt: Debt, index: number) => (
+                {filteredDebts.map((debt: Debt) => (
                   <motion.div
                     key={debt._id}
                     initial={{ opacity: 0, x: -20 }}

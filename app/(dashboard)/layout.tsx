@@ -23,10 +23,54 @@ import {
   UserIcon,
   BellIcon,
   ArrowPathIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ChevronDownIcon
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+const adminSubItems = [
+  {
+    name: "Dashboard",
+    href: "/admin",
+    permission: "view_admin_dashboard",
+  },
+  {
+    name: "Usuarios",
+    href: "/admin/users",
+    permission: "view_users",
+  },
+  {
+    name: "Planes",
+    href: "/admin/plans",
+    permission: "view_plans",
+  },
+  {
+    name: "Monedas",
+    href: "/admin/currencies",
+    permission: "view_currencies",
+  },
+  {
+    name: "Permisos",
+    href: "/admin/permissions",
+    permission: "view_permissions",
+  },
+  {
+    name: "Analíticas",
+    href: "/admin/analytics",
+    permission: "view_analytics",
+  },
+  {
+    name: "Auditoría",
+    href: "/admin/audit",
+    permission: "view_audit_logs",
+  },
+  {
+    name: "Sistema",
+    href: "/admin/system",
+    permission: "manage_system_settings",
+  },
+];
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
@@ -38,7 +82,7 @@ const navigation = [
   { name: "Recordatorios", href: "/reminders", icon: BellIcon },
   { name: "Reportes", href: "/reports", icon: ChartBarIcon },
   { name: "Datos Ejemplo", href: "/seed", icon: CogIcon },
-  { name: "Admin", href: "/admin", icon: ShieldCheckIcon, adminOnly: true },
+  { name: "Admin", href: "/admin", icon: ShieldCheckIcon, adminOnly: true, subItems: adminSubItems },
 ];
 
 export default function DashboardLayout({
@@ -47,29 +91,42 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+
+
   const pathname = usePathname();
   const currentUser = useQuery(api.users.getCurrentUser);
-  const { isAdmin } = useAdmin();
-  const { 
-    billingInfo, 
-    isFree, 
-    isPremium, 
-    showSubscriptionPopup, 
-    setShowSubscriptionPopup, 
-    currentLimitType 
+  const { isAdmin, hasPermission } = useAdmin();
+
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(pathname.startsWith("/admin"));
+
+  const {
+    billingInfo,
+    isFree,
+    isPremium,
+    showSubscriptionPopup,
+    setShowSubscriptionPopup,
+    currentLimitType
   } = useBilling();
-  
+
+  // Keep admin dropdown open when on admin pages
+  useEffect(() => {
+    if (pathname.startsWith("/admin")) {
+      setAdminDropdownOpen(true);
+    }
+  }, [pathname]);
+
   // Mostrar popup de suscripción al cargar el dashboard para usuarios gratuitos
   useEffect(() => {
     if (pathname === '/dashboard' && isFree && billingInfo) {
       const timer = setTimeout(() => {
         setShowSubscriptionPopup(true);
       }, 2000); // Mostrar después de 2 segundos
-      
+
       return () => clearTimeout(timer);
     }
   }, [pathname, isFree, billingInfo, setShowSubscriptionPopup]);
-  
+
   // Mostrar toda la navegación pero marcar elementos premium para usuarios gratuitos
   const navigationWithStatus = navigation
     .filter(item => !item.adminOnly || isAdmin) // Only show admin items to admin users
@@ -135,7 +192,7 @@ export default function DashboardLayout({
               {navigationWithStatus.map((item) => {
                 const IconComponent = item.icon;
                 // Check if current path matches the item href or if it's a subcategory of categories
-                const isActive = pathname === item.href || 
+                const isActive = pathname === item.href ||
                   (item.href === '/categories' && pathname.startsWith('/categories/'));
 
                 const handleClick = (e: React.MouseEvent) => {
@@ -145,6 +202,50 @@ export default function DashboardLayout({
                   }
                 };
 
+                // Handle Admin dropdown menu
+                if (item.name === "Admin" && item.subItems) {
+                  return (
+                    <li key={item.name}>
+                      <div>
+                        <button
+                          onClick={() => setAdminDropdownOpen(!adminDropdownOpen)}
+                          className={`flex items-center w-full px-4 py-3 text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${pathname.startsWith("/admin")
+                            ? "bg-yellow-400 text-black shadow-brutal"
+                            : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
+                            }`}
+                        >
+                          <IconComponent className="w-5 h-5 mr-3" />
+                          <span className="truncate">{item.name}</span>
+                          <ChevronDownIcon
+                            className={`ml-auto w-4 h-4 transition-transform ${adminDropdownOpen ? "rotate-180" : ""
+                              }`}
+                          />
+                        </button>
+                        {adminDropdownOpen && (
+                          <ul className="mt-1 ml-6 space-y-1">
+                            {item.subItems.map((subItem) => {
+                              if (!hasPermission(subItem.permission)) return null;
+                              return (
+                                <li key={subItem.name}>
+                                  <Link
+                                    href={subItem.href}
+                                    className={`block px-4 py-2 text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${pathname === subItem.href
+                                      ? "bg-yellow-400 text-black shadow-brutal"
+                                      : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
+                                      }`}
+                                  >
+                                    {subItem.name}
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    </li>
+                  );
+                }
+
                 return (
                   <li key={item.name}>
                     <Link
@@ -153,8 +254,8 @@ export default function DashboardLayout({
                       className={`flex items-center px-4 py-3 text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${item.isDisabled
                         ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
                         : isActive
-                        ? "bg-yellow-400 text-black shadow-brutal"
-                        : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
+                          ? "bg-yellow-400 text-black shadow-brutal"
+                          : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
                         }`}
                     >
                       <IconComponent className={`w-5 h-5 mr-3 ${item.isDisabled ? "text-gray-400" : ""}`} />
@@ -162,11 +263,6 @@ export default function DashboardLayout({
                       {item.isPremium && (
                         <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded font-black">
                           PRO
-                        </span>
-                      )}
-                      {item.isAdmin && (
-                        <span className="ml-auto text-xs bg-red-500 text-white px-2 py-1 rounded font-black">
-                          ADMIN
                         </span>
                       )}
                     </Link>
@@ -192,13 +288,12 @@ export default function DashboardLayout({
                     Mi Cuenta
                   </p>
                   {billingInfo && (
-                    <Badge 
+                    <Badge
                       variant={isPremium ? "default" : "secondary"}
-                      className={`text-xs font-bold uppercase mt-1 ${
-                        isPremium 
-                          ? "bg-yellow-400 text-yellow-900 border-yellow-600" 
-                          : "bg-gray-200 text-gray-700 border-gray-400"
-                      }`}
+                      className={`text-xs font-bold uppercase mt-1 ${isPremium
+                        ? "bg-yellow-400 text-yellow-900 border-yellow-600"
+                        : "bg-gray-200 text-gray-700 border-gray-400"
+                        }`}
                     >
                       {isPremium ? "Premium" : "Gratuito"}
                     </Badge>
@@ -245,7 +340,7 @@ export default function DashboardLayout({
               {navigationWithStatus.map((item) => {
                 const IconComponent = item.icon;
                 // Check if current path matches the item href or if it's a subcategory of categories
-                const isActive = pathname === item.href || 
+                const isActive = pathname === item.href ||
                   (item.href === '/categories' && pathname.startsWith('/categories/'));
 
                 const handleClick = (e: React.MouseEvent) => {
@@ -257,6 +352,51 @@ export default function DashboardLayout({
                   }
                 };
 
+                // Handle Admin dropdown menu
+                if (item.name === "Admin" && item.subItems) {
+                  return (
+                    <li key={item.name}>
+                      <div>
+                        <button
+                          onClick={() => setAdminDropdownOpen(!adminDropdownOpen)}
+                          className={`flex items-center w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${pathname.startsWith("/admin")
+                            ? "bg-yellow-400 text-black shadow-brutal"
+                            : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
+                            }`}
+                        >
+                          <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
+                          <span className="truncate">{item.name}</span>
+                          <ChevronDownIcon
+                            className={`ml-auto w-3 h-3 sm:w-4 sm:h-4 transition-transform ${adminDropdownOpen ? "rotate-180" : ""
+                              }`}
+                          />
+                        </button>
+                        {adminDropdownOpen && (
+                          <ul className="mt-1 ml-4 sm:ml-6 space-y-1">
+                            {item.subItems.map((subItem) => {
+                              if (!hasPermission(subItem.permission)) return null;
+                              return (
+                                <li key={subItem.name}>
+                                  <Link
+                                    href={subItem.href}
+                                    onClick={() => setSidebarOpen(false)}
+                                    className={`block px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${pathname === subItem.href
+                                      ? "bg-yellow-400 text-black shadow-brutal"
+                                      : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
+                                      }`}
+                                  >
+                                    {subItem.name}
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    </li>
+                  );
+                }
+
                 return (
                   <li key={item.name}>
                     <Link
@@ -264,8 +404,8 @@ export default function DashboardLayout({
                       className={`flex items-center px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wide border-2 border-black transition-all duration-200 ${item.isDisabled
                         ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
                         : isActive
-                        ? "bg-yellow-400 text-black shadow-brutal"
-                        : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
+                          ? "bg-yellow-400 text-black shadow-brutal"
+                          : "bg-white text-black hover:bg-gray-100 hover:shadow-brutal"
                         }`}
                       onClick={handleClick}
                     >
@@ -299,13 +439,12 @@ export default function DashboardLayout({
                     Mi Cuenta
                   </p>
                   {billingInfo && (
-                    <Badge 
+                    <Badge
                       variant={isPremium ? "default" : "secondary"}
-                      className={`text-xs font-bold uppercase mt-1 ${
-                        isPremium 
-                          ? "bg-yellow-400 text-yellow-900 border-yellow-600" 
-                          : "bg-gray-200 text-gray-700 border-gray-400"
-                      }`}
+                      className={`text-xs font-bold uppercase mt-1 ${isPremium
+                        ? "bg-yellow-400 text-yellow-900 border-yellow-600"
+                        : "bg-gray-200 text-gray-700 border-gray-400"
+                        }`}
                     >
                       {isPremium ? "Premium" : "Gratuito"}
                     </Badge>
@@ -373,7 +512,7 @@ export default function DashboardLayout({
           </motion.div>
         </main>
       </div>
-      
+
       {/* Subscription Popup */}
       <SubscriptionPopup
         isOpen={showSubscriptionPopup}

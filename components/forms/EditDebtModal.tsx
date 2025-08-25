@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -75,7 +75,7 @@ export default function EditDebtModal({
   };
 
   // Create initial form data dynamically based on debt prop
-  const getInitialFormData = (): FormData => ({
+  const getInitialFormData = useCallback((): FormData => ({
     type: debt?.type || "i_owe",
     originalAmount: debt?.originalAmount?.toString() || "",
     currentAmount: debt?.currentAmount?.toString() || "",
@@ -86,7 +86,7 @@ export default function EditDebtModal({
     notes: debt?.notes || "",
     interestRate: debt?.interestRate?.toString() || "",
     status: debt?.status || "open"
-  });
+  }), [debt]);
 
   const validationRules = useMemo(() => createValidationRules<FormData>([
     {
@@ -255,7 +255,7 @@ export default function EditDebtModal({
       currentAmountInput.setValue(0);
       interestRateInput.setValue(0);
     }
-  }, [isOpen, debt]);
+  }, [isOpen, debt, currentAmountInput, getInitialFormData, interestRateInput, originalAmountInput, resetForm, updateField]);
 
   const debtTypeOptions = [
     { value: "i_owe", label: "YO DEBO" },

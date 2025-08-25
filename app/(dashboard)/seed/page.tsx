@@ -6,7 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Database, Trash2, BarChart3, AlertTriangle, Target } from "lucide-react";
+import { Loader2, Database, BarChart3, AlertTriangle, Target } from "lucide-react";
 import { useBilling } from "@/hooks/useBilling";
 
 export default function SeedPage() {
@@ -434,9 +434,16 @@ export default function SeedPage() {
 
           {/* Message Display */}
           {message && (
-            <Card className="border-4 border-black shadow-brutal">
+            <Card className="border-4 border-black shadow-brutal bg-white">
               <CardContent className="pt-6">
-                <pre className="text-center font-medium whitespace-pre-wrap">{message}</pre>
+                <div className={`p-4 border-2 border-black font-bold ${
+                  message.includes('✅') ? 'bg-green-100 text-green-800' :
+                  message.includes('❌') ? 'bg-red-100 text-red-800' :
+                  message.includes('⚠️') ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-blue-100 text-blue-800'
+                }`}>
+                  <pre className="whitespace-pre-wrap font-mono text-sm">{message}</pre>
+                </div>
               </CardContent>
             </Card>
           )}

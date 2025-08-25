@@ -20,7 +20,6 @@ import {
   TrashIcon,
   TagIcon,
   FunnelIcon,
-  ChevronDownIcon,
   Squares2X2Icon,
   ListBulletIcon
 } from "@heroicons/react/24/outline";
@@ -37,7 +36,7 @@ function GridCategory({ category, handleEditCategory, handleDeleteCategory, rout
   category: Category;
   handleEditCategory: (category: Category) => void;
   handleDeleteCategory: (category: Category) => void;
-  router: any;
+  router: ReturnType<typeof useRouter>;
 }) {
   return (
     <motion.div
@@ -449,7 +448,7 @@ export default function Categories() {
               </div>
             ) : viewMode === 'list' ? (
               <div className="space-y-4">
-                {filteredCategories.map((category, index) => (
+                {filteredCategories.map((category) => (
                   <motion.div
                     key={category._id}
                     initial={{ opacity: 0, x: -20 }}

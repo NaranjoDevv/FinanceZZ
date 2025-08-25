@@ -47,10 +47,10 @@ export const createFreeUser = mutation({
       userId,
       message: "Usuario gratuito creado exitosamente con limitaciones del plan free",
       limits: {
-        monthlyTransactions: 50,
-        activeDebts: 3,
+        monthlyTransactions: 10,
+        activeDebts: 1,
         recurringTransactions: 2,
-        categories: 3,
+        categories: 2,
       }
     };
   }
@@ -749,9 +749,13 @@ export const seedDataWithPercentage = mutation({
       const categoriesToCreate = Math.min(targetCategories - 1, additionalCategories.length);
       
       for (let i = 0; i < categoriesToCreate; i++) {
+        const category = additionalCategories[i]!;
         await ctx.db.insert("categories", {
           userId: args.userId,
-          ...additionalCategories[i],
+          name: category.name,
+          icon: category.icon,
+          color: category.color,
+          isExpense: category.isExpense,
           isSystem: false,
           order: i + 2
         });
@@ -781,18 +785,21 @@ export const seedDataWithPercentage = mutation({
     const expenseCategories = categoriesForTransactions.filter(c => c.isExpense);
 
     let transactionsCreated = 0;
-    for (let i = 0; i < targetTransactions && i < transactionTemplates.length; i++) {
-      const template = transactionTemplates[i];
+    for (let i = 0; i < targetTransactions; i++) {
+      const templateIndex = i % transactionTemplates.length;
+      const template = transactionTemplates[templateIndex];
+      
+      if (!template) continue;
       
       await ctx.db.insert("transactions", {
         userId: args.userId,
         type: template.type,
         amount: template.amount,
-        description: template.description,
+        description: `${template.description} ${Math.floor(i / transactionTemplates.length) > 0 ? `(${Math.floor(i / transactionTemplates.length) + 1})` : ''}`,
         date: Date.now() - (86400000 * (i + 1)), // Días anteriores
         categoryId: template.categoryId || (template.type === "expense" && expenseCategories[0] ? expenseCategories[0]._id : incomeCategory),
         isRecurring: false,
-        notes: `Transacción de ejemplo ${i + 1}`
+        notes: `Transacción de ejemplo ${i + 1} - ${args.percentage}% de uso`
       });
       transactionsCreated++;
     }
@@ -807,6 +814,8 @@ export const seedDataWithPercentage = mutation({
 
       for (let i = 0; i < targetRecurringTransactions && i < recurringTemplates.length; i++) {
         const template = recurringTemplates[i];
+        
+        if (!template) continue;
         
         await ctx.db.insert("recurringTransactions", {
           userId: args.userId,
@@ -948,9 +957,13 @@ export const fillToLimit = mutation({
       const categoriesToCreate = Math.min(targetCategories - 1, additionalCategories.length);
       
       for (let i = 0; i < categoriesToCreate; i++) {
+        const category = additionalCategories[i]!;
         await ctx.db.insert("categories", {
           userId: args.userId,
-          ...additionalCategories[i],
+          name: category.name,
+          icon: category.icon,
+          color: category.color,
+          isExpense: category.isExpense,
           isSystem: false,
           order: i + 2
         });
@@ -979,18 +992,21 @@ export const fillToLimit = mutation({
       .collect();
 
     let transactionsCreated = 0;
-    for (let i = 0; i < targetTransactions && i < transactionTemplates.length; i++) {
-      const template = transactionTemplates[i];
+    for (let i = 0; i < targetTransactions; i++) {
+      const templateIndex = i % transactionTemplates.length;
+      const template = transactionTemplates[templateIndex];
+      
+      if (!template) continue;
       
       await ctx.db.insert("transactions", {
         userId: args.userId,
         type: template.type,
         amount: template.amount,
-        description: template.description,
+        description: `${template.description} ${Math.floor(i / transactionTemplates.length) > 0 ? `(${Math.floor(i / transactionTemplates.length) + 1})` : ''}`,
         date: Date.now() - (86400000 * (i + 1)),
         categoryId: template.categoryId || (template.type === "expense" && expenseCategories[0] ? expenseCategories[0]._id : incomeCategory),
         isRecurring: false,
-        notes: `Transacción de ejemplo ${i + 1}`
+        notes: `Transacción de ejemplo ${i + 1} para llenar hasta el límite`
       });
       transactionsCreated++;
     }
@@ -1005,6 +1021,8 @@ export const fillToLimit = mutation({
 
       for (let i = 0; i < targetRecurringTransactions && i < recurringTemplates.length; i++) {
         const template = recurringTemplates[i];
+        
+        if (!template) continue;
         
         await ctx.db.insert("recurringTransactions", {
           userId: args.userId,

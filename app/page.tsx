@@ -4,13 +4,31 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Separator } from '@/components/ui/separator';
-import Link from 'next/link';
+import { useAuth, SignInButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 /**
  * Componente principal de la aplicación - Landing Page YEEZY AI
  * @returns {JSX.Element}
  */
 const App = () => {
+  const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
+
+  const handleGetStarted = () => {
+    if (isSignedIn) {
+      router.push('/dashboard');
+    }
+  };
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-pulse text-white text-xl font-bold">Cargando...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Hero Section - Diseño minimalista inspirado en Kanye West */}
@@ -34,14 +52,24 @@ const App = () => {
 
           {/* Botones de acción */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Link href="/dashboard">
+            {isSignedIn ? (
               <Button
                 size="lg"
+                onClick={handleGetStarted}
                 className="bg-white text-black hover:bg-gray-200 font-bold text-lg px-12 py-6 rounded-none border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
               >
-                COMENZAR AHORA
+                IR AL DASHBOARD
               </Button>
-            </Link>
+            ) : (
+              <SignInButton mode="modal">
+                <Button
+                  size="lg"
+                  className="bg-white text-black hover:bg-gray-200 font-bold text-lg px-12 py-6 rounded-none border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                >
+                  COMENZAR AHORA
+                </Button>
+              </SignInButton>
+            )}
             <Button
               variant="outline"
               size="lg"

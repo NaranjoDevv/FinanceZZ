@@ -1,0 +1,59 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8] [cursor=pointer]
+  - alert [ref=e11]
+  - banner [ref=e12]
+  - generic [ref=e19]:
+    - generic [ref=e20]:
+      - heading "FINANCEZZ" [level=1] [ref=e21]
+      - paragraph [ref=e22]: INICIAR SESIÓN
+    - generic [ref=e25]:
+      - generic [ref=e27]:
+        - generic [ref=e29]:
+          - button "Sign in with GitHub GitHub" [ref=e30] [cursor=pointer]:
+            - generic [ref=e31] [cursor=pointer]:
+              - img "Sign in with GitHub" [ref=e33] [cursor=pointer]
+              - generic [ref=e34] [cursor=pointer]: GitHub
+          - button "Sign in with Google Google" [ref=e35] [cursor=pointer]:
+            - generic [ref=e36] [cursor=pointer]:
+              - img "Sign in with Google" [ref=e38] [cursor=pointer]
+              - generic [ref=e39] [cursor=pointer]: Google
+        - paragraph [ref=e42]: or
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e48]:
+              - generic [ref=e50]: Email address
+              - textbox "Email address" [ref=e51]
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Password
+                  - generic:
+                    - textbox "Password"
+                    - button "Show password":
+                      - img
+          - button "Continue" [ref=e53] [cursor=pointer]:
+            - generic [ref=e54] [cursor=pointer]:
+              - text: Continue
+              - img [ref=e55] [cursor=pointer]
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]: Don’t have an account?
+          - link "Sign up" [ref=e60] [cursor=pointer]:
+            - /url: http://localhost:3004/sign-up
+        - generic [ref=e62]:
+          - generic [ref=e64]:
+            - paragraph [ref=e65]: Secured by
+            - link "Clerk logo" [ref=e66] [cursor=pointer]:
+              - /url: https://go.clerk.com/components
+              - img [ref=e67] [cursor=pointer]
+          - paragraph [ref=e72]: Development mode
+    - link "VOLVER AL INICIO" [ref=e74] [cursor=pointer]:
+      - /url: /
+      - img [ref=e75] [cursor=pointer]
+      - generic [ref=e77] [cursor=pointer]: VOLVER AL INICIO
+```

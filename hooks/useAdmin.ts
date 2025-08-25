@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
+import { useMemo, useCallback } from "react";
 
 export interface AdminUser {
   _id: Id<"users">;
@@ -101,37 +102,64 @@ export const ADMIN_PERMISSIONS = {
 } as const;
 
 export function useAdmin() {
-  // Queries
-  const currentAdminUser = useQuery(api.admin.getCurrentAdminUser);
-  const allUsers = useQuery(api.admin.getAllUsers, { limit: 50 });
-  const allPlans = useQuery(api.admin.getAllPlans);
-  const allCurrencies = useQuery(api.admin.getAllCurrencies);
+  // Safe admin status check that doesn't throw errors
+  const adminStatus = useQuery(api.admin.checkAdminStatus);
+  
+  // Use memoized value to prevent infinite loops
+  const isAdminUser = useMemo(() => adminStatus?.isAdmin || false, [adminStatus?.isAdmin]);
+  
+  // Queries - conditionally called based on stable admin status
+  const currentAdminUser = useQuery(
+    api.admin.getCurrentAdminUser,
+    isAdminUser ? {} : "skip"
+  );
+  const allUsers = useQuery(
+    api.admin.getAllUsers, 
+    isAdminUser ? { limit: 50 } : "skip"
+  );
+  const allPlans = useQuery(
+    api.admin.getAllPlans,
+    isAdminUser ? {} : "skip"
+  );
+  const allCurrencies = useQuery(
+    api.admin.getAllCurrencies,
+    isAdminUser ? {} : "skip"
+  );
 
   // Mutations
   const promoteUserToAdminMutation = useMutation(api.admin.promoteUserToAdmin);
   const updateUserLimitsMutation = useMutation(api.admin.updateUserLimits);
   const createSubscriptionPlanMutation = useMutation(api.admin.createSubscriptionPlan);
+  const updateSubscriptionPlanMutation = useMutation(api.admin.updateSubscriptionPlan);
+  const deleteSubscriptionPlanMutation = useMutation(api.admin.deleteSubscriptionPlan);
+  const toggleSubscriptionPlanStatusMutation = useMutation(api.admin.toggleSubscriptionPlanStatus);
   const createCurrencyMutation = useMutation(api.admin.createCurrency);
   const assignPermissionToUserMutation = useMutation(api.admin.assignPermissionToUser);
   const initializeAdminSystemMutation = useMutation(api.admin.initializeAdminSystem);
 
-  // Helper functions
-  const isAdmin = () => {
-    return currentAdminUser && (
-      currentAdminUser.role === "admin" || 
-      currentAdminUser.role === "super_admin"
-    );
-  };
+  // Helper functions - memoized to prevent infinite loops
+  const isAdmin = useCallback(() => {
+    return adminStatus?.isAdmin || false;
+  }, [adminStatus?.isAdmin]);
 
-  const isSuperAdmin = () => {
-    return currentAdminUser && currentAdminUser.role === "super_admin";
-  };
+  const isSuperAdmin = useCallback(() => {
+    return adminStatus?.role === "super_admin" || false;
+  }, [adminStatus?.role]);
 
-  const hasPermission = (permission: string) => {
-    if (!currentAdminUser) return false;
-    if (currentAdminUser.role === "super_admin") return true;
-    return currentAdminUser.adminPermissions?.includes(permission) || false;
-  };
+  const hasPermission = useCallback((permission: string) => {
+    // If not admin at all, return false
+    if (!isAdmin()) return false;
+    
+    // Super admin has all permissions
+    if (isSuperAdmin()) return true;
+    
+    // Check permissions from admin user data
+    if (currentAdminUser) {
+      return currentAdminUser.adminPermissions?.includes(permission) || false;
+    }
+    
+    return false;
+  }, [isAdmin, isSuperAdmin, currentAdminUser?.adminPermissions]);
 
   // User Management Functions
   const promoteUserToAdmin = async (
@@ -205,6 +233,67 @@ export function useAdmin() {
     }
   };
 
+  // Update subscription plan
+  const updateSubscriptionPlan = async (
+    planId: Id<"subscriptionPlans">,
+    updateData: Partial<{
+      name: string;
+      displayName: string;
+      description: string;
+      priceMonthly: number;
+      priceYearly: number;
+      currency: string;
+      limits: {
+        monthlyTransactions: number;
+        activeDebts: number;
+        recurringTransactions: number;
+        categories: number;
+      };
+      features: string[];
+      order: number;
+      isActive: boolean;
+    }>
+  ) => {
+    try {
+      const result = await updateSubscriptionPlanMutation({
+        planId,
+        ...updateData,
+      });
+      toast.success(result.message);
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error updating plan";
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  // Delete subscription plan
+  const deleteSubscriptionPlan = async (planId: Id<"subscriptionPlans">) => {
+    try {
+      const result = await deleteSubscriptionPlanMutation({ planId });
+      toast.success(result.message);
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error deleting plan";
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  // Toggle subscription plan status
+  const toggleSubscriptionPlanStatus = async (planId: Id<"subscriptionPlans">) => {
+    try {
+      const result = await toggleSubscriptionPlanStatusMutation({ planId });
+      toast.success(result.message);
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error toggling plan status";
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
   // Currency Management Functions
   const createCurrency = async (currencyData: {
     code: string;
@@ -263,27 +352,28 @@ export function useAdmin() {
     }
   };
 
-  // Permission Helpers
-  const canManageUsers = () => hasPermission(ADMIN_PERMISSIONS.MANAGE_USERS);
-  const canViewUsers = () => hasPermission(ADMIN_PERMISSIONS.VIEW_USERS);
-  const canEditUserRoles = () => hasPermission(ADMIN_PERMISSIONS.EDIT_USER_ROLES);
-  const canManagePlans = () => hasPermission(ADMIN_PERMISSIONS.MANAGE_PLANS);
-  const canViewPlans = () => hasPermission(ADMIN_PERMISSIONS.VIEW_PLANS);
-  const canCreatePlans = () => hasPermission(ADMIN_PERMISSIONS.CREATE_PLANS);
-  const canManageCurrencies = () => hasPermission(ADMIN_PERMISSIONS.MANAGE_CURRENCIES);
-  const canViewCurrencies = () => hasPermission(ADMIN_PERMISSIONS.VIEW_CURRENCIES);
-  const canCreateCurrencies = () => hasPermission(ADMIN_PERMISSIONS.CREATE_CURRENCIES);
-  const canAssignPermissions = () => hasPermission(ADMIN_PERMISSIONS.ASSIGN_PERMISSIONS);
-  const canViewAnalytics = () => hasPermission(ADMIN_PERMISSIONS.VIEW_ANALYTICS);
-  const canViewAuditLogs = () => hasPermission(ADMIN_PERMISSIONS.VIEW_AUDIT_LOGS);
+  // Permission Helpers - memoized to prevent re-computation
+  const canManageUsers = useMemo(() => hasPermission(ADMIN_PERMISSIONS.MANAGE_USERS), [hasPermission]);
+  const canViewUsers = useMemo(() => hasPermission(ADMIN_PERMISSIONS.VIEW_USERS), [hasPermission]);
+  const canEditUserRoles = useMemo(() => hasPermission(ADMIN_PERMISSIONS.EDIT_USER_ROLES), [hasPermission]);
+  const canManagePlans = useMemo(() => hasPermission(ADMIN_PERMISSIONS.MANAGE_PLANS), [hasPermission]);
+  const canViewPlans = useMemo(() => hasPermission(ADMIN_PERMISSIONS.VIEW_PLANS), [hasPermission]);
+  const canCreatePlans = useMemo(() => hasPermission(ADMIN_PERMISSIONS.CREATE_PLANS), [hasPermission]);
+  const canManageCurrencies = useMemo(() => hasPermission(ADMIN_PERMISSIONS.MANAGE_CURRENCIES), [hasPermission]);
+  const canViewCurrencies = useMemo(() => hasPermission(ADMIN_PERMISSIONS.VIEW_CURRENCIES), [hasPermission]);
+  const canCreateCurrencies = useMemo(() => hasPermission(ADMIN_PERMISSIONS.CREATE_CURRENCIES), [hasPermission]);
+  const canAssignPermissions = useMemo(() => hasPermission(ADMIN_PERMISSIONS.ASSIGN_PERMISSIONS), [hasPermission]);
+  const canViewAnalytics = useMemo(() => hasPermission(ADMIN_PERMISSIONS.VIEW_ANALYTICS), [hasPermission]);
+  const canViewAuditLogs = useMemo(() => hasPermission(ADMIN_PERMISSIONS.VIEW_AUDIT_LOGS), [hasPermission]);
 
   return {
     // State
     currentAdminUser,
+    adminStatus,
     allUsers,
     allPlans,
     allCurrencies,
-    isLoading: currentAdminUser === undefined,
+    isLoading: adminStatus === undefined,
 
     // Permission Checks
     isAdmin: isAdmin(),
@@ -291,23 +381,26 @@ export function useAdmin() {
     hasPermission,
     
     // Permission Helpers
-    canManageUsers: canManageUsers(),
-    canViewUsers: canViewUsers(),
-    canEditUserRoles: canEditUserRoles(),
-    canManagePlans: canManagePlans(),
-    canViewPlans: canViewPlans(),
-    canCreatePlans: canCreatePlans(),
-    canManageCurrencies: canManageCurrencies(),
-    canViewCurrencies: canViewCurrencies(),
-    canCreateCurrencies: canCreateCurrencies(),
-    canAssignPermissions: canAssignPermissions(),
-    canViewAnalytics: canViewAnalytics(),
-    canViewAuditLogs: canViewAuditLogs(),
+    canManageUsers,
+    canViewUsers,
+    canEditUserRoles,
+    canManagePlans,
+    canViewPlans,
+    canCreatePlans,
+    canManageCurrencies,
+    canViewCurrencies,
+    canCreateCurrencies,
+    canAssignPermissions,
+    canViewAnalytics,
+    canViewAuditLogs,
 
     // Actions
     promoteUserToAdmin,
     updateUserLimits,
     createSubscriptionPlan,
+    updateSubscriptionPlan,
+    deleteSubscriptionPlan,
+    toggleSubscriptionPlanStatus,
     createCurrency,
     assignPermissionToUser,
     initializeAdminSystem,

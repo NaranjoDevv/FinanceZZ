@@ -1,18 +1,31 @@
 # Plan de Billing - Sistema de Suscripciones
 
+## Sistema de Administración
+
+### Acceso Seguro para Usuarios No-Admin
+- **Fix Implementado**: Los usuarios gratuitos y premium pueden navegar sin errores de autenticación
+- **Consulta Segura**: `checkAdminStatus` query no arroja errores para usuarios no-admin
+- **Carga Condicional**: Las consultas de admin solo se ejecutan para usuarios con privilegios de administrador
+- **Navegación Filtrada**: El elemento "Admin" en la navegación solo aparece para usuarios admin reales
+
+### Configuración de Admin
+- Los permisos de admin se asignan manualmente desde el dashboard de Convex
+- Los usuarios deben tener `role: "admin"` o `role: "super_admin"` en la base de datos
+- El sistema detecta automáticamente el estado de admin sin generar errores
+
 ## Versión Gratuita (Free Plan)
 
 ### Limitaciones del Plan Gratuito
 
 #### 📊 Transacciones
-- **Máximo 50 transacciones por mes**
+- **Máximo 10 transacciones por mes**
 - Contador se reinicia el primer día de cada mes
 - Al alcanzar el límite, se mostrará popup de suscripción
 
 #### 💳 Deudas
-- **Máximo 3 deudas activas**
+- **Máximo 1 deuda activa**
 - No se pueden crear más deudas una vez alcanzado el límite
-- Popup de suscripción al intentar crear la 4ta deuda
+- Popup de suscripción al intentar crear la 2da deuda
 
 #### 🔄 Transacciones Recurrentes
 - **Máximo 2 transacciones recurrentes**
@@ -25,9 +38,9 @@
 - Redirección a página de suscripción si se accede directamente
 
 #### 🏷️ Categorías
-- **Máximo 3 categorías personalizadas**
+- **Máximo 2 categorías personalizadas**
 - Categorías por defecto del sistema siempre disponibles
-- Popup de suscripción al intentar crear la 4ta categoría
+- Popup de suscripción al intentar crear la 3ra categoría
 
 #### 📈 Reportes
 - **Solo reporte básico de transacciones disponible**
@@ -47,10 +60,10 @@
 ### Características Incluidas en Plan Gratuito
 
 ✅ Dashboard básico con resumen financiero
-✅ Gestión básica de transacciones (hasta 50/mes)
-✅ Gestión básica de deudas (hasta 3 activas)
+✅ Gestión básica de transacciones (hasta 10/mes)
+✅ Gestión básica de deudas (hasta 1 activa)
 ✅ Transacciones recurrentes básicas (hasta 2)
-✅ Categorías básicas del sistema + 3 personalizadas
+✅ Categorías básicas del sistema + 2 personalizadas
 ✅ Reporte básico de transacciones
 ✅ Configuración básica de perfil
 ✅ Recordatorios básicos
