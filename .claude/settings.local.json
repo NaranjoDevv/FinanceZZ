@@ -14,7 +14,8 @@
       "Bash(npm run build:*)",
       "Bash(npx convex dev:*)",
       "Bash(npx convex env:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": [],

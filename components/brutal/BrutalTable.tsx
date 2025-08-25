@@ -2,23 +2,23 @@
 
 import React, { memo, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { BrutalButton, BrutalBadge, BrutalCheckbox } from './index';
+import { BrutalBadge, BrutalCheckbox } from './index';
 
 // ============================================
 // BRUTAL TABLE - Tabla optimizada con estética brutalista
 // ============================================
 
-interface BrutalTableColumn<T = any> {
+interface BrutalTableColumn<T = Record<string, unknown>> {
     key: string;
     title: string;
     dataIndex?: keyof T;
-    render?: (value: any, record: T, index: number) => ReactNode;
+    render?: (value: unknown, record: T, index: number) => ReactNode;
     sortable?: boolean;
     width?: string;
     align?: 'left' | 'center' | 'right';
 }
 
-interface BrutalTableProps<T = any> {
+interface BrutalTableProps<T = Record<string, unknown>> {
     columns: BrutalTableColumn<T>[];
     data: T[];
     loading?: boolean;
@@ -35,7 +35,7 @@ interface BrutalTableProps<T = any> {
     onRowClick?: (record: T, index: number) => void;
 }
 
-export const BrutalTable = memo(<T extends Record<string, any>>(
+export const BrutalTable = memo(<T extends Record<string, unknown>>(
     {
         columns,
         data,
@@ -68,7 +68,6 @@ export const BrutalTable = memo(<T extends Record<string, any>>(
     };
 
     const isAllSelected = data.length > 0 && selectedRows.length === data.length;
-    const isIndeterminate = selectedRows.length > 0 && selectedRows.length < data.length;
 
     if (loading) {
         return (
@@ -87,106 +86,177 @@ export const BrutalTable = memo(<T extends Record<string, any>>(
 
     return (
         <div className={cn('border-4 border-black bg-white overflow-hidden', className)}>
-            {/* Header */}
-            <div className="bg-black text-white">
-                <div className="flex">
-                    {selectable && (
-                        <div className="w-12 flex items-center justify-center py-4 border-r-4 border-white">
-                            <BrutalCheckbox
-                                checked={isAllSelected}
-                                onChange={(e) => onSelectAll?.(e.target.checked)}
-                                className="w-4 h-4 border-2 border-white bg-black checked:bg-white checked:border-white"
-                            />
-                        </div>
-                    )}
-                    {columns.map((column) => (
-                        <div
-                            key={column.key}
-                            className={cn(
-                                'flex items-center py-4 px-4 border-r-4 border-white last:border-r-0',
-                                column.width || 'flex-1',
-                                column.align === 'center' && 'justify-center',
-                                column.align === 'right' && 'justify-end',
-                                column.sortable && 'cursor-pointer hover:bg-gray-800'
-                            )}
-                            onClick={() => column.sortable && handleSort(column.key)}
-                        >
-                            <span className="text-sm font-black uppercase tracking-wider">
-                                {column.title}
-                            </span>
-                            {column.sortable && (
-                                <span className="ml-2 text-xs">
-                                    {sortKey === column.key ? (
-                                        sortDirection === 'asc' ? '▲' : '▼'
-                                    ) : (
-                                        '▲▼'
-                                    )}
+            {/* MOBILE-FIRST RESPONSIVE TABLE */}
+            {/* Desktop View */}
+            <div className="hidden lg:block">
+                {/* Header */}
+                <div className="bg-black text-white">
+                    <div className="flex">
+                        {selectable && (
+                            <div className="w-12 flex items-center justify-center py-4 border-r-4 border-white">
+                                <BrutalCheckbox
+                                    checked={isAllSelected}
+                                    onChange={(e) => onSelectAll?.(e.target.checked)}
+                                    className="w-4 h-4 border-2 border-white bg-black checked:bg-white checked:border-white"
+                                />
+                            </div>
+                        )}
+                        {columns.map((column) => (
+                            <div
+                                key={column.key}
+                                className={cn(
+                                    'flex items-center py-4 px-4 border-r-4 border-white last:border-r-0',
+                                    column.width || 'flex-1',
+                                    column.align === 'center' && 'justify-center',
+                                    column.align === 'right' && 'justify-end',
+                                    column.sortable && 'cursor-pointer hover:bg-gray-800'
+                                )}
+                                onClick={() => column.sortable && handleSort(column.key)}
+                            >
+                                <span className="text-sm font-black uppercase tracking-wider">
+                                    {column.title}
                                 </span>
-                            )}
+                                {column.sortable && (
+                                    <span className="ml-2 text-xs">
+                                        {sortKey === column.key ? (
+                                            sortDirection === 'asc' ? '▲' : '▼'
+                                        ) : (
+                                            '▲▼'
+                                        )}
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Body */}
+                <div className="bg-white">
+                    {data.length === 0 ? (
+                        <div className="flex items-center justify-center py-16">
+                            <p className="text-lg font-bold uppercase tracking-wide text-gray-500">
+                                {emptyText}
+                            </p>
                         </div>
-                    ))}
+                    ) : (
+                        data.map((record, index) => {
+                            const key = getRowKey(record);
+                            const isSelected = selectedRows.includes(key);
+                            
+                            return (
+                                <div
+                                    key={key}
+                                    className={cn(
+                                        'flex border-b-2 border-gray-200 last:border-b-0',
+                                        'hover:bg-gray-50 transition-colors',
+                                        isSelected && 'bg-yellow-100',
+                                        onRowClick && 'cursor-pointer'
+                                    )}
+                                    onClick={() => onRowClick?.(record, index)}
+                                >
+                                    {selectable && (
+                                        <div className="w-12 flex items-center justify-center py-4 border-r-2 border-gray-200">
+                                            <BrutalCheckbox
+                                                checked={isSelected}
+                                                onChange={(e) => onSelectRow?.(key, e.target.checked)}
+                                                className="w-4 h-4"
+                                            />
+                                        </div>
+                                    )}
+                                    {columns.map((column) => (
+                                        <div
+                                            key={column.key}
+                                            className={cn(
+                                                'flex items-center py-4 px-4 border-r-2 border-gray-200 last:border-r-0',
+                                                column.width || 'flex-1',
+                                                column.align === 'center' && 'justify-center',
+                                                column.align === 'right' && 'justify-end'
+                                            )}
+                                        >
+                                            {column.render ? (
+                                                column.render(
+                                                    column.dataIndex ? record[column.dataIndex] : record,
+                                                    record,
+                                                    index
+                                                )
+                                            ) : (
+                                                <span className="text-sm font-bold text-black">
+                                                    {column.dataIndex ? String(record[column.dataIndex] || '') : ''}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
             </div>
 
-            {/* Body */}
-            <div className="bg-white">
+            {/* MOBILE & TABLET VIEW - CARD LAYOUT */}
+            <div className="lg:hidden">
                 {data.length === 0 ? (
-                    <div className="flex items-center justify-center py-16">
-                        <p className="text-lg font-bold uppercase tracking-wide text-gray-500">
+                    <div className="flex flex-col items-center justify-center py-16">
+                        <p className="text-lg font-bold uppercase tracking-wide text-gray-500 text-center">
                             {emptyText}
                         </p>
                     </div>
                 ) : (
-                    data.map((record, index) => {
-                        const key = getRowKey(record);
-                        const isSelected = selectedRows.includes(key);
-                        
-                        return (
-                            <div
-                                key={key}
-                                className={cn(
-                                    'flex border-b-2 border-gray-200 last:border-b-0',
-                                    'hover:bg-gray-50 transition-colors',
-                                    isSelected && 'bg-yellow-100',
-                                    onRowClick && 'cursor-pointer'
-                                )}
-                                onClick={() => onRowClick?.(record, index)}
-                            >
-                                {selectable && (
-                                    <div className="w-12 flex items-center justify-center py-4 border-r-2 border-gray-200">
-                                        <BrutalCheckbox
-                                            checked={isSelected}
-                                            onChange={(e) => onSelectRow?.(key, e.target.checked)}
-                                            className="w-4 h-4"
-                                        />
-                                    </div>
-                                )}
-                                {columns.map((column) => (
-                                    <div
-                                        key={column.key}
-                                        className={cn(
-                                            'flex items-center py-4 px-4 border-r-2 border-gray-200 last:border-r-0',
-                                            column.width || 'flex-1',
-                                            column.align === 'center' && 'justify-center',
-                                            column.align === 'right' && 'justify-end'
-                                        )}
-                                    >
-                                        {column.render ? (
-                                            column.render(
-                                                column.dataIndex ? record[column.dataIndex] : record,
-                                                record,
-                                                index
-                                            )
-                                        ) : (
-                                            <span className="text-sm font-bold text-black">
-                                                {column.dataIndex ? String(record[column.dataIndex] || '') : ''}
+                    <div className="space-y-4 p-4">
+                        {data.map((record, index) => {
+                            const key = getRowKey(record);
+                            const isSelected = selectedRows.includes(key);
+                            
+                            return (
+                                <div
+                                    key={key}
+                                    className={cn(
+                                        'border-4 border-black bg-white p-4 space-y-3',
+                                        'hover:bg-gray-50 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]',
+                                        isSelected && 'bg-yellow-100',
+                                        onRowClick && 'cursor-pointer'
+                                    )}
+                                    onClick={() => onRowClick?.(record, index)}
+                                >
+                                    {/* Selection checkbox for mobile */}
+                                    {selectable && (
+                                        <div className="flex items-center justify-between border-b-2 border-gray-200 pb-2">
+                                            <span className="text-xs font-black uppercase tracking-wider text-gray-600">
+                                                SELECCIONAR
                                             </span>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        );
-                    })
+                                            <BrutalCheckbox
+                                                checked={isSelected}
+                                                onChange={(e) => onSelectRow?.(key, e.target.checked)}
+                                                className="w-4 h-4"
+                                            />
+                                        </div>
+                                    )}
+                                    
+                                    {/* Mobile card content */}
+                                    {columns.map((column) => (
+                                        <div key={column.key} className="flex justify-between items-start">
+                                            <span className="text-xs font-black uppercase tracking-wider text-gray-600 flex-shrink-0 w-1/3">
+                                                {column.title}
+                                            </span>
+                                            <div className="flex-1 text-right">
+                                                {column.render ? (
+                                                    column.render(
+                                                        column.dataIndex ? record[column.dataIndex] : record,
+                                                        record,
+                                                        index
+                                                    )
+                                                ) : (
+                                                    <span className="text-sm font-bold text-black break-words">
+                                                        {column.dataIndex ? String(record[column.dataIndex] || '') : ''}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
         </div>

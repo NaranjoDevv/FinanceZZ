@@ -20,7 +20,6 @@ import {
   ClockIcon,
   CheckCircleIcon,
   BoltIcon,
-  EyeIcon,
   CommandLineIcon
 } from "@heroicons/react/24/outline";
 import { BrutalAdminLayout, BrutalModuleCard } from "@/components/brutal/BrutalAdminLayout";
@@ -112,6 +111,8 @@ export default function AdminDashboardPage() {
   // Fetch real data
   const allUsers = useQuery(api.admin.getAllUsers, {});
   const systemStats = useQuery(api.admin.getSystemStats);
+  const allPlans = useQuery(api.admin.getAllPlans);
+  const allCurrencies = useQuery(api.admin.getAllCurrencies);
 
   useEffect(() => {
     if (isLoading) return;
@@ -174,28 +175,28 @@ export default function AdminDashboardPage() {
     {
       label: 'USUARIOS TOTALES',
       value: allUsers?.page?.length || 0,
-      trend: 'up',
+      trend: 'up' as const,
       trendValue: '+12%',
       type: 'success' as const
     },
     {
       label: 'MÓDULOS ACTIVOS',
       value: accessibleModules.length,
-      trend: 'stable',
+      trend: 'stable' as const,
       trendValue: 'Estable',
       type: 'primary' as const
     },
     {
       label: 'TRANSACCIONES',
       value: systemStats?.totalTransactions || 0,
-      trend: 'up',
+      trend: 'up' as const,
       trendValue: '+8%',
       type: 'success' as const
     },
     {
       label: 'UPTIME SISTEMA',
       value: '99.9%',
-      trend: 'stable',
+      trend: 'stable' as const,
       trendValue: 'Óptimo',
       type: 'success' as const
     }
@@ -271,7 +272,7 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {accessibleModules.map((module, index) => {
             const getModuleStats = () => {
               switch (module.id) {
@@ -333,7 +334,16 @@ export default function AdminDashboardPage() {
                     {
                       label: 'VISTA RÁPIDA',
                       variant: 'secondary',
-                      onClick: () => openQuickView(module.id)
+                      onClick: () => openQuickView(
+                        module.id, 
+                        {
+                          allUsers: allUsers?.page || [],
+                          systemStats: systemStats,
+                          allPlans: allPlans || [],
+                          allCurrencies: allCurrencies || []
+                        }, 
+                        (path: string) => router.push(path)
+                      )
                     },
                     {
                       label: 'ADMINISTRAR',
@@ -372,7 +382,7 @@ export default function AdminDashboardPage() {
           </div>
           
           {/* BRUTAL STATS GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
             <BrutalCard className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-8 border-black">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xs font-black uppercase tracking-wider">
@@ -439,7 +449,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* BRUTAL ACTIVITY AND STATUS */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             <BrutalCard className="p-6 border-8 border-black">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-black text-white border-2 border-black">

@@ -2,6 +2,7 @@
 
 import React, { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { BrutalButton, BrutalBadge } from '@/components/brutal';
 import {
   UserIcon,
@@ -88,7 +89,7 @@ export const UsersTable = memo<UsersTableProps>(({
 
   // Filtrar y ordenar usuarios
   const filteredAndSortedUsers = React.useMemo(() => {
-    let filtered = users.filter(user => {
+    const filtered = users.filter(user => {
       const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            user.email.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = roleFilter === 'all' || user.role === roleFilter;
@@ -105,8 +106,10 @@ export const UsersTable = memo<UsersTableProps>(({
       if (typeof aValue === 'string') aValue = aValue.toLowerCase();
       if (typeof bValue === 'string') bValue = bValue.toLowerCase();
       
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      if (aValue != null && bValue != null) {
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      }
       return 0;
     });
 
@@ -334,7 +337,7 @@ export const UsersTable = memo<UsersTableProps>(({
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 border-2 border-black flex items-center justify-center">
                         {user.avatar ? (
-                          <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                          <Image src={user.avatar} alt={user.name} width={40} height={40} className="w-full h-full object-cover" />
                         ) : (
                           <UserIcon className="w-5 h-5 text-gray-600" />
                         )}
@@ -400,7 +403,7 @@ export const UsersTable = memo<UsersTableProps>(({
                       )}
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </AnimatePresence>
           </tbody>

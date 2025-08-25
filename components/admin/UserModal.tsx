@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { BrutalButton, BrutalModal } from '@/components/brutal';
+import { motion } from 'framer-motion';
+import Image from 'next/image';
+import { BrutalButton, BrutalModal, BrutalSelect, BrutalTextarea } from '@/components/brutal';
 import { BrutalInput } from '@/components/ui/brutal-input';
-import { BrutalSelect } from '@/components/ui/brutal-select';
-import { BrutalTextarea } from '@/components/ui/brutal-textarea';
 import {
   UserIcon,
   XMarkIcon,
@@ -15,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 
-interface User {
+export interface User {
   _id?: string;
   name: string;
   email: string;
@@ -154,7 +153,7 @@ export const UserModal: React.FC<UserModalProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof User, value: any) => {
+  const handleInputChange = (field: keyof User, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -200,7 +199,7 @@ export const UserModal: React.FC<UserModalProps> = ({
   };
 
   return (
-    <BrutalModal isOpen={isOpen} onClose={onClose} size="lg">
+    <BrutalModal isOpen={isOpen} onClose={onClose} size="lg" title=''>
       <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b-4 border-black bg-gray-50">
@@ -247,9 +246,11 @@ export const UserModal: React.FC<UserModalProps> = ({
               <div className="relative">
                 <div className="w-24 h-24 bg-gray-200 border-4 border-black flex items-center justify-center overflow-hidden">
                   {avatarPreview ? (
-                    <img 
+                    <Image 
                       src={avatarPreview} 
                       alt="Avatar preview" 
+                      width={96}
+                      height={96}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -307,10 +308,9 @@ export const UserModal: React.FC<UserModalProps> = ({
               <BrutalSelect
                 label="DEPARTAMENTO"
                 value={formData.department || ''}
-                onChange={(value) => handleInputChange('department', value)}
+                onChange={(e) => handleInputChange('department', e.target.value)}
                 options={DEPARTMENT_OPTIONS}
                 disabled={isReadOnly}
-                placeholder="Seleccionar departamento"
               />
             </div>
 
@@ -319,9 +319,9 @@ export const UserModal: React.FC<UserModalProps> = ({
               <BrutalSelect
                 label="ROL"
                 value={formData.role}
-                onChange={(value) => handleInputChange('role', value)}
+                onChange={(e) => handleInputChange('role', e.target.value)}
                 options={ROLE_OPTIONS}
-                error={errors.role}
+                {...(errors.role && { error: errors.role })}
                 disabled={isReadOnly}
                 required
               />
@@ -329,9 +329,9 @@ export const UserModal: React.FC<UserModalProps> = ({
               <BrutalSelect
                 label="ESTADO"
                 value={formData.status}
-                onChange={(value) => handleInputChange('status', value)}
+                onChange={(e) => handleInputChange('status', e.target.value)}
                 options={STATUS_OPTIONS}
-                error={errors.status}
+                {...(errors.status && { error: errors.status })}
                 disabled={isReadOnly}
                 required
               />
@@ -341,7 +341,7 @@ export const UserModal: React.FC<UserModalProps> = ({
             <BrutalTextarea
               label="BIOGRAFÍA"
               value={formData.bio || ''}
-              onChange={(value) => handleInputChange('bio', value)}
+              onChange={(e) => handleInputChange('bio', e.target.value)}
               disabled={isReadOnly}
               placeholder="Información adicional sobre el usuario..."
               rows={3}
@@ -395,7 +395,7 @@ export const UserModal: React.FC<UserModalProps> = ({
             <BrutalButton
               variant="secondary"
               onClick={onClose}
-              disabled={isSaving}
+              disabled={isSaving || isLoading}
             >
               CANCELAR
             </BrutalButton>
@@ -404,7 +404,8 @@ export const UserModal: React.FC<UserModalProps> = ({
               <BrutalButton
                 variant="primary"
                 onClick={handleSubmit}
-                disabled={isSaving}
+                disabled={isSaving || isLoading}
+                loading={isSaving || isLoading}
                 className="min-w-[150px]"
               >
                 {getSubmitButtonText()}

@@ -2,21 +2,17 @@
 
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
-import { BrutalButton, BrutalCard, BrutalBadge } from '@/components/brutal';
+import { BrutalButton } from '@/components/brutal';
 import {
   PlusIcon,
   UserPlusIcon,
   CogIcon,
   ChartBarIcon,
   DocumentTextIcon,
-  BellIcon,
   CurrencyDollarIcon,
   ShieldCheckIcon,
   ArrowPathIcon,
-  ExclamationTriangleIcon,
-  BoltIcon,
-  FireIcon,
-  CommandLineIcon
+  BoltIcon
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 
@@ -37,14 +33,15 @@ interface QuickActionsProps {
   className?: string;
   compact?: boolean;
   maxColumns?: number;
+  onNavigate?: (path: string) => void;
 }
 
-const DEFAULT_ACTIONS: QuickAction[] = [
+const createDefaultActions = (onNavigate?: (path: string) => void): QuickAction[] => [
   {
     id: 'add-user',
     label: 'NUEVO USUARIO',
     icon: <UserPlusIcon className="w-5 h-5" />,
-    onClick: () => console.log('Add user'),
+    onClick: () => onNavigate ? onNavigate('/admin/users') : console.log('Navigate to users'),
     variant: 'primary',
     description: 'Crear nuevo usuario del sistema',
     shortcut: 'Ctrl+U'
@@ -53,7 +50,7 @@ const DEFAULT_ACTIONS: QuickAction[] = [
     id: 'system-settings',
     label: 'CONFIGURACIÓN',
     icon: <CogIcon className="w-5 h-5" />,
-    onClick: () => console.log('System settings'),
+    onClick: () => onNavigate ? onNavigate('/admin/system') : console.log('Navigate to system settings'),
     variant: 'secondary',
     description: 'Acceder a configuración del sistema',
     shortcut: 'Ctrl+S'
@@ -62,7 +59,7 @@ const DEFAULT_ACTIONS: QuickAction[] = [
     id: 'view-analytics',
     label: 'ANALÍTICAS',
     icon: <ChartBarIcon className="w-5 h-5" />,
-    onClick: () => console.log('View analytics'),
+    onClick: () => onNavigate ? onNavigate('/admin/analytics') : console.log('Navigate to analytics'),
     variant: 'secondary',
     description: 'Ver estadísticas y reportes',
     shortcut: 'Ctrl+A'
@@ -71,25 +68,16 @@ const DEFAULT_ACTIONS: QuickAction[] = [
     id: 'audit-logs',
     label: 'AUDITORÍA',
     icon: <DocumentTextIcon className="w-5 h-5" />,
-    onClick: () => console.log('Audit logs'),
+    onClick: () => onNavigate ? onNavigate('/admin/audit') : console.log('Navigate to audit logs'),
     variant: 'secondary',
     description: 'Revisar logs de auditoría',
     shortcut: 'Ctrl+L'
   },
   {
-    id: 'send-notification',
-    label: 'NOTIFICACIÓN',
-    icon: <BellIcon className="w-5 h-5" />,
-    onClick: () => console.log('Send notification'),
-    variant: 'secondary',
-    description: 'Enviar notificación masiva',
-    shortcut: 'Ctrl+N'
-  },
-  {
     id: 'manage-currencies',
     label: 'MONEDAS',
     icon: <CurrencyDollarIcon className="w-5 h-5" />,
-    onClick: () => console.log('Manage currencies'),
+    onClick: () => onNavigate ? onNavigate('/admin/currencies') : console.log('Navigate to currencies'),
     variant: 'secondary',
     description: 'Gestionar monedas del sistema',
     shortcut: 'Ctrl+M'
@@ -98,36 +86,38 @@ const DEFAULT_ACTIONS: QuickAction[] = [
     id: 'permissions',
     label: 'PERMISOS',
     icon: <ShieldCheckIcon className="w-5 h-5" />,
-    onClick: () => console.log('Manage permissions'),
+    onClick: () => onNavigate ? onNavigate('/admin/permissions') : console.log('Navigate to permissions'),
     variant: 'secondary',
     description: 'Configurar permisos de usuario',
+    shortcut: 'Ctrl+P'
+  },
+  {
+    id: 'manage-plans',
+    label: 'PLANES',
+    icon: <BoltIcon className="w-5 h-5" />,
+    onClick: () => onNavigate ? onNavigate('/admin/plans') : console.log('Navigate to plans'),
+    variant: 'success',
+    description: 'Gestionar planes de suscripción',
     shortcut: 'Ctrl+P'
   },
   {
     id: 'backup-system',
     label: 'RESPALDO',
     icon: <ArrowPathIcon className="w-5 h-5" />,
-    onClick: () => console.log('Backup system'),
-    variant: 'success',
+    onClick: () => console.log('Sistema de respaldo - Funcionalidad a implementar'),
+    variant: 'secondary',
     description: 'Crear respaldo del sistema',
     shortcut: 'Ctrl+B'
   }
 ];
 
 export const QuickActions = memo<QuickActionsProps>(({ 
-  actions = DEFAULT_ACTIONS, 
+  actions, 
   className,
   compact = false,
-  maxColumns = 4
+  onNavigate
 }) => {
-  const gridCols = Math.min(actions.length, maxColumns);
-  
-  const gridClasses = {
-    1: 'grid-cols-1',
-    2: 'grid-cols-1 sm:grid-cols-2',
-    3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
-  };
+  const finalActions = actions || createDefaultActions(onNavigate);
 
   return (
     <div className={cn(
@@ -150,12 +140,13 @@ export const QuickActions = memo<QuickActionsProps>(({
         </div>
       </div>
 
-      {/* Actions Grid */}
+      {/* Actions Grid - MOBILE OPTIMIZED */}
       <div className={cn(
         'grid gap-3',
-        gridClasses[gridCols as keyof typeof gridClasses] || 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+        compact ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+        'auto-rows-fr' // Ensure equal height rows
       )}>
-        {actions.map((action, index) => (
+        {finalActions.map((action, index) => (
           <motion.div
             key={action.id}
             initial={{ opacity: 0, y: 20 }}
@@ -169,12 +160,12 @@ export const QuickActions = memo<QuickActionsProps>(({
                 size={compact ? 'sm' : 'md'}
                 fullWidth
                 disabled={action.disabled}
-                loading={action.loading}
+                loading={action.loading || false}
                 onClick={action.onClick}
                 className={cn(
-                  'h-auto flex-col gap-2 py-4 px-3',
-                  'hover:scale-[1.02] transition-transform duration-200',
-                  compact && 'py-3 px-2'
+                  'h-auto flex-col gap-2 py-4 px-3 min-h-[80px]',
+                  'hover:scale-[1.02] transition-transform duration-200 touch-manipulation',
+                  compact && 'py-3 px-2 min-h-[70px] text-xs'
                 )}
               >
                 <div className="flex items-center justify-center">
@@ -217,7 +208,7 @@ export const QuickActions = memo<QuickActionsProps>(({
       {!compact && (
         <div className="mt-6 pt-4 border-t-4 border-black">
           <div className="flex items-center justify-between text-xs font-bold text-gray-600 uppercase tracking-wide">
-            <span>{actions.length} acciones disponibles</span>
+            <span>{finalActions.length} acciones disponibles</span>
             <span>Usa Ctrl + tecla para acceso rápido</span>
           </div>
         </div>

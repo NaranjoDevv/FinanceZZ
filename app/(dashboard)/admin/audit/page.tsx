@@ -320,7 +320,7 @@ export default function AdminAuditPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredLogs.map((log, index) => {
+                {filteredLogs.map((log) => {
                   const SeverityIcon = getSeverityIcon(log.severity);
                   const details = parseDetails(log.details);
                   
