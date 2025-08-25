@@ -406,3 +406,150 @@ export const BrutalBadge = memo(forwardRef<HTMLSpanElement, BrutalBadgeProps>(
 ));
 
 BrutalBadge.displayName = 'BrutalBadge';
+
+// ============================================
+// BRUTAL CHECKBOX - Casilla de verificación
+// ============================================
+
+interface BrutalCheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
+    label?: string;
+}
+
+export const BrutalCheckbox = memo(forwardRef<HTMLInputElement, BrutalCheckboxProps>(
+    ({ label, className, ...props }, ref) => {
+        return (
+            <div className="flex items-center gap-2">
+                <input
+                    ref={ref}
+                    type="checkbox"
+                    className={cn(
+                        'w-5 h-5 border-4 border-black bg-white',
+                        'focus:outline-none focus:ring-0',
+                        'checked:bg-yellow-400 checked:border-black',
+                        'appearance-none relative cursor-pointer',
+                        'checked:after:content-["✓"] checked:after:absolute checked:after:inset-0',
+                        'checked:after:flex checked:after:items-center checked:after:justify-center',
+                        'checked:after:text-black checked:after:font-black checked:after:text-xs',
+                        className
+                    )}
+                    {...props}
+                />
+                {label && (
+                    <label className="text-sm font-bold uppercase tracking-wide cursor-pointer">
+                        {label}
+                    </label>
+                )}
+            </div>
+        );
+    }
+));
+
+BrutalCheckbox.displayName = 'BrutalCheckbox';
+
+// ============================================
+// BRUTAL SELECT - Campo de selección
+// ============================================
+
+interface BrutalSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+    label?: string;
+    error?: string;
+    options: Array<{ value: string; label: string; disabled?: boolean }>;
+}
+
+export const BrutalSelect = memo(forwardRef<HTMLSelectElement, BrutalSelectProps>(
+    ({ label, error, options, className, ...props }, ref) => {
+        return (
+            <div className="w-full">
+                {label && (
+                    <label className="block text-xs font-black uppercase tracking-wider text-black mb-2">
+                        {label}
+                    </label>
+                )}
+                <div className="relative">
+                    <select
+                        ref={ref}
+                        className={cn(
+                            'w-full px-4 py-3 min-h-[44px] text-base',
+                            'font-bold uppercase tracking-wide',
+                            'border-4 border-black',
+                            'bg-white text-black',
+                            'focus:outline-none focus:border-black',
+                            'disabled:bg-gray-100 disabled:cursor-not-allowed',
+                            'appearance-none cursor-pointer',
+                            error && 'border-red-500',
+                            className
+                        )}
+                        {...props}
+                    >
+                        {options.map((option) => (
+                            <option key={option.value} value={option.value} disabled={option.disabled}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black" />
+                    </div>
+                </div>
+                {error && (
+                    <p className="mt-2 text-xs font-bold uppercase text-red-500">
+                        {error}
+                    </p>
+                )}
+            </div>
+        );
+    }
+));
+
+BrutalSelect.displayName = 'BrutalSelect';
+
+// ============================================
+// BRUTAL TEXTAREA - Campo de texto largo
+// ============================================
+
+interface BrutalTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+    label?: string;
+    error?: string;
+}
+
+export const BrutalTextarea = memo(forwardRef<HTMLTextAreaElement, BrutalTextareaProps>(
+    ({ label, error, className, ...props }, ref) => {
+        return (
+            <div className="w-full">
+                {label && (
+                    <label className="block text-xs font-black uppercase tracking-wider text-black mb-2">
+                        {label}
+                    </label>
+                )}
+                <textarea
+                    ref={ref}
+                    className={cn(
+                        'w-full px-4 py-3 min-h-[120px] text-base',
+                        'font-bold tracking-wide',
+                        'border-4 border-black',
+                        'bg-white text-black',
+                        'placeholder:text-gray-500 placeholder:uppercase',
+                        'focus:outline-none focus:border-black',
+                        'disabled:bg-gray-100 disabled:cursor-not-allowed',
+                        'resize-vertical',
+                        error && 'border-red-500',
+                        className
+                    )}
+                    {...props}
+                />
+                {error && (
+                    <p className="mt-2 text-xs font-bold uppercase text-red-500">
+                        {error}
+                    </p>
+                )}
+            </div>
+        );
+    }
+));
+
+BrutalTextarea.displayName = 'BrutalTextarea';
+
+// Export all components
+export { BrutalTable } from './BrutalTable';
+export { BrutalQuickView, useBrutalQuickView } from './BrutalQuickView';
+export { BrutalAdminLayout, BrutalModuleCard } from './BrutalAdminLayout';
