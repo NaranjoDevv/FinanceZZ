@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -18,7 +18,8 @@ import {
   CreditCard
 } from "lucide-react";
 import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
-import { usePriceInput } from "@/lib/price-formatter";
+import { useBilling } from "@/hooks/useBilling";
+import { usePriceInput, parseFormattedPrice } from "@/lib/price-formatter";
 import { toast } from "sonner";
 
 export interface NewDebtModalProps {
@@ -43,6 +44,7 @@ export default function NewDebtModal({
 }: NewDebtModalProps) {
   const currentUser = useQuery(api.users.getCurrentUser);
   const createDebt = useMutation(api.debts.createDebt);
+  const { setShowSubscriptionPopup, setCurrentLimitType } = useBilling();
 
   // Price input handlers
   const amountInput = usePriceInput("", "COP");
@@ -59,12 +61,14 @@ export default function NewDebtModal({
     interestRate: "",
   };
 
-  const validationRules = createValidationRules<FormData>([
+  const validationRules = useMemo(() => createValidationRules<FormData>([
     {
       field: 'amount',
       validators: [
-        () => {
-          if (amountInput.rawValue <= 0) {
+        (value) => {
+          // Parse the formatted price value
+          const numValue = parseFormattedPrice(value, "COP");
+          if (numValue <= 0) {
             return 'El monto debe ser mayor a 0';
           }
           return null;
@@ -83,17 +87,21 @@ export default function NewDebtModal({
       field: 'interestRate',
       validators: [
         (value) => {
-          if (value && interestRateInput.rawValue < 0) {
-            return 'La tasa de interés no puede ser negativa';
-          }
-          if (value && interestRateInput.rawValue > 100) {
-            return 'La tasa de interés no puede ser mayor al 100%';
+          if (value) {
+            // Parse the formatted interest rate value
+            const numValue = parseFormattedPrice(value, "COP");
+            if (numValue < 0) {
+              return 'La tasa de interés no puede ser negativa';
+            }
+            if (numValue > 100) {
+              return 'La tasa de interés no puede ser mayor al 100%';
+            }
           }
           return null;
         }
       ],
     },
-  ]);
+  ]), []);
 
   const submitDebt = async (data: FormData) => {
     if (!currentUser) {
@@ -137,9 +145,18 @@ export default function NewDebtModal({
 
       toast.success("Deuda creada exitosamente");
       onClose();
-    } catch (error) {
+    } catch (error: Error | unknown) {
       console.error("Error creating debt:", error);
-      toast.error("Error al crear la deuda");
+      
+      // Check if it's a billing limit error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("límite de") && errorMessage.includes("deudas")) {
+        setCurrentLimitType("debts");
+        setShowSubscriptionPopup(true);
+        return;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -157,18 +174,19 @@ export default function NewDebtModal({
 
   const handleClose = () => {
     resetForm();
-    amountInput.setValue(0);
-    interestRateInput.setValue(0);
+    amountInput.setValue("");
+    interestRateInput.setValue("");
     onClose();
   };
 
   useEffect(() => {
     if (isOpen) {
+      // Reset form state when modal opens
       resetForm();
-      amountInput.setValue(0);
-      interestRateInput.setValue(0);
+      amountInput.setValue("");
+      interestRateInput.setValue("");
     }
-  }, [isOpen, resetForm, amountInput, interestRateInput]);
+  }, [isOpen]); // Only depend on isOpen to prevent infinite re-renders
 
   const debtTypeOptions = [
     { value: "i_owe", label: "YO DEBO" },
@@ -216,8 +234,10 @@ export default function NewDebtModal({
                 placeholder="$0"
                 value={amountInput.displayValue}
                 onChange={(value) => {
+                  // Update price input and get the raw value synchronously
                   amountInput.handleChange(value);
-                  updateField("amount", amountInput.rawValue.toString());
+                  // Update form with the input value for validation
+                  updateField("amount", value);
                 }}
                 error={errors.amount}
                 required
@@ -289,8 +309,10 @@ export default function NewDebtModal({
                 placeholder="0%"
                 value={interestRateInput.displayValue}
                 onChange={(value) => {
+                  // Update price input and get the raw value synchronously
                   interestRateInput.handleChange(value);
-                  updateField("interestRate", interestRateInput.rawValue.toString());
+                  // Update form with the input value for validation
+                  updateField("interestRate", value);
                 }}
                 error={errors.interestRate}
               />

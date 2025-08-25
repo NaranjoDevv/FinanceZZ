@@ -16,6 +16,7 @@ interface BrutalInputProps {
   min?: string;
   className?: string;
   disabled?: boolean;
+  autoComplete?: string;
 }
 
 export function BrutalInput({
@@ -30,7 +31,8 @@ export function BrutalInput({
   step,
   min,
   className = "",
-  disabled = false
+  disabled = false,
+  autoComplete
 }: BrutalInputProps) {
   const inputClass = `
     brutal-input h-12 font-medium border-black w-full px-4 py-3
@@ -53,6 +55,7 @@ export function BrutalInput({
         onChange={(e) => onChange(e.target.value)}
         className={inputClass + " h-10 sm:h-12 text-sm sm:text-base"}
         disabled={disabled}
+        autoComplete={autoComplete}
       />
       {error && (
         <p className="text-red-600 text-xs font-black uppercase tracking-wide">

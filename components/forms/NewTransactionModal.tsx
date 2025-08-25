@@ -12,7 +12,7 @@ import { BrutalTextarea } from "@/components/ui/brutal-textarea";
 import { usePriceInput } from "@/lib/price-formatter";
 
 import { useFormHandler, createValidationRules, commonValidationRules } from "@/hooks/use-form-handler";
-import { toast } from "sonner";
+import { useBilling } from "@/hooks/useBilling";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -88,6 +88,7 @@ export default function NewTransactionModal({
   });
 
   const currentUser = useQuery(api.users.getCurrentUser);
+  const { setShowSubscriptionPopup, setCurrentLimitType } = useBilling();
 
   const createTransaction = useMutation(api.transactions.createTransaction);
   const categories = useQuery(
@@ -108,7 +109,6 @@ export default function NewTransactionModal({
 
   const submitTransaction = async (data: FormData) => {
     if (!currentUser?._id) {
-      toast.error("Usuario no autenticado");
       throw new Error("Usuario no autenticado");
     }
 
@@ -149,7 +149,20 @@ export default function NewTransactionModal({
       }
     }
 
-    await createTransaction(transactionData);
+    try {
+      await createTransaction(transactionData);
+    } catch (error: Error | unknown) {
+      // Check if it's a billing limit error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("límite de") && errorMessage.includes("transacciones")) {
+        setCurrentLimitType("transactions");
+        setShowSubscriptionPopup(true);
+        // Don't re-throw the error, let the popup handle it
+        return;
+      }
+      // Re-throw other errors to be handled by useFormHandler
+      throw error;
+    }
   };
 
   const handleClose = () => {

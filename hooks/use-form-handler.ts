@@ -42,10 +42,13 @@ export function useFormHandler<T extends Record<string, any>>({
     }));
 
     // Clear error for this field
-    if (errors[field as string]) {
-      setErrors(prev => ({ ...prev, [field as string]: "" }));
-    }
-  }, [errors]);
+    setErrors(prev => {
+      if (prev[field as string]) {
+        return { ...prev, [field as string]: "" };
+      }
+      return prev;
+    });
+  }, []);
 
   const validateForm = useCallback((): boolean => {
     const newErrors: FormErrors = {};

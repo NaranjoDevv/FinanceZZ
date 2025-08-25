@@ -3,23 +3,24 @@
 import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { BrutalInput } from "@/components/ui/brutal-input";
 import { BrutalSelect } from "@/components/ui/brutal-select";
 import { BrutalTextarea } from "@/components/ui/brutal-textarea";
-import { BaseModal } from "@/components/ui/BaseModal";
+import { Card } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
 import { usePriceInput } from "@/lib/price-formatter";
 import { useFormHandler } from "@/hooks/use-form-handler";
 import { toast } from "sonner";
 import { RecurringTransaction } from "@/hooks/useRecurringTransactions";
 import { Id } from "@/convex/_generated/dataModel";
 import {
-  CalendarIcon,
-  CurrencyDollarIcon,
-  TagIcon,
   PauseIcon,
   PlayIcon,
+  XMarkIcon,
+  PlusIcon,
+  MinusIcon,
+  PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 
 interface EditRecurringTransactionModalProps {
@@ -41,13 +42,6 @@ interface FormData {
   isActive: boolean;
 }
 
-const TYPE_OPTIONS = [
-  { value: "income", label: "Ingreso" },
-  { value: "expense", label: "Gasto" },
-  { value: "debt_payment", label: "Pago de Deuda" },
-  { value: "loan_received", label: "Préstamo Recibido" },
-];
-
 const FREQUENCY_OPTIONS = [
   { value: "daily", label: "Diario" },
   { value: "weekly", label: "Semanal" },
@@ -60,7 +54,6 @@ export default function EditRecurringTransactionModal({
   onClose,
   transaction,
 }: EditRecurringTransactionModalProps) {
-  const { user } = useUser();
   const currentUser = useQuery(api.users.getCurrentUser);
   const updateRecurringTransaction = useMutation(api.recurringTransactions.updateRecurringTransaction);
   const toggleRecurringTransaction = useMutation(api.recurringTransactions.toggleRecurringTransaction);
@@ -100,7 +93,7 @@ export default function EditRecurringTransactionModal({
       resetForm();
       setValue(transaction.amount);
     }
-  }, [isOpen, transaction._id, resetForm, setValue]);
+  }, [isOpen, transaction._id, transaction.amount, resetForm, setValue]);
 
   const filteredCategories = categories?.filter(cat => 
     formData.type === "income" ? !cat.isExpense : cat.isExpense
@@ -176,174 +169,216 @@ export default function EditRecurringTransactionModal({
     }
   };
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="EDITAR TRANSACCIÓN RECURRENTE"
-      size="lg"
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Status Toggle */}
-        <div className="flex items-center justify-between p-3 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-          <div className="flex items-center space-x-2">
-            {transaction.isActive ? (
-              <PlayIcon className="h-4 w-4 text-green-600" />
-            ) : (
-              <PauseIcon className="h-4 w-4 text-red-600" />
-            )}
-            <span className="font-black text-xs uppercase tracking-wide">
-              {transaction.isActive ? "ACTIVA" : "PAUSADA"}
-            </span>
-          </div>
-          <Button
-            type="button"
-            onClick={handleToggleActive}
-            className={`brutal-button font-black uppercase text-xs px-3 py-1 ${
-              transaction.isActive 
-                ? "bg-red-200 hover:bg-red-300 text-red-800 border-red-800" 
-                : "bg-green-200 hover:bg-green-300 text-green-800 border-green-800"
-            }`}
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={handleClose}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[95vh] sm:max-h-[85vh] overflow-y-auto sm:overflow-visible"
           >
-            {transaction.isActive ? "PAUSAR" : "ACTIVAR"}
-          </Button>
-        </div>
+            <Card className="brutal-card">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b-4 border-black bg-white">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 sm:p-3 bg-black text-white border-4 border-black">
+                    <PencilSquareIcon className="h-6 w-6 sm:h-8 sm:w-8" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-black text-black uppercase tracking-wide">
+                      EDITAR TRANSACCIÓN RECURRENTE
+                    </h2>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleClose}
+                  variant="outline"
+                  size="sm"
+                  className="border-2 border-black font-bold hover:bg-black hover:text-white transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </Button>
+              </div>
 
-        {/* Amount and Type Row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <BrutalInput
-              label="MONTO"
-              icon={<CurrencyDollarIcon className="h-4 w-4" />}
-              type="text"
-              value={displayValue}
-              onChange={(value) => {
-                handleChange(value);
-                updateField("amount", amountValue.toString());
-              }}
-              placeholder="0.00"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <BrutalSelect
-              label="TIPO"
-              value={formData.type}
-              onChange={(value) => updateField("type", value)}
-              placeholder="Selecciona el tipo"
-              options={TYPE_OPTIONS}
-            />
-          </div>
-        </div>
+              {/* Form Content */}
+              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                {/* Status Toggle */}
+                <div className="flex items-center justify-between p-3 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                  <div className="flex items-center space-x-2">
+                    {transaction.isActive ? (
+                      <PlayIcon className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <PauseIcon className="h-4 w-4 text-red-600" />
+                    )}
+                    <span className="font-black text-sm uppercase tracking-wide">
+                      {transaction.isActive ? "ACTIVA" : "PAUSADA"}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleToggleActive}
+                    className={`font-black uppercase text-sm px-4 py-2 border-4 transition-colors ${
+                      transaction.isActive 
+                        ? "bg-white text-red-600 border-red-600 hover:bg-red-600 hover:text-white" 
+                        : "bg-white text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
+                    }`}
+                  >
+                    {transaction.isActive ? "PAUSAR" : "ACTIVAR"}
+                  </Button>
+                </div>
 
-        {/* Description */}
-        <div className="space-y-1">
-          <BrutalInput
-            label="DESCRIPCIÓN"
-            type="text"
-            value={formData.description}
-            onChange={(value) => updateField("description", value)}
-            placeholder="Descripción de la transacción"
-            required
-          />
-        </div>
+                {/* Transaction Type */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-black text-black uppercase tracking-wide">
+                    TIPO DE TRANSACCIÓN
+                  </label>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      onClick={() => updateField("type", "income")}
+                      className={`flex-1 py-3 sm:py-4 border-4 font-black text-base sm:text-lg transition-all ${formData.type === "income"
+                        ? "bg-black text-white border-black shadow-[4px_4px_0px_0px_#000]"
+                        : "bg-white text-black border-black hover:bg-gray-100"
+                        }`}
+                    >
+                      <PlusIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                      INGRESO
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => updateField("type", "expense")}
+                      className={`flex-1 py-3 sm:py-4 border-4 font-black text-base sm:text-lg transition-all ${formData.type === "expense"
+                        ? "bg-black text-white border-black shadow-[4px_4px_0px_0px_#000]"
+                        : "bg-white text-black border-black hover:bg-gray-100"
+                        }`}
+                    >
+                      <MinusIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
+                      GASTO
+                    </Button>
+                  </div>
+                </div>
 
-        {/* Date and Frequency Row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <BrutalInput
-              label="PRÓXIMA EJECUCIÓN"
-              icon={<CalendarIcon className="h-4 w-4" />}
-              type="date"
-              value={formData.nextExecutionDate}
-              onChange={(value) => updateField("nextExecutionDate", value)}
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <BrutalSelect
-              label="FRECUENCIA"
-              value={formData.recurringFrequency}
-              onChange={(value) => updateField("recurringFrequency", value)}
-              placeholder="Selecciona la frecuencia"
-              options={FREQUENCY_OPTIONS}
-            />
-          </div>
-        </div>
+                {/* Amount and Description */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <BrutalInput
+                    label="MONTO"
+                    type="text"
+                    placeholder="$5,000"
+                    value={displayValue}
+                    onChange={(value) => {
+                      handleChange(value);
+                    }}
+                    required
+                  />
+                  <BrutalInput
+                    label="DESCRIPCIÓN"
+                    placeholder="¿En qué gastas recurrentemente?"
+                    value={formData.description}
+                    onChange={(value) => updateField("description", value)}
+                    required
+                  />
+                </div>
 
-        {/* Category and Subcategory Row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <BrutalSelect
-              label="CATEGORÍA"
-              value={formData.categoryId}
-              onChange={(value) => {
-                updateField("categoryId", value);
-                updateField("subcategoryId", ""); // Reset subcategory
-              }}
-              placeholder="Selecciona una categoría"
-              options={filteredCategories?.map(cat => ({
-                value: cat._id,
-                label: cat.name
-              })) || []}
-            />
-          </div>
-          {formData.categoryId && subcategories && subcategories.length > 0 && (
-            <div className="space-y-1">
-              <BrutalSelect
-                label="SUBCATEGORÍA"
-                value={formData.subcategoryId}
-                onChange={(value) => updateField("subcategoryId", value)}
-                placeholder="Selecciona una subcategoría"
-                options={subcategories.map(sub => ({
-                  value: sub._id,
-                  label: sub.name
-                }))}
-              />
-            </div>
-          )}
-        </div>
 
-        {/* Tags */}
-        <div className="space-y-1">
-          <BrutalInput
-            label="ETIQUETAS"
-            icon={<TagIcon className="h-4 w-4" />}
-            type="text"
-            value={formData.tags}
-            onChange={(value) => updateField("tags", value)}
-            placeholder="Etiquetas separadas por comas"
-          />
-        </div>
+                {/* Frequency and Date */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <BrutalSelect
+                    label="FRECUENCIA"
+                    placeholder="Selecciona la frecuencia"
+                    value={formData.recurringFrequency}
+                    onChange={(value) => updateField("recurringFrequency", value)}
+                    options={FREQUENCY_OPTIONS}
+                  />
+                  <div className="space-y-3">
+                    <label className="block text-sm font-black text-black uppercase tracking-wide">
+                      PRÓXIMA EJECUCIÓN *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.nextExecutionDate || ''}
+                      onChange={(e) => updateField("nextExecutionDate", e.target.value)}
+                      className="w-full h-12 sm:h-14 px-4 py-3 bg-white border-4 border-black font-black text-black uppercase tracking-wider shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:bg-gray-100 hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] focus:outline-none focus:bg-gray-100 focus:shadow-[6px_6px_0px_rgba(0,0,0,1)] transition-all duration-150 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_rgba(0,0,0,1)]"
+                    />
+                  </div>
+                </div>
 
-        {/* Notes */}
-        <div className="space-y-1">
-          <BrutalTextarea
-            label="NOTAS"
-            value={formData.notes}
-            onChange={(value) => updateField("notes", value)}
-            placeholder="Notas adicionales"
-            rows={2}
-          />
-        </div>
+                {/* Category and Subcategory */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <BrutalSelect
+                    label="CATEGORÍA"
+                    placeholder="Seleccionar categoría"
+                    value={formData.categoryId || ""}
+                    onChange={(value) => {
+                      updateField("categoryId", value);
+                      updateField("subcategoryId", "");
+                    }}
+                    options={filteredCategories?.map(cat => ({ value: cat._id, label: cat.name })) || []}
+                  />
+                  <BrutalSelect
+                    label="SUBCATEGORÍA"
+                    placeholder={!subcategories || subcategories.length === 0 ? "Sin subcategorías" : "Seleccionar subcategoría"}
+                    value={formData.subcategoryId || ""}
+                    onChange={(value) => updateField("subcategoryId", value)}
+                    disabled={!subcategories || subcategories.length === 0}
+                    options={subcategories?.map(sub => ({ value: sub._id, label: sub.name })) || []}
+                  />
+                </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end space-x-3 pt-4 border-t-4 border-black mt-4">
-          <Button
-            type="button"
-            onClick={onClose}
-            className="brutal-button bg-gray-200 hover:bg-gray-300 text-gray-800 border-gray-800 font-black uppercase text-xs px-4 py-2"
-          >
-            CANCELAR
-          </Button>
-          <Button
-            type="submit"
-            className="brutal-button bg-blue-200 hover:bg-blue-300 text-blue-800 border-blue-800 font-black uppercase text-xs px-4 py-2"
-          >
-            ACTUALIZAR
-          </Button>
-        </div>
-      </form>
-    </BaseModal>
+                {/* Notes and Tags */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <BrutalTextarea
+                    label="NOTAS"
+                    placeholder="Notas adicionales..."
+                    value={formData.notes}
+                    onChange={(value) => updateField("notes", value)}
+                    rows={3}
+                  />
+                  <BrutalInput
+                    label="ETIQUETAS"
+                    placeholder="trabajo, personal, urgente"
+                    value={formData.tags}
+                    onChange={(value) => updateField("tags", value)}
+                  />
+                </div>
+
+                </form>
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-4 p-4 sm:p-6 border-t-4 border-black bg-white">
+                <Button
+                  onClick={handleClose}
+                  variant="outline"
+                  className="flex-1 py-3 border-4 border-black font-black text-black hover:bg-gray-100 transition-colors uppercase tracking-wide"
+                >
+                  CANCELAR
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  className="flex-1 py-3 bg-black text-white border-4 border-black font-black hover:bg-gray-800 transition-colors shadow-[4px_4px_0px_0px_#666] uppercase tracking-wide"
+                >
+                  ACTUALIZAR TRANSACCIÓN
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

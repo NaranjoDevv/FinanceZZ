@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npx playwright:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(npm run dev:*)",
+      "Bash(mkdir:*)",
+      "Bash(node:*)",
+      "Read(/C:\\c\\Users\\123456\\Desktop/**)",
+      "Bash(npm run lint)",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\mnt\\c\\Users\\123456\\Desktop",
+      "C:\\c\\Users\\123456\\Desktop"
+    ]
+  }
+}

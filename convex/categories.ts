@@ -92,6 +92,24 @@ export const createCategory = mutation({
     order: v.number(),
   },
   handler: async (ctx, args) => {
+    // Obtener información del usuario para verificar el plan de billing
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Verificar límites para usuarios gratuitos
+    if (user.plan === "free") {
+      const userCategoriesCount = await ctx.db
+        .query("categories")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .collect();
+      
+      if (userCategoriesCount.length >= 3) {
+        throw new Error("Los usuarios gratuitos pueden crear máximo 3 categorías. Actualiza a premium para crear categorías ilimitadas.");
+      }
+    }
+
     // Check if category name already exists for this user
     const existingCategory = await ctx.db
       .query("categories")

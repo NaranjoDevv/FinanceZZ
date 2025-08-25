@@ -95,6 +95,22 @@ export const createDebt = mutation({
     interestRate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Get user information to check billing limits
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check debt limits for free users
+    if (user.plan === "free") {
+      const currentActiveDebts = user.usage?.activeDebts || 0;
+      const debtLimit = user.limits?.activeDebts || 3;
+      
+      if (currentActiveDebts >= debtLimit) {
+        throw new Error(`Has alcanzado el límite de ${debtLimit} deudas activas. Actualiza a Premium para deudas ilimitadas.`);
+      }
+    }
+
     // Validate amount is positive
     if (args.amount <= 0) {
       throw new Error("Amount must be positive");
@@ -135,6 +151,17 @@ export const createDebt = mutation({
     if (args.interestRate) debtData.interestRate = args.interestRate;
 
     const debtId = await ctx.db.insert("debts", debtData);
+
+    // Increment active debt count for free users
+    if (user.plan === "free" && user.usage) {
+      const currentActiveDebts = user.usage.activeDebts || 0;
+      await ctx.db.patch(args.userId, {
+        usage: {
+          ...user.usage,
+          activeDebts: currentActiveDebts + 1,
+        },
+      });
+    }
 
     return debtId;
   },
@@ -195,6 +222,25 @@ export const updateDebt = mutation({
     if (args.status !== undefined) updateData.status = args.status;
 
     await ctx.db.patch(args.id, updateData);
+
+    // Decrement active debt count for free users when debt is fully paid
+    if (args.status === "paid") {
+      const user = await ctx.db.get(args.userId);
+      if (user && user.plan === "free") {
+        if (user.usage) {
+          const currentActiveDebts = user.usage.activeDebts || 0;
+          if (currentActiveDebts > 0) {
+            await ctx.db.patch(args.userId, {
+              usage: {
+                ...user.usage,
+                activeDebts: currentActiveDebts - 1,
+              },
+            });
+          }
+        }
+      }
+    }
+
     return args.id;
   },
 });
@@ -304,7 +350,27 @@ export const deleteDebt = mutation({
       throw new Error("Unauthorized");
     }
 
+    // Check if debt was active before deletion
+    const wasActive = debt.status === "open" || debt.status === "partially_paid";
+
     await ctx.db.delete(args.id);
+
+    // Decrement active debt count for free users if debt was active
+    if (wasActive) {
+      const user = await ctx.db.get(args.userId);
+      if (user && user.plan === "free" && user.usage) {
+        const currentActiveDebts = user.usage.activeDebts || 0;
+        if (currentActiveDebts > 0) {
+          await ctx.db.patch(args.userId, {
+            usage: {
+              ...user.usage,
+              activeDebts: currentActiveDebts - 1,
+            },
+          });
+        }
+      }
+    }
+
     return args.id;
   },
 });

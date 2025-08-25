@@ -6,21 +6,21 @@ import { Button } from "@/components/ui/button";
 import {
   ChartBarIcon,
   DocumentArrowDownIcon,
-  CalendarIcon
+  CalendarIcon,
+  LockClosedIcon,
+  StarIcon
 } from "@heroicons/react/24/outline";
 import { useEnhancedReports } from "@/hooks/use-enhanced-reports";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+// Removed unused imports
 import { FinancialSummaryCard } from "@/components/reports/FinancialSummaryCard";
 import { IncomeExpenseChart } from "@/components/reports/IncomeExpenseChart";
 import { CategoryDistributionChart } from "@/components/reports/CategoryDistributionChart";
 import { MonthlyTrendChart } from "@/components/reports/MonthlyTrendChart";
 import { RecurringTransactionsReport } from "@/components/reports/RecurringTransactionsReport";
-import { toCurrency } from "@/lib/currency";
-import { useState } from "react";
+import { toCurrency, formatCurrency } from "@/lib/currency";
+import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { 
-  FunnelIcon, 
   Cog6ToothIcon,
   ChevronDownIcon,
   EyeIcon,
@@ -34,47 +34,73 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useBilling } from "@/hooks/useBilling";
+import { SubscriptionPopup } from "@/components/billing/SubscriptionPopup";
+import { useCurrentUser } from "@/contexts/UserContext";
+
+// Consolidate chart visibility state
+interface ChartVisibility {
+  income: boolean;
+  category: boolean;
+  trend: boolean;
+  subcategory: boolean;
+  recurring: boolean;
+}
 
 export default function ReportsPage() {
-  const { reportData, isLoading, currentUser, hasData, hasTransactions, hasRecurringTransactions, refetch } = useEnhancedReports();
-  const userCurrency = toCurrency(currentUser?.currency || 'USD');
+  const { reportData, isLoading, hasData, hasTransactions, hasRecurringTransactions, refetch } = useEnhancedReports();
+  const { currentUser } = useCurrentUser();
+  const userCurrency = useMemo(() => toCurrency(currentUser?.currency || 'USD'), [currentUser?.currency]);
+  
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('Este mes');
   
-  // Customization states
+  // Billing verification
+  const { isFree, checkAdvancedReportsAccess, showSubscriptionPopup, setShowSubscriptionPopup, currentLimitType } = useBilling();
+  const isUserFree = isFree;
+  
+  // Consolidated customization state
   const [showCustomization, setShowCustomization] = useState(false);
   const [chartType, setChartType] = useState('bar');
   const [dateRange, setDateRange] = useState('month');
-  const [showIncomeChart, setShowIncomeChart] = useState(true);
-  const [showCategoryChart, setShowCategoryChart] = useState(true);
-  const [showTrendChart, setShowTrendChart] = useState(true);
-  const [showSubcategoryChart, setShowSubcategoryChart] = useState(true);
-  const [showRecurringReport, setShowRecurringReport] = useState(true);
+  const [chartVisibility, setChartVisibility] = useState<ChartVisibility>({
+    income: true,
+    category: true,
+    trend: true,
+    subcategory: true,
+    recurring: true
+  });
 
-  const handleRefresh = async () => {
+  // Memoized handlers
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
       await refetch();
       toast.success('Reportes actualizados correctamente');
-    } catch (error) {
+    } catch {
       toast.error('Error al actualizar los reportes');
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [refetch]);
 
-  const handleExport = () => {
+  const toggleChartVisibility = useCallback((chart: keyof ChartVisibility) => {
+    setChartVisibility(prev => ({
+      ...prev,
+      [chart]: !prev[chart]
+    }));
+  }, []);
+
+  const handleExport = useCallback(() => {
+    if (!checkAdvancedReportsAccess()) return;
+    
     try {
-      // Validate data before export
       if (!reportData || (!hasData && !hasRecurringTransactions)) {
         toast.error('No hay datos suficientes para exportar');
         return;
       }
 
-      // Sanitize numeric values to prevent NaN in export
-      const sanitizeValue = (value: number) => {
-        return isNaN(value) || !isFinite(value) ? 0 : value;
-      };
+      const sanitizeValue = (value: number) => isNaN(value) || !isFinite(value) ? 0 : value;
 
       const dataToExport = {
         metadata: {
@@ -120,13 +146,7 @@ export default function ReportsPage() {
         configuracion: {
           tipoGrafico: chartType,
           rangoFecha: dateRange,
-          seccionesVisibles: {
-            ingresoGasto: showIncomeChart,
-            categorias: showCategoryChart,
-            tendencias: showTrendChart,
-            subcategorias: showSubcategoryChart,
-            recurrentes: showRecurringReport
-          }
+          seccionesVisibles: chartVisibility
         }
       };
 
@@ -148,9 +168,9 @@ export default function ReportsPage() {
       console.error('Error al exportar reporte:', error);
       toast.error('Error al exportar el reporte. Inténtalo de nuevo.');
     }
-  };
+  }, [checkAdvancedReportsAccess, reportData, hasData, hasRecurringTransactions, selectedPeriod, currentUser, hasTransactions, chartType, dateRange, chartVisibility]);
 
-  const handlePeriodChange = () => {
+  const handlePeriodChange = useCallback(() => {
     const periods = ['Este mes', 'Últimos 3 meses', 'Últimos 6 meses', 'Este año'];
     const currentIndex = periods.indexOf(selectedPeriod);
     const nextIndex = (currentIndex + 1) % periods.length;
@@ -159,7 +179,26 @@ export default function ReportsPage() {
       setSelectedPeriod(nextPeriod);
       toast.info(`Período cambiado a: ${nextPeriod}`);
     }
-  };
+  }, [selectedPeriod]);
+
+  // Memoized UI state checks
+  const anyChartsVisible = useMemo(() => 
+    Object.values(chartVisibility).some(Boolean), 
+    [chartVisibility]
+  );
+
+  const resetConfiguration = useCallback(() => {
+    setChartType('bar');
+    setDateRange('month');
+    setChartVisibility({
+      income: true,
+      category: true,
+      trend: true,
+      subcategory: true,
+      recurring: true
+    });
+    toast.success('Configuración restablecida');
+  }, []);
 
   if (isLoading) {
     return (
@@ -180,6 +219,129 @@ export default function ReportsPage() {
             </p>
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  // Show premium message for free users
+  if (isUserFree) {
+    return (
+      <div className="px-6 py-0">
+        <div className="mb-8 pt-6">
+          <h1 className="text-4xl font-black uppercase tracking-wider mb-2 text-black">
+            Reportes
+          </h1>
+          <p className="text-gray-600 font-medium">
+            Análisis financiero básico
+          </p>
+          <div className="w-20 h-1 bg-black mt-4"></div>
+        </div>
+
+        <Card className="brutal-card p-8 text-center border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+            <LockClosedIcon className="w-8 h-8 text-white" />
+          </div>
+          <h3 className="text-xl font-black uppercase tracking-wider text-black mb-2">
+            Reportes Avanzados - Funcionalidad Premium
+          </h3>
+          <p className="text-gray-600 font-bold mb-6 max-w-md mx-auto">
+            Accede a reportes detallados, gráficos avanzados, análisis de tendencias y exportación de datos con el plan Premium.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-left max-w-2xl mx-auto">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <StarIcon className="w-5 h-5 text-yellow-500" />
+                <span className="text-sm font-bold text-gray-700">Gráficos de distribución por categorías</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <StarIcon className="w-5 h-5 text-yellow-500" />
+                <span className="text-sm font-bold text-gray-700">Análisis de tendencias mensuales</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <StarIcon className="w-5 h-5 text-yellow-500" />
+                <span className="text-sm font-bold text-gray-700">Reportes de ingresos vs gastos</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <StarIcon className="w-5 h-5 text-yellow-500" />
+                <span className="text-sm font-bold text-gray-700">Exportación de datos a JSON</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <StarIcon className="w-5 h-5 text-yellow-500" />
+                <span className="text-sm font-bold text-gray-700">Análisis de subcategorías</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <StarIcon className="w-5 h-5 text-yellow-500" />
+                <span className="text-sm font-bold text-gray-700">Personalización de períodos</span>
+              </div>
+            </div>
+          </div>
+          
+          <Button 
+            onClick={() => setShowSubscriptionPopup(true)}
+            className="brutal-button brutal-button--primary bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 font-black uppercase tracking-wide"
+          >
+            <StarIcon className="w-4 h-4 mr-2" />
+            Actualizar a Premium
+          </Button>
+        </Card>
+
+        {/* Basic transaction report for free users */}
+        {hasTransactions && (
+          <Card className="brutal-card p-6 mt-6">
+            <h3 className="text-lg font-black uppercase tracking-wider text-black mb-4">Reporte Básico de Transacciones</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-green-50 p-4 border-4 border-green-200 shadow-[4px_4px_0px_0px_rgba(34,197,94,0.3)]">
+                  <p className="text-sm text-green-600 font-black uppercase">Total Ingresos</p>
+                  <p className="text-2xl font-black text-green-700">
+                    {formatCurrency(reportData?.totalIncome || 0, userCurrency)}
+                  </p>
+                </div>
+                <div className="bg-red-50 p-4 border-4 border-red-200 shadow-[4px_4px_0px_0px_rgba(239,68,68,0.3)]">
+                  <p className="text-sm text-red-600 font-black uppercase">Total Gastos</p>
+                  <p className="text-2xl font-black text-red-700">
+                    {formatCurrency(reportData?.totalExpenses || 0, userCurrency)}
+                  </p>
+                </div>
+                <div className="bg-blue-50 p-4 border-4 border-blue-200 shadow-[4px_4px_0px_0px_rgba(59,130,246,0.3)]">
+                  <p className="text-sm text-blue-600 font-black uppercase">Balance</p>
+                  <p className={`text-2xl font-black ${
+                    (reportData?.totalIncome || 0) - (reportData?.totalExpenses || 0) >= 0 
+                      ? 'text-green-700' 
+                      : 'text-red-700'
+                  }`}>
+                    {formatCurrency((reportData?.totalIncome || 0) - (reportData?.totalExpenses || 0), userCurrency)}
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 text-center font-bold">
+                Actualiza a Premium para acceder a reportes detallados y análisis avanzados
+              </p>
+            </div>
+          </Card>
+        )}
+
+        {!hasTransactions && (
+          <Card className="brutal-card p-8 text-center mt-6">
+            <ChartBarIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-black uppercase tracking-wider text-black mb-2">No hay transacciones</h3>
+            <p className="text-gray-600 font-bold mb-4">
+              Agrega algunas transacciones para ver tu reporte básico
+            </p>
+            <Button className="brutal-button">
+              Agregar Transacción
+            </Button>
+          </Card>
+        )}
+
+        <SubscriptionPopup 
+          isOpen={showSubscriptionPopup}
+          onClose={() => setShowSubscriptionPopup(false)}
+          limitType={currentLimitType}
+        />
       </div>
     );
   }
@@ -221,10 +383,10 @@ export default function ReportsPage() {
           <Button
             className="brutal-button"
             onClick={handleExport}
-            disabled={!hasData}
+            disabled={!hasData || isUserFree}
           >
             <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
-            Exportar
+            {isUserFree ? 'Exportar (Premium)' : 'Exportar'}
           </Button>
           <Button
             className="brutal-button"
@@ -239,10 +401,16 @@ export default function ReportsPage() {
                 ? 'bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] scale-105' 
                 : 'bg-white text-black border-black hover:bg-gray-100 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:scale-105'
             }`}
-            onClick={() => setShowCustomization(!showCustomization)}
+            onClick={() => {
+              if (isUserFree) {
+                setShowSubscriptionPopup(true);
+                return;
+              }
+              setShowCustomization(!showCustomization);
+            }}
           >
             <Cog6ToothIcon className="w-5 h-5 mr-2" />
-            PERSONALIZAR
+            {isUserFree ? 'PERSONALIZAR (Premium)' : 'PERSONALIZAR'}
             <ChevronDownIcon className={`w-4 h-4 ml-2 transition-transform duration-300 ${
               showCustomization ? 'rotate-180' : 'rotate-0'
             }`} />
@@ -330,10 +498,10 @@ export default function ReportsPage() {
                     <div className="flex items-center justify-between p-2 border-2 border-black bg-gray-50">
                       <span className="text-xs font-black uppercase">INGRESOS/GASTOS</span>
                       <Button
-                        onClick={() => setShowIncomeChart(!showIncomeChart)}
+                        onClick={() => toggleChartVisibility('income')}
                         className="p-1 border-2 border-black bg-white hover:bg-gray-100"
                       >
-                        {showIncomeChart ? 
+                        {chartVisibility.income ? 
                           <EyeIcon className="w-4 h-4 text-black" /> : 
                           <EyeSlashIcon className="w-4 h-4 text-gray-400" />
                         }
@@ -342,10 +510,10 @@ export default function ReportsPage() {
                     <div className="flex items-center justify-between p-2 border-2 border-black bg-gray-50">
                       <span className="text-xs font-black uppercase">CATEGORÍAS</span>
                       <Button
-                        onClick={() => setShowCategoryChart(!showCategoryChart)}
+                        onClick={() => toggleChartVisibility('category')}
                         className="p-1 border-2 border-black bg-white hover:bg-gray-100"
                       >
-                        {showCategoryChart ? 
+                        {chartVisibility.category ? 
                           <EyeIcon className="w-4 h-4 text-black" /> : 
                           <EyeSlashIcon className="w-4 h-4 text-gray-400" />
                         }
@@ -354,10 +522,10 @@ export default function ReportsPage() {
                     <div className="flex items-center justify-between p-2 border-2 border-black bg-gray-50">
                        <span className="text-xs font-black uppercase">TENDENCIAS</span>
                        <Button
-                         onClick={() => setShowTrendChart(!showTrendChart)}
+                         onClick={() => toggleChartVisibility('trend')}
                          className="p-1 border-2 border-black bg-white hover:bg-gray-100"
                        >
-                         {showTrendChart ? 
+                         {chartVisibility.trend ? 
                            <EyeIcon className="w-4 h-4 text-black" /> : 
                            <EyeSlashIcon className="w-4 h-4 text-gray-400" />
                          }
@@ -366,10 +534,10 @@ export default function ReportsPage() {
                      <div className="flex items-center justify-between p-2 border-2 border-black bg-gray-50">
                        <span className="text-xs font-black uppercase">SUBCATEGORÍAS</span>
                        <Button
-                         onClick={() => setShowSubcategoryChart(!showSubcategoryChart)}
+                         onClick={() => toggleChartVisibility('subcategory')}
                          className="p-1 border-2 border-black bg-white hover:bg-gray-100"
                        >
-                         {showSubcategoryChart ? 
+                         {chartVisibility.subcategory ? 
                            <EyeIcon className="w-4 h-4 text-black" /> : 
                            <EyeSlashIcon className="w-4 h-4 text-gray-400" />
                          }
@@ -378,10 +546,10 @@ export default function ReportsPage() {
                      <div className="flex items-center justify-between p-2 border-2 border-black bg-gray-50">
                        <span className="text-xs font-black uppercase">RECURRENTES</span>
                        <Button
-                         onClick={() => setShowRecurringReport(!showRecurringReport)}
+                         onClick={() => toggleChartVisibility('recurring')}
                          className="p-1 border-2 border-black bg-white hover:bg-gray-100"
                        >
-                         {showRecurringReport ? 
+                         {chartVisibility.recurring ? 
                            <EyeIcon className="w-4 h-4 text-black" /> : 
                            <EyeSlashIcon className="w-4 h-4 text-gray-400" />
                          }
@@ -399,16 +567,7 @@ export default function ReportsPage() {
                     <span className="text-black">{chartType.toUpperCase()} • {dateRange.toUpperCase()}</span>
                   </div>
                   <Button
-                    onClick={() => {
-                      setChartType('bar');
-                      setDateRange('month');
-                      setShowIncomeChart(true);
-                      setShowCategoryChart(true);
-                      setShowTrendChart(true);
-                      setShowSubcategoryChart(true);
-                      setShowRecurringReport(true);
-                      toast.success('Configuración restablecida');
-                    }}
+                    onClick={resetConfiguration}
                     className="bg-gray-100 text-black border-2 border-black font-black text-xs px-3 py-1 hover:bg-gray-200 transition-colors duration-200 uppercase tracking-wide"
                   >
                     RESTABLECER
@@ -496,7 +655,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Recurring Transactions Report */}
-          {showRecurringReport && (
+          {chartVisibility.recurring && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -509,9 +668,9 @@ export default function ReportsPage() {
           )}
 
           {/* Charts Grid */}
-          {(showIncomeChart || showCategoryChart || showSubcategoryChart || showTrendChart) ? (
+          {anyChartsVisible ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {showIncomeChart && (
+              {chartVisibility.income && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -525,7 +684,7 @@ export default function ReportsPage() {
                 </motion.div>
               )}
               
-              {showCategoryChart && (
+              {chartVisibility.category && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -540,7 +699,7 @@ export default function ReportsPage() {
               )}
 
               {/* Monthly Trend */}
-              {showTrendChart && (
+              {chartVisibility.trend && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -554,7 +713,7 @@ export default function ReportsPage() {
               )}
 
               {/* Subcategory Distribution */}
-              {showSubcategoryChart && reportData.subcategoryDistribution.length > 0 && (
+              {chartVisibility.subcategory && reportData.subcategoryDistribution.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -590,9 +749,12 @@ export default function ReportsPage() {
                   </div>
                   <Button
                     onClick={() => {
-                      setShowIncomeChart(true);
-                      setShowCategoryChart(true);
-                      setShowTrendChart(true);
+                      setChartVisibility(prev => ({
+                        ...prev,
+                        income: true,
+                        category: true,
+                        trend: true
+                      }));
                     }}
                     className="brutal-button bg-black text-white border-4 border-black font-black px-6 py-3 hover:bg-gray-800 transition-colors duration-200 uppercase tracking-wide"
                   >

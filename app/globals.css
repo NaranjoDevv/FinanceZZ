@@ -414,6 +414,25 @@ body {
   background: var(--secondary-gray);
 }
 
+/* Scrollbar específico para modales brutales */
+.brutal-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.brutal-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border: 2px solid var(--border-color);
+}
+
+.brutal-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border: 2px solid var(--border-color);
+}
+
+.brutal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
 /* Sticky Auth Buttons */
 .auth-buttons-sticky {
   @apply transition-all duration-300 ease-in-out;

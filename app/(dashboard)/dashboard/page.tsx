@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
@@ -18,10 +18,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useDebts } from "@/hooks/use-debts";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useBilling } from "@/hooks/useBilling";
 import { formatCurrency, formatCurrencyWithRounding, toCurrency } from "@/lib/currency";
-import { BalanceTooltip } from "@/components/ui/balance-tooltip";
+import { useCurrentUser } from "@/contexts/UserContext";
+import { StatCard } from "@/components/ui/stat-card";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
@@ -29,51 +29,98 @@ export default function DashboardPage() {
   const [showSignIn, setShowSignIn] = useState(false);
   const [showNewTransaction, setShowNewTransaction] = useState(false);
 
-  // Event handlers for buttons
-  const handleNewTransaction = () => {
-    console.log('Nueva Transacción clicked');
-    setShowNewTransaction(true);
-  };
-
-  const handleCloseNewTransaction = () => {
-    setShowNewTransaction(false);
-  };
-
-  const handleTransactionCreated = () => {
-    setShowNewTransaction(false);
-    // Optionally refresh data here
-  };
-
-  const handleManageDebts = () => {
-    console.log('Gestionar Deudas clicked');
-    router.push('/debts');
-  };
-
-  const handleViewReports = () => {
-    console.log('Ver Reportes clicked');
-    router.push('/reports');
-  };
-
   // Get real data from Convex - MUST be called before any conditional returns
   const { stats: transactionStats, transactions, isLoading: transactionsLoading } = useTransactions({ limit: 5 });
   const { stats: debtStats, isLoading: debtsLoading } = useDebts();
-  const currentUser = useQuery(api.users.getCurrentUser);
+  const { currentUser, isLoading: userLoading } = useCurrentUser();
+  const { billingInfo, isFree, getUsagePercentage } = useBilling();
   
-  const userCurrency = toCurrency(currentUser?.currency || 'USD');
-  const isDataLoading = transactionsLoading || debtsLoading || !currentUser;
+  const userCurrency = useMemo(() => toCurrency(currentUser?.currency || 'USD'), [currentUser?.currency]);
+  const isDataLoading = transactionsLoading || debtsLoading || userLoading;
+  
+  // Calculate stats from real data (memoized)
+  const useRounding = useMemo(() => currentUser?.numberRounding || false, [currentUser?.numberRounding]);
+
+  // Memoized stats calculation
+  const stats = useMemo(() => [
+    {
+      title: "Balance Total",
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(transactionStats?.balance || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(transactionStats?.balance || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : transactionStats?.balance || 0,
+      icon: BanknotesIcon,
+      color: "bg-green-500",
+      change: "+12.5%"
+    },
+    {
+      title: "Gastos del Mes",
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(transactionStats?.totalExpenses || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(transactionStats?.totalExpenses || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : transactionStats?.totalExpenses || 0,
+      icon: CreditCardIcon,
+      color: "bg-red-500",
+      change: "-8.2%"
+    },
+    {
+      title: "Ingresos del Mes",
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(transactionStats?.totalIncome || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(transactionStats?.totalIncome || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : transactionStats?.totalIncome || 0,
+      icon: ChartBarIcon,
+      color: "bg-blue-500",
+      change: "+15.3%"
+    },
+    {
+      title: "Me deben",
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(debtStats?.totalOwedToMe || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(debtStats?.totalOwedToMe || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : debtStats?.totalOwedToMe || 0,
+      icon: ArrowTrendingUpIcon,
+      color: "bg-green-500",
+      change: "+"
+    },
+    {
+      title: "Debo",
+      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(debtStats?.totalIOwe || 0, userCurrency, useRounding),
+      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(debtStats?.totalIOwe || 0, userCurrency),
+      rawAmount: isDataLoading ? 0 : debtStats?.totalIOwe || 0,
+      icon: ArrowTrendingDownIcon,
+      color: "bg-red-500",
+      change: "-"
+    }
+  ], [isDataLoading, transactionStats, debtStats, userCurrency, useRounding]);
+
+  // Event handlers for buttons (memoized)
+  const handleNewTransaction = useCallback(() => {
+    setShowNewTransaction(true);
+  }, []);
+
+  const handleCloseNewTransaction = useCallback(() => {
+    setShowNewTransaction(false);
+  }, []);
+
+  const handleTransactionCreated = useCallback(() => {
+    setShowNewTransaction(false);
+  }, []);
+
+  const handleManageDebts = useCallback(() => {
+    router.push('/debts');
+  }, [router]);
+
+  const handleViewReports = useCallback(() => {
+    router.push('/reports');
+  }, [router]);
+
+  const handleCloseModal = useCallback(() => {
+    setShowSignIn(false);
+    router.push('/');
+  }, [router]);
 
   useEffect(() => {
     if (isLoaded && !user) {
-      // Si no hay usuario autenticado, mostrar modal de login
       setShowSignIn(true);
     }
   }, [isLoaded, user]);
-
-  const handleCloseModal = () => {
-    setShowSignIn(false);
-    // Redirigir a la página principal después de cerrar el modal
-    router.push('/');
-  };
 
   // Si está cargando, mostrar loading
   if (!isLoaded) {
@@ -115,59 +162,6 @@ export default function DashboardPage() {
       </>
     );
   }
-  
-  // Calculate stats from real data
-  const useRounding = currentUser?.numberRounding || false;
-  
-
-
-  const stats = [
-    {
-      title: "Balance Total",
-      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(transactionStats?.balance || 0, userCurrency, useRounding),
-      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(transactionStats?.balance || 0, userCurrency),
-      rawAmount: isDataLoading ? 0 : transactionStats?.balance || 0,
-      icon: BanknotesIcon,
-      color: "bg-green-500",
-      change: "+12.5%" // TODO: Calculate real change percentage
-    },
-    {
-      title: "Gastos del Mes",
-      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(transactionStats?.totalExpenses || 0, userCurrency, useRounding),
-      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(transactionStats?.totalExpenses || 0, userCurrency),
-      rawAmount: isDataLoading ? 0 : transactionStats?.totalExpenses || 0,
-      icon: CreditCardIcon,
-      color: "bg-red-500",
-      change: "-8.2%" // TODO: Calculate real change percentage
-    },
-    {
-      title: "Ingresos del Mes",
-      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(transactionStats?.totalIncome || 0, userCurrency, useRounding),
-      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(transactionStats?.totalIncome || 0, userCurrency),
-      rawAmount: isDataLoading ? 0 : transactionStats?.totalIncome || 0,
-      icon: ChartBarIcon,
-      color: "bg-blue-500",
-      change: "+15.3%" // TODO: Calculate real change percentage
-    },
-    {
-      title: "Me deben",
-      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(debtStats?.totalOwedToMe || 0, userCurrency, useRounding),
-      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(debtStats?.totalOwedToMe || 0, userCurrency),
-      rawAmount: isDataLoading ? 0 : debtStats?.totalOwedToMe || 0,
-      icon: ArrowTrendingUpIcon,
-      color: "bg-green-500",
-      change: "+" // TODO: Calculate real change percentage
-    },
-    {
-      title: "Debo",
-      value: isDataLoading ? formatCurrencyWithRounding(0, userCurrency, useRounding) : formatCurrencyWithRounding(debtStats?.totalIOwe || 0, userCurrency, useRounding),
-      fullValue: isDataLoading ? formatCurrency(0, userCurrency) : formatCurrency(debtStats?.totalIOwe || 0, userCurrency),
-      rawAmount: isDataLoading ? 0 : debtStats?.totalIOwe || 0,
-      icon: ArrowTrendingDownIcon,
-      color: "bg-red-500",
-      change: "-" // TODO: Calculate real change percentage
-    }
-  ];
 
   return (
     <div className="px-6 py-0">
@@ -211,6 +205,157 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
+      {/* Plan Usage Overview for Free Users */}
+      {isFree && billingInfo && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mb-8"
+        >
+          <Card className="brutal-card p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-black uppercase tracking-wide text-black">
+                🔍 PLAN GRATUITO - RESUMEN DE USO
+              </h2>
+              <div className="px-3 py-1 bg-gray-200 border-2 border-black font-black text-xs uppercase">
+                FREE
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Transactions */}
+              <div className="p-4 border-2 border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-700">Transacciones</span>
+                  <span className="text-xs font-bold text-gray-600">
+                    {billingInfo.usage.monthlyTransactions}/{billingInfo.limits.monthlyTransactions}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-2 mb-2">
+                  <div 
+                    className={`h-2 transition-all duration-300 ${
+                      getUsagePercentage('transactions') >= 80 
+                        ? 'bg-red-500' 
+                        : getUsagePercentage('transactions') >= 60 
+                        ? 'bg-yellow-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(getUsagePercentage('transactions'), 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600">
+                  {billingInfo.limits.monthlyTransactions - billingInfo.usage.monthlyTransactions} restantes
+                </p>
+              </div>
+
+              {/* Debts */}
+              <div className="p-4 border-2 border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-700">Deudas activas</span>
+                  <span className="text-xs font-bold text-gray-600">
+                    {billingInfo.usage.activeDebts}/{billingInfo.limits.activeDebts}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-2 mb-2">
+                  <div 
+                    className={`h-2 transition-all duration-300 ${
+                      getUsagePercentage('debts') >= 80 
+                        ? 'bg-red-500' 
+                        : getUsagePercentage('debts') >= 60 
+                        ? 'bg-yellow-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(getUsagePercentage('debts'), 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600">
+                  {billingInfo.limits.activeDebts - billingInfo.usage.activeDebts} restantes
+                </p>
+              </div>
+
+              {/* Recurring Transactions */}
+              <div className="p-4 border-2 border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-700">Recurrentes</span>
+                  <span className="text-xs font-bold text-gray-600">
+                    {billingInfo.usage.recurringTransactions}/{billingInfo.limits.recurringTransactions}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-2 mb-2">
+                  <div 
+                    className={`h-2 transition-all duration-300 ${
+                      getUsagePercentage('recurring_transactions') >= 80 
+                        ? 'bg-red-500' 
+                        : getUsagePercentage('recurring_transactions') >= 60 
+                        ? 'bg-yellow-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(getUsagePercentage('recurring_transactions'), 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600">
+                  {billingInfo.limits.recurringTransactions - billingInfo.usage.recurringTransactions} restantes
+                </p>
+              </div>
+
+              {/* Categories */}
+              <div className="p-4 border-2 border-gray-300 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-gray-700">Categorías</span>
+                  <span className="text-xs font-bold text-gray-600">
+                    {billingInfo.usage.categories}/{billingInfo.limits.categories}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-2 mb-2">
+                  <div 
+                    className={`h-2 transition-all duration-300 ${
+                      getUsagePercentage('categories') >= 80 
+                        ? 'bg-red-500' 
+                        : getUsagePercentage('categories') >= 60 
+                        ? 'bg-yellow-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(getUsagePercentage('categories'), 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600">
+                  {billingInfo.limits.categories - billingInfo.usage.categories} restantes
+                </p>
+              </div>
+            </div>
+
+            {/* Warning for high usage */}
+            {(
+              getUsagePercentage('transactions') >= 80 ||
+              getUsagePercentage('debts') >= 80 ||
+              getUsagePercentage('recurring_transactions') >= 80 ||
+              getUsagePercentage('categories') >= 80
+            ) && (
+              <div className="mt-4 p-3 bg-red-50 border-2 border-red-500 flex items-center gap-3">
+                <span className="text-red-600 text-lg">⚠️</span>
+                <div>
+                  <p className="text-sm font-bold text-red-700">
+                    Te estás acercando a los límites del plan gratuito
+                  </p>
+                  <p className="text-xs text-red-600">
+                    Considera actualizar a Premium para límites ilimitados
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+        </motion.div>
+      )}
+
       {/* Stats Grid */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -219,43 +364,15 @@ export default function DashboardPage() {
         className="mb-8"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => {
-            const IconComponent = stat.icon;
-            return (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + index * 0.1 }}
-              >
-                <Card className="brutal-card p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-lg ${stat.color}`}>
-                      <IconComponent className="w-6 h-6 text-white" />
-                    </div>
-                    <span className={`text-sm font-bold ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                      {stat.change}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 mb-1">
-                    {stat.title}
-                  </h3>
-                  <BalanceTooltip
-                    value={stat.value}
-                    fullValue={stat.fullValue}
-                    amount={stat.rawAmount}
-                    currency={userCurrency}
-                    useRounding={useRounding}
-                  >
-                    <p className="text-2xl font-black cursor-help">
-                      {stat.value}
-                    </p>
-                  </BalanceTooltip>
-                </Card>
-              </motion.div>
-            );
-          })}
+          {stats.map((stat, index) => (
+            <StatCard
+              key={stat.title}
+              {...stat}
+              userCurrency={userCurrency}
+              useRounding={useRounding}
+              index={index}
+            />
+          ))}
         </div>
       </motion.div>
 

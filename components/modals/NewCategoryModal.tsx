@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 
 import { useCategories } from "@/hooks/use-categories";
+import { useBilling } from "@/hooks/useBilling";
 import { toast } from "sonner";
 import { TagIcon } from "@heroicons/react/24/outline";
 import { BrutalFormModal } from "@/components/ui/brutal-form-modal";
@@ -25,6 +26,7 @@ const CATEGORY_ICONS = [
 
 export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
   const { createCategory } = useCategories();
+  const { setShowSubscriptionPopup, setCurrentLimitType } = useBilling();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -51,9 +53,18 @@ export function NewCategoryModal({ isOpen, onClose }: NewCategoryModalProps) {
 
       toast.success("Categoría creada exitosamente");
       handleClose();
-    } catch (error) {
+    } catch (error: Error | unknown) {
       console.error("Error creating category:", error);
-      toast.error("Error al crear la categoría");
+      
+      // Check if it's a billing limit error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("límite de") && errorMessage.includes("categorías")) {
+        setCurrentLimitType("categories");
+        setShowSubscriptionPopup(true);
+        return;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
